@@ -1,4 +1,4 @@
-"""OCR engine. PaddleOCR v5 (PP-OCRv5, mobile build) only. No fallbacks."""
+"""OCR engine. PaddleOCR v5 (PP-OCRv5, mobile build)."""
 from __future__ import annotations
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Sequence
@@ -34,6 +34,8 @@ class OCREngine:
         self._lang = lang
         try:
             # PaddleOCR 3.x — explicit PP-OCRv5 mobile model names.
+            # `lang` and `ocr_version` are ignored when model names are set,
+            # so omit them to silence the UserWarning.
             self.ocr = PaddleOCR(
                 text_detection_model_name="PP-OCRv5_mobile_det",
                 text_recognition_model_name="PP-OCRv5_mobile_rec",
@@ -41,11 +43,9 @@ class OCREngine:
                 use_doc_unwarping=False,
                 use_textline_orientation=True,
                 enable_mkldnn=False,
-                lang=lang,
             )
             self._is_v3 = True
         except TypeError:
-            # PaddleOCR 2.x — older kwargs. PP-OCRv5 not available; fail loud.
             raise RuntimeError(
                 "Installed PaddleOCR is too old for PP-OCRv5 mobile. "
                 "Upgrade: pip install -U 'paddleocr>=3.0' 'paddlepaddle>=3.0'"

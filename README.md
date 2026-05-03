@@ -2,7 +2,7 @@
 
 Portable, offline whiteboard-to-document system targeting the Raspberry Pi 5. Captures a classroom whiteboard, preprocesses the image, performs OCR, applies LLM-assisted spelling and grammar correction, generates a summary, exports DOCX, PDF, TXT, PNG, and a JSON manifest, and stores everything in a local SQLite database that is browseable through a Flask web interface.
 
-PaddleOCR (PP-OCRv5 mobile) is the only OCR engine. The local LLM is Phi-3-mini served by Ollama; if Ollama is unavailable, rule-based fallbacks (SymSpell, sumy LSA) take over automatically.
+OCR uses PaddleOCR (PP-OCRv5 mobile). Text correction and summarization use Phi-3-mini served by Ollama.
 
 ## Modules
 
@@ -36,13 +36,11 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Optional: install Ollama from <https://ollama.com/download/windows>, then pull the model.
+Install Ollama from <https://ollama.com/download/windows>, then pull the model.
 
 ```powershell
 ollama pull phi3:mini
 ```
-
-Without Ollama, correction falls back to SymSpell and summarization falls back to sumy LSA.
 
 ### 2. Configure
 
@@ -201,7 +199,7 @@ Authentication uses `Authorization: Bearer <jwt>` or a `token` cookie. Tokens ex
 1. `preprocess` detects board corners, rectifies the perspective, removes specular glare, applies CLAHE, and denoises.
 2. `run_ocr` returns a list of `OCRLine(text, confidence, bbox)` from PaddleOCR PP-OCRv5 mobile.
 3. `correct_low_confidence` rewrites only lines whose confidence is below 0.75.
-4. `summarize` produces a bullet-point summary using the local LLM, with sumy LSA as fallback.
+4. `summarize` produces a bullet-point summary using the local LLM.
 5. `export_all` writes DOCX, PDF, TXT, PNG, and a JSON manifest under `data/YYYY-MM-DD/<uuid>/`.
 6. `insert_lecture` indexes the result in SQLite.
 
@@ -232,12 +230,12 @@ Targets: at least 85 percent character and word recognition rate, and end-to-end
 
 ## Known constraints
 
-- OCR engine: PaddleOCR `>=3.0` with the PP-OCRv5 mobile build is the only supported engine. There is no fallback engine; install issues must be resolved at the source. ARM wheels: <https://www.paddlepaddle.org.cn/install/>.
+- OCR engine: PaddleOCR `>=3.0` with the PP-OCRv5 mobile build. ARM wheels: <https://www.paddlepaddle.org.cn/install/>.
 - NumPy is pinned to `<2` because `paddlex` and `skimage` are compiled against the 1.x ABI.
 - `opencv-python` and `opencv-python-headless` are pinned to `<4.11` because newer releases require NumPy `>=2`. PaddleOCR pulls `opencv-python-headless` transitively, so both packages are pinned.
 - On Windows with a CPU build of `paddlepaddle 3.3.x`, MKL-DNN raises `ConvertPirAttribute2RuntimeAttribute`. The engine sets `enable_mkldnn=False` to work around this.
 - `make_sample.py` writes a synthetic board intended for smoke-testing OCR alone. The full preprocessing pipeline is tuned for real whiteboard photographs.
-- Phi-3-mini on the Raspberry Pi 5 is the slowest stage. If Ollama is unavailable, the system falls back to SymSpell for correction and sumy LSA for summarization without requiring network access or model weights.
+- Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
 - The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
 - DOCX heading inference is heuristic and based on regular expressions. Replace with PaddleOCR layout analysis output for richer structure.
 - `/api/stream` opens a single shared `CameraHub`. The Flask development server is single-threaded by default. Run with `flask run --with-threads` or `gunicorn -k gthread` to allow multiple concurrent stream viewers.

@@ -14,15 +14,13 @@ from .export import export_all
 from .db import init_db, insert_lecture
 
 
-def process_image(image: np.ndarray, course_name: Optional[str] = None,
-                  prefer_llm: bool = True) -> dict:
+def process_image(image: np.ndarray, course_name: Optional[str] = None) -> dict:
     init_db()
     rectified = preprocess(image)
     lines = run_ocr(rectified, engine=get_engine())
     raw_text = lines_to_text(lines)
-    corrected = correct_low_confidence(
-        lines, threshold=OCR_CONFIDENCE_THRESHOLD, prefer_llm=prefer_llm)
-    summary = summarize(corrected, prefer_llm=prefer_llm)
+    corrected = correct_low_confidence(lines, threshold=OCR_CONFIDENCE_THRESHOLD)
+    summary = summarize(corrected)
 
     result = export_all(rectified, lines, corrected, summary,
                         base_dir=DATA_DIR, course_name=course_name)
@@ -53,9 +51,8 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
     }
 
 
-def process_path(path: str, course_name: Optional[str] = None,
-                 prefer_llm: bool = True) -> dict:
+def process_path(path: str, course_name: Optional[str] = None) -> dict:
     img = cv2.imread(path)
     if img is None:
         raise FileNotFoundError(path)
-    return process_image(img, course_name=course_name, prefer_llm=prefer_llm)
+    return process_image(img, course_name=course_name)

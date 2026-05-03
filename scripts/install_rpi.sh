@@ -11,11 +11,11 @@ source .venv/bin/activate
 pip install --upgrade pip wheel
 pip install -r requirements.txt
 
-# Ollama (skip if already installed)
+# Ollama
 if ! command -v ollama >/dev/null 2>&1; then
   curl -fsSL https://ollama.com/install.sh | sh
 fi
-ollama pull phi3:mini || echo "warn: pull phi3:mini manually"
+ollama pull phi3:mini
 
 python -m stellegent.cli initdb
 echo "Done. Activate venv with: source .venv/bin/activate"
