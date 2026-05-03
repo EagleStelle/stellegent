@@ -4,26 +4,28 @@ Portable, offline whiteboard-to-document system. RPi 5 target. Captures classroo
 
 ## Modules
 
-| # | Module | Path |
-|---|---|---|
-| 1 | Capture + live preview | `stellegent/capture/` |
-| 2 | Preprocessing | `stellegent/preprocess/` |
-| 3 | OCR (PaddleOCR / EasyOCR) | `stellegent/ocr/` |
-| 4 | NLP correct + summarize (Ollama / SymSpell + sumy) | `stellegent/nlp/` |
-| 5 | Export DOCX/PDF/TXT/JSON | `stellegent/export/` |
-| 6 | SQLite store | `stellegent/db/` |
-| 7 | Flask web + JWT auth | `stellegent/web/` |
-| — | Orchestrator + CLI | `stellegent/pipeline.py`, `stellegent/cli.py` |
+| #   | Module                                             | Path                                          |
+| --- | -------------------------------------------------- | --------------------------------------------- |
+| 1   | Capture + live preview                             | `stellegent/capture/`                         |
+| 2   | Preprocessing                                      | `stellegent/preprocess/`                      |
+| 3   | OCR (PaddleOCR / EasyOCR)                          | `stellegent/ocr/`                             |
+| 4   | NLP correct + summarize (Ollama / SymSpell + sumy) | `stellegent/nlp/`                             |
+| 5   | Export DOCX/PDF/TXT/JSON                           | `stellegent/export/`                          |
+| 6   | SQLite store                                       | `stellegent/db/`                              |
+| 7   | Flask web + JWT auth                               | `stellegent/web/`                             |
+| —   | Orchestrator + CLI                                 | `stellegent/pipeline.py`, `stellegent/cli.py` |
 
 ## Install
 
 ### Windows dev
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install_dev.ps1
 .\.venv\Scripts\Activate.ps1
 ```
 
 ### Raspberry Pi 5 (Bookworm 64-bit)
+
 ```bash
 bash scripts/install_rpi.sh
 source .venv/bin/activate
@@ -33,13 +35,38 @@ Pulls `phi3:mini` via Ollama. If pull fails, run `ollama pull phi3:mini` manuall
 
 ## Quick start
 
+Always activate the venv first so `stellegent` and its deps are importable:
+
+Windows (PowerShell):
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+Linux/RPi:
+
+```bash
+source .venv/bin/activate
+```
+
+If you skipped the install script, install deps now:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then:
+
 ```bash
 python -m stellegent.cli initdb
-python scripts/seed_admin.py            # creates admin/prof/student dev accounts
-python -m stellegent.cli process samples\board.jpg --course "CS101"
+python scripts/seed_admin.py             # creates admin/prof/student dev accounts
+python scripts/make_sample.py            # writes samples/board.jpg (synthetic test image)
+python -m stellegent.cli process samples/board.jpg --course "CS101"
 python -m stellegent.cli list
 python -m stellegent.cli serve --port 5000
 ```
+
+The `process` step requires PaddleOCR or EasyOCR installed. If neither is installed yet, skip it and use the web UI's `/upload` after `serve` — the engine loads lazily on first use.
 
 Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` and reseed for production).
 
@@ -74,18 +101,18 @@ OpenCV native window, SPACE = capture, `q` = quit. Same guidance overlay as the 
 ### 4. CLI (offline batch)
 
 ```bash
-python -m stellegent.cli process samples\board.jpg --course "CS101"
+python -m stellegent.cli process samples/board.jpg --course "CS101"
 ```
 
 ## Configuration (env vars)
 
-| Var | Default | Purpose |
-|---|---|---|
-| `STELLEGENT_DATA` | `./data` | output root |
-| `STELLEGENT_DB` | `./stellegent.db` | SQLite path |
-| `STELLEGENT_JWT_SECRET` | `change-me-in-prod` | JWT signing key |
-| `OLLAMA_HOST` | `http://127.0.0.1:11434` | Ollama API |
-| `OLLAMA_MODEL` | `phi3:mini` | model tag |
+| Var                     | Default                  | Purpose         |
+| ----------------------- | ------------------------ | --------------- |
+| `STELLEGENT_DATA`       | `./data`                 | output root     |
+| `STELLEGENT_DB`         | `./stellegent.db`        | SQLite path     |
+| `STELLEGENT_JWT_SECRET` | `change-me-in-prod`      | JWT signing key |
+| `OLLAMA_HOST`           | `http://127.0.0.1:11434` | Ollama API      |
+| `OLLAMA_MODEL`          | `phi3:mini`              | model tag       |
 
 ## API
 
@@ -110,6 +137,7 @@ Bearer token via `Authorization: Bearer <jwt>` or `token` cookie. 30-min expiry.
 ## Pipeline contract
 
 `stellegent.pipeline.process_image(np.ndarray, course_name=None)` runs:
+
 1. `preprocess` — detect corners, rectify, deglare, CLAHE, denoise
 2. `run_ocr` — list of `OCRLine(text, confidence, bbox)`
 3. `correct_low_confidence` — only lines below 0.75 confidence

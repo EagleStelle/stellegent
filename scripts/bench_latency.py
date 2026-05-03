@@ -3,6 +3,8 @@ from __future__ import annotations
 import sys
 import time
 import statistics
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import cv2
 from stellegent.pipeline import process_image

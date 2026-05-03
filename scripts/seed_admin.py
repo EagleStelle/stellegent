@@ -1,4 +1,8 @@
 """Seed default admin/prof/student accounts. Use only for dev."""
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 from stellegent.db import init_db, create_user, get_user
 
 init_db()
