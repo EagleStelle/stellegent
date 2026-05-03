@@ -14,7 +14,8 @@ from ..db import get_user, audit
 def issue_token(user_id: int, username: str, role: str) -> str:
     now = datetime.now(timezone.utc)
     payload = {
-        "sub": user_id,
+        "sub": str(user_id),
+        "uid": int(user_id),
         "username": username,
         "role": role,
         "iat": int(now.timestamp()),
@@ -56,5 +57,6 @@ def login_required(roles: Optional[Sequence[str]] = None):
 
 
 def log_action(action: str, target_id: Optional[str] = None) -> None:
-    uid = getattr(g, "user", {}).get("sub") if hasattr(g, "user") else None
+    user = getattr(g, "user", None)
+    uid = user.get("uid") if user else None
     audit(uid, action, target_id, request.remote_addr)

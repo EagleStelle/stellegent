@@ -144,7 +144,7 @@ def api_annotate(lecture_id: str):
     note = (request.json or request.form).get("note", "").strip()
     if not note:
         return jsonify({"error": "empty note"}), 400
-    nid = add_annotation(lecture_id, g.user["sub"], note)
+    nid = add_annotation(lecture_id, g.user["uid"], note)
     log_action("annotate", lecture_id)
     return jsonify({"id": nid})
 

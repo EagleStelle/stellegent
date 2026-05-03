@@ -55,6 +55,15 @@ If you skipped the install script, install deps now:
 pip install -r requirements.txt
 ```
 
+Copy the example env file (a working `.env` is already shipped with a generated secret — replace it for production):
+
+```bash
+# Linux/RPi
+cp .env.example .env
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
 Then:
 
 ```bash
@@ -68,7 +77,7 @@ python -m stellegent.cli serve --port 5000
 
 The `process` step requires PaddleOCR or EasyOCR installed. If neither is installed yet, skip it and use the web UI's `/upload` after `serve` — the engine loads lazily on first use.
 
-Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` and reseed for production).
+Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` in `.env` and reseed users for production).
 
 ## Three ways to ingest a board
 
@@ -104,15 +113,23 @@ OpenCV native window, SPACE = capture, `q` = quit. Same guidance overlay as the 
 python -m stellegent.cli process samples/board.jpg --course "CS101"
 ```
 
-## Configuration (env vars)
+## Configuration (env vars / `.env`)
 
-| Var                     | Default                  | Purpose         |
-| ----------------------- | ------------------------ | --------------- |
-| `STELLEGENT_DATA`       | `./data`                 | output root     |
-| `STELLEGENT_DB`         | `./stellegent.db`        | SQLite path     |
-| `STELLEGENT_JWT_SECRET` | `change-me-in-prod`      | JWT signing key |
-| `OLLAMA_HOST`           | `http://127.0.0.1:11434` | Ollama API      |
-| `OLLAMA_MODEL`          | `phi3:mini`              | model tag       |
+`stellegent/config.py` auto-loads a `.env` file at the repo root. Process env vars override file values.
+
+| Var                     | Default                  | Purpose                                         |
+| ----------------------- | ------------------------ | ----------------------------------------------- |
+| `STELLEGENT_DATA`       | `./data`                 | output root                                     |
+| `STELLEGENT_DB`         | `./stellegent.db`        | SQLite path                                     |
+| `STELLEGENT_JWT_SECRET` | (long built-in fallback) | JWT signing key — **must be ≥32 bytes** (PyJWT) |
+| `OLLAMA_HOST`           | `http://127.0.0.1:11434` | Ollama API                                      |
+| `OLLAMA_MODEL`          | `phi3:mini`              | model tag                                       |
+
+Generate a fresh secret:
+
+```bash
+python -c "import secrets; print(secrets.token_urlsafe(48))"
+```
 
 ## API
 
