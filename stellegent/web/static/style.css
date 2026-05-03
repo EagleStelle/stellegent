@@ -1,0 +1,23 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; margin: 0; background: #f7f7fb; color: #222; }
+header { display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 24px; background: #1f2a44; color: #fff; }
+header a, header a:visited { color: #fff; text-decoration: none; margin-left: 12px; }
+.brand { font-weight: 700; font-size: 1.2rem; }
+main { padding: 24px; max-width: 1200px; margin: 0 auto; }
+.card { background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+.narrow { max-width: 360px; margin: 64px auto; }
+form label { display: block; margin: 8px 0; }
+input, textarea, button { font: inherit; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+input { width: 100%; }
+button { background: #1f2a44; color: #fff; cursor: pointer; border: none; padding: 8px 16px; }
+button.danger { background: #c0392b; }
+.error { color: #c0392b; }
+table.lectures { width: 100%; border-collapse: collapse; background: #fff; }
+table.lectures th, table.lectures td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+.filters input { display: inline-block; width: auto; margin-right: 8px; }
+.cols { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.cols pre { background: #fff; padding: 12px; border-radius: 4px; white-space: pre-wrap; max-height: 400px; overflow: auto; }
+img.board { max-width: 100%; border: 1px solid #ddd; border-radius: 4px; }
+.downloads a { margin-right: 4px; }
+textarea { width: 100%; min-height: 80px; }

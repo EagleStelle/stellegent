@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Lectures</h2>
+<form method="get" class="filters">
+  <input name="date" value="{{ date }}" placeholder="YYYY-MM-DD">
+  <input name="course" value="{{ course }}" placeholder="Course">
+  <input name="q" value="{{ q }}" placeholder="Search keyword">
+  <button type="submit">Filter</button>
+</form>
+{% if user.role in ['prof','admin'] %}
+<button id="capture-btn">Capture now</button>
+<script>
+document.getElementById('capture-btn').onclick = async () => {
+  const r = await fetch('/api/capture', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
+  const j = await r.json();
+  if (j.lecture_id) location.href = '/lecture/' + j.lecture_id;
+  else alert(JSON.stringify(j));
+};
+</script>
+{% endif %}
+<table class="lectures">
+  <thead><tr><th>Captured</th><th>Course</th><th>Tags</th><th>Summary</th><th></th></tr></thead>
+  <tbody>
+  {% for l in lectures %}
+    <tr>
+      <td>{{ l.captured_at }}</td>
+      <td>{{ l.course_name or '—' }}</td>
+      <td>{{ l.tags }}</td>
+      <td class="summary">{{ (l.summary or '')[:160] }}</td>
+      <td><a href="{{ url_for('ui.lecture_detail', lecture_id=l.id) }}">Open</a></td>
+    </tr>
+  {% else %}
+    <tr><td colspan="5">No lectures yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}
