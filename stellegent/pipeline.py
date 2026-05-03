@@ -8,27 +8,17 @@ import numpy as np
 
 from .config import DATA_DIR, OCR_CONFIDENCE_THRESHOLD
 from .preprocess import preprocess
-from .ocr.engine import make_engine, run_ocr, lines_to_text, OCREngine
+from .ocr.engine import get_engine, run_ocr, lines_to_text, OCREngine
 from .nlp import correct_low_confidence, summarize
 from .export import export_all
 from .db import init_db, insert_lecture
-
-
-_ENGINE: Optional[OCREngine] = None
-
-
-def _engine() -> OCREngine:
-    global _ENGINE
-    if _ENGINE is None:
-        _ENGINE = make_engine()
-    return _ENGINE
 
 
 def process_image(image: np.ndarray, course_name: Optional[str] = None,
                   prefer_llm: bool = True) -> dict:
     init_db()
     rectified = preprocess(image)
-    lines = run_ocr(rectified, engine=_engine())
+    lines = run_ocr(rectified, engine=get_engine())
     raw_text = lines_to_text(lines)
     corrected = correct_low_confidence(
         lines, threshold=OCR_CONFIDENCE_THRESHOLD, prefer_llm=prefer_llm)

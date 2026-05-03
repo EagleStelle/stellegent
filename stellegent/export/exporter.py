@@ -84,25 +84,39 @@ def _write_pdf(path: Path, image_path: Path, summary: str, corrected: str) -> No
     pdf = FPDF(unit="mm", format="A4")
     pdf.set_auto_page_break(auto=True, margin=15)
     pdf.add_page()
+    margin = 10
+    page_w = pdf.w - 2 * margin
+    pdf.set_left_margin(margin)
+    pdf.set_right_margin(margin)
+
+    def safe(s: str) -> str:
+        return s.encode("latin-1", "replace").decode("latin-1")
+
+    def write_block(lines: list, line_h: float) -> None:
+        for ln in lines:
+            text = safe(ln).strip()
+            if not text:
+                pdf.ln(line_h)
+                continue
+            pdf.multi_cell(page_w, line_h, text)
+
     pdf.set_font("Helvetica", "B", 16)
-    pdf.cell(0, 10, "Lecture Capture", ln=True)
+    pdf.cell(page_w, 10, safe("Lecture Capture"), ln=True)
     if image_path.exists():
         try:
-            pdf.image(str(image_path), x=10, y=25, w=190)
+            pdf.image(str(image_path), x=margin, y=25, w=page_w)
             pdf.ln(120)
         except Exception:
             pass
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, "Summary", ln=True)
+    pdf.cell(page_w, 8, "Summary", ln=True)
     pdf.set_font("Helvetica", "", 11)
-    for ln in summary.splitlines():
-        pdf.multi_cell(0, 6, ln.encode("latin-1", "replace").decode("latin-1"))
+    write_block(summary.splitlines(), 6)
     pdf.add_page()
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(0, 8, "Corrected Transcript", ln=True)
+    pdf.cell(page_w, 8, "Corrected Transcript", ln=True)
     pdf.set_font("Helvetica", "", 10)
-    for ln in corrected.splitlines():
-        pdf.multi_cell(0, 5, ln.encode("latin-1", "replace").decode("latin-1"))
+    write_block(corrected.splitlines(), 5)
     pdf.output(str(path))
 
 

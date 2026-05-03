@@ -8,7 +8,7 @@ Portable, offline whiteboard-to-document system. RPi 5 target. Captures classroo
 | --- | -------------------------------------------------- | --------------------------------------------- |
 | 1   | Capture + live preview                             | `stellegent/capture/`                         |
 | 2   | Preprocessing                                      | `stellegent/preprocess/`                      |
-| 3   | OCR (PaddleOCR / EasyOCR)                          | `stellegent/ocr/`                             |
+| 3   | OCR (PaddleOCR v5 / PP-OCRv5 mobile)               | `stellegent/ocr/`                             |
 | 4   | NLP correct + summarize (Ollama / SymSpell + sumy) | `stellegent/nlp/`                             |
 | 5   | Export DOCX/PDF/TXT/JSON                           | `stellegent/export/`                          |
 | 6   | SQLite store                                       | `stellegent/db/`                              |
@@ -31,7 +31,7 @@ bash scripts/install_rpi.sh
 source .venv/bin/activate
 ```
 
-Pulls `phi3:mini` via Ollama. If pull fails, run `ollama pull phi3:mini` manually. PaddleOCR may need `paddlepaddle` ARM wheels — fall back to EasyOCR by default if init fails (handled automatically).
+Pulls `phi3:mini` via Ollama. If pull fails, run `ollama pull phi3:mini` manually. PaddleOCR requires `paddlepaddle>=3.0` and `paddleocr>=3.0` (PP-OCRv5 mobile build). On RPi 5 / ARM64 see https://www.paddlepaddle.org.cn/install/ for the correct wheel. **EasyOCR is not used.**
 
 ## Quick start
 
@@ -75,7 +75,7 @@ python -m stellegent.cli list
 python -m stellegent.cli serve --port 5000
 ```
 
-The `process` step requires PaddleOCR or EasyOCR installed. If neither is installed yet, skip it and use the web UI's `/upload` after `serve` — the engine loads lazily on first use.
+The `process` step requires PaddleOCR (PP-OCRv5 mobile) installed. If it isn't installed yet, skip it and run `serve` first — the engine loads lazily on first use, and the error message tells you exactly what to install.
 
 Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` in `.env` and reseed users for production).
 
@@ -183,7 +183,10 @@ Targets: ≥85% CRR/WRR, ≤30s end-to-end on RPi 5.
 
 ## Notes / known constraints
 
-- PaddleOCR ARM wheels are flaky. Code falls back to EasyOCR automatically.
+- PaddleOCR is the only OCR engine (PP-OCRv5 mobile build, `paddleocr>=3.0`). No fallback engine — if init fails, fix the install. ARM wheels: https://www.paddlepaddle.org.cn/install/.
+- `numpy<2` is required (skimage / paddlex compiled against the 1.x ABI). Already pinned in `requirements.txt`.
+- On Windows + CPU, MKL-DNN in paddlepaddle 3.3.x throws `ConvertPirAttribute2RuntimeAttribute` errors. The engine sets `enable_mkldnn=False` to work around this — leave it disabled unless you've upgraded.
+- `make_sample.py` writes a _synthetic_ board for smoke-testing OCR alone, not the full preprocessing pipeline. Real whiteboard photos work normally; the synthetic image's perfect rectangle interacts badly with CLAHE/glare-inpaint. To verify OCR on the synthetic image, call `stellegent.ocr.run_ocr(cv2.imread('samples/board.jpg'))` directly.
 - Phi-3-mini on RPi 5 is the bottleneck. If Ollama is unavailable or slow, `correct_text` falls back to SymSpell and `summarize` falls back to sumy LSA — no network, no model load required.
 - `solvePnP`-style distance estimate uses a 66° HFOV assumption (typical RPi camera). Tune in `capture/guidance.py` for your lens.
 - DOCX layout heading inference is heuristic (numbered/bulleted regex). Extend with PaddleOCR layout-analysis output for richer structure.
