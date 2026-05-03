@@ -95,6 +95,7 @@ def lecture_detail(lecture_id: str):
 @ui_bp.route("/lecture/<lecture_id>/file")
 @login_required()
 def lecture_file(lecture_id: str):
+    from ..config import ROOT
     row = get_lecture(lecture_id)
     if not row:
         abort(404)
@@ -103,8 +104,13 @@ def lecture_file(lecture_id: str):
            "image": "image_path", "manifest": "manifest_path"}.get(kind)
     if not key or not row[key]:
         abort(404)
+    p = Path(row[key])
+    if not p.is_absolute():
+        p = (ROOT / p).resolve()
+    if not p.exists():
+        abort(404)
     log_action(f"download:{kind}", lecture_id)
-    return send_file(row[key], as_attachment=(kind != "image"))
+    return send_file(str(p), as_attachment=(kind != "image"))
 
 
 # ---------- API ----------

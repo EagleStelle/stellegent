@@ -21,8 +21,14 @@ def _load_dotenv() -> None:
 
 _load_dotenv()
 
-DATA_DIR = Path(os.environ.get("STELLEGENT_DATA", ROOT / "data"))
-DB_PATH = Path(os.environ.get("STELLEGENT_DB", ROOT / "stellegent.db"))
+def _resolve(p) -> Path:
+    """Resolve relative paths against the repo root, leave absolute paths alone."""
+    p = Path(p)
+    return p if p.is_absolute() else (ROOT / p).resolve()
+
+
+DATA_DIR = _resolve(os.environ.get("STELLEGENT_DATA", ROOT / "data"))
+DB_PATH = _resolve(os.environ.get("STELLEGENT_DB", ROOT / "stellegent.db"))
 
 OCR_LANGS = ["en"]
 OCR_CONFIDENCE_THRESHOLD = 0.75

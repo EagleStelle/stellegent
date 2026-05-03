@@ -58,13 +58,32 @@ def denoise(img: np.ndarray) -> np.ndarray:
     return cv2.GaussianBlur(img, (5, 5), 0)
 
 
-def remove_glare(img: np.ndarray, thresh: int = 240) -> np.ndarray:
-    """Inpaint bright glare spots using Navier-Stokes."""
+def remove_glare(img: np.ndarray, thresh: int = 250,
+                 max_blob_ratio: float = 0.02,
+                 max_total_ratio: float = 0.10) -> np.ndarray:
+    """Inpaint small specular highlights only.
+
+    A whiteboard itself is bright (>240). To avoid wiping the board, we keep
+    only small connected components above ``thresh`` whose individual area is
+    below ``max_blob_ratio`` of the image. If the resulting mask still covers
+    more than ``max_total_ratio``, give up and return the original image.
+    """
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    _, mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
-    mask = cv2.dilate(mask, np.ones((5, 5), np.uint8), iterations=2)
+    _, raw_mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
+    h, w = gray.shape
+    img_area = h * w
+    n, labels, stats, _ = cv2.connectedComponentsWithStats(raw_mask, connectivity=8)
+    blob_limit = max_blob_ratio * img_area
+    mask = np.zeros_like(raw_mask)
+    for i in range(1, n):
+        area = stats[i, cv2.CC_STAT_AREA]
+        if area < blob_limit:
+            mask[labels == i] = 255
     if cv2.countNonZero(mask) == 0:
         return img
+    if cv2.countNonZero(mask) > max_total_ratio * img_area:
+        return img
+    mask = cv2.dilate(mask, np.ones((5, 5), np.uint8), iterations=1)
     return cv2.inpaint(img, mask, 5, cv2.INPAINT_NS)
 
 
