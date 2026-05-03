@@ -2,7 +2,7 @@ import numpy as np
 import cv2
 
 from stellegent.preprocess.pipeline import (
-    detect_board_corners, rectify, clahe_normalize, denoise, remove_glare,
+    detect_board_corners, rectify, remove_glare, shadow_normalize, binarize,
     laplacian_sharpness, preprocess,
 )
 
@@ -35,21 +35,26 @@ def test_pipeline_runs():
     img, _ = _synthetic_board()
     out = preprocess(img)
     assert out.shape == (1080, 1920, 3)
+    # Output should be near-binary B&W on white.
+    assert len(np.unique(out)) <= 4
     assert laplacian_sharpness(out) > 0
 
 
 def test_glare_inpaint_no_op_when_clean():
-    img = np.full((100, 100, 3), 100, dtype=np.uint8)
-    assert np.array_equal(remove_glare(img), img)
+    gray = np.full((100, 100), 100, dtype=np.uint8)
+    assert np.array_equal(remove_glare(gray), gray)
 
 
-def test_clahe_changes_image():
-    img = np.full((50, 50, 3), 80, dtype=np.uint8)
-    img[10:40, 10:40] = 180
-    out = clahe_normalize(img)
-    assert out.shape == img.shape
+def test_shadow_normalize_runs():
+    gray = np.full((64, 64), 80, dtype=np.uint8)
+    gray[10:40, 10:40] = 180
+    out = shadow_normalize(gray)
+    assert out.shape == gray.shape
 
 
-def test_denoise_runs():
-    img = np.random.randint(0, 255, (64, 64, 3), dtype=np.uint8)
-    assert denoise(img).shape == img.shape
+def test_binarize_outputs_two_values():
+    gray = np.random.randint(80, 200, (128, 128), dtype=np.uint8)
+    gray[40:80, 40:80] = 30
+    out = binarize(gray)
+    vals = set(np.unique(out).tolist())
+    assert vals.issubset({0, 255})

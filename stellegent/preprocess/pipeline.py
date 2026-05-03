@@ -1,4 +1,4 @@
-"""Image preprocessing pipeline: detect board, rectify, denoise, deglare."""
+"""Image preprocessing pipeline: detect board, rectify, deglare, binarize."""
 from __future__ import annotations
 import cv2
 import numpy as np
@@ -6,6 +6,8 @@ from typing import Optional, Tuple
 
 from ..config import RECTIFIED_SIZE
 
+
+# ---------- corner detection ----------
 
 def _order_corners(pts: np.ndarray) -> np.ndarray:
     pts = pts.reshape(4, 2).astype(np.float32)
@@ -18,25 +20,54 @@ def _order_corners(pts: np.ndarray) -> np.ndarray:
     return np.array([tl, tr, br, bl], dtype=np.float32)
 
 
+def _board_mask(img: np.ndarray) -> np.ndarray:
+    """Whiteboard surface = bright + low saturation. Returns binary mask."""
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    s = hsv[:, :, 1]
+    v = hsv[:, :, 2]
+    mask = ((s < 60) & (v > 140)).astype(np.uint8) * 255
+    k = np.ones((9, 9), np.uint8)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, k, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, k, iterations=1)
+    return mask
+
+
+def _largest_quad(mask: np.ndarray, img_area: float) -> Optional[np.ndarray]:
+    contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    if not contours:
+        return None
+    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
+    for c in contours:
+        if cv2.contourArea(c) < 0.15 * img_area:
+            continue
+        peri = cv2.arcLength(c, True)
+        for eps in (0.01, 0.02, 0.03, 0.05, 0.08):
+            approx = cv2.approxPolyDP(c, eps * peri, True)
+            if len(approx) == 4 and cv2.isContourConvex(approx):
+                return _order_corners(approx)
+        rect = cv2.minAreaRect(c)
+        box = cv2.boxPoints(rect)
+        return _order_corners(box.astype(np.float32))
+    return None
+
+
 def detect_board_corners(img: np.ndarray) -> Optional[np.ndarray]:
-    """Find 4 corners of largest quadrilateral. Returns None if not found."""
+    """Find 4 corners of the whiteboard. Tries color mask first, then edges."""
+    h, w = img.shape[:2]
+    img_area = float(h * w)
+
+    quad = _largest_quad(_board_mask(img), img_area)
+    if quad is not None:
+        return quad
+
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
     blur = cv2.GaussianBlur(gray, (5, 5), 0)
     edges = cv2.Canny(blur, 50, 150)
     edges = cv2.dilate(edges, np.ones((3, 3), np.uint8), iterations=1)
+    return _largest_quad(edges, img_area)
 
-    contours, _ = cv2.findContours(edges, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    if not contours:
-        return None
-    contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
-    img_area = img.shape[0] * img.shape[1]
-    for c in contours:
-        peri = cv2.arcLength(c, True)
-        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
-        if len(approx) == 4 and cv2.contourArea(approx) > 0.1 * img_area:
-            return _order_corners(approx)
-    return None
 
+# ---------- rectify ----------
 
 def rectify(img: np.ndarray, corners: np.ndarray,
             out_size: Tuple[int, int] = RECTIFIED_SIZE) -> np.ndarray:
@@ -46,29 +77,24 @@ def rectify(img: np.ndarray, corners: np.ndarray,
     return cv2.warpPerspective(img, H, (w, h))
 
 
-def clahe_normalize(img: np.ndarray) -> np.ndarray:
-    lab = cv2.cvtColor(img, cv2.COLOR_BGR2LAB)
-    l, a, b = cv2.split(lab)
-    clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
-    l = clahe.apply(l)
-    return cv2.cvtColor(cv2.merge([l, a, b]), cv2.COLOR_LAB2BGR)
+def crop_to_board_mask(img: np.ndarray) -> np.ndarray:
+    """Fallback when corners aren't found: tight-crop bounding box of board mask."""
+    mask = _board_mask(img)
+    ys, xs = np.where(mask > 0)
+    if xs.size == 0:
+        return cv2.resize(img, RECTIFIED_SIZE)
+    x0, x1 = xs.min(), xs.max()
+    y0, y1 = ys.min(), ys.max()
+    cropped = img[y0:y1 + 1, x0:x1 + 1]
+    return cv2.resize(cropped, RECTIFIED_SIZE)
 
 
-def denoise(img: np.ndarray) -> np.ndarray:
-    return cv2.GaussianBlur(img, (5, 5), 0)
+# ---------- enhancement ----------
 
-
-def remove_glare(img: np.ndarray, thresh: int = 250,
+def remove_glare(gray: np.ndarray, thresh: int = 250,
                  max_blob_ratio: float = 0.02,
                  max_total_ratio: float = 0.10) -> np.ndarray:
-    """Inpaint small specular highlights only.
-
-    A whiteboard itself is bright (>240). To avoid wiping the board, we keep
-    only small connected components above ``thresh`` whose individual area is
-    below ``max_blob_ratio`` of the image. If the resulting mask still covers
-    more than ``max_total_ratio``, give up and return the original image.
-    """
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    """Inpaint small specular highlights on a grayscale image."""
     _, raw_mask = cv2.threshold(gray, thresh, 255, cv2.THRESH_BINARY)
     h, w = gray.shape
     img_area = h * w
@@ -76,15 +102,34 @@ def remove_glare(img: np.ndarray, thresh: int = 250,
     blob_limit = max_blob_ratio * img_area
     mask = np.zeros_like(raw_mask)
     for i in range(1, n):
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area < blob_limit:
+        if stats[i, cv2.CC_STAT_AREA] < blob_limit:
             mask[labels == i] = 255
     if cv2.countNonZero(mask) == 0:
-        return img
+        return gray
     if cv2.countNonZero(mask) > max_total_ratio * img_area:
-        return img
+        return gray
     mask = cv2.dilate(mask, np.ones((5, 5), np.uint8), iterations=1)
-    return cv2.inpaint(img, mask, 5, cv2.INPAINT_NS)
+    return cv2.inpaint(gray, mask, 5, cv2.INPAINT_NS)
+
+
+def shadow_normalize(gray: np.ndarray) -> np.ndarray:
+    """Estimate background illumination and divide it out so writing pops."""
+    bg = cv2.medianBlur(gray, 51)
+    bg = np.where(bg == 0, 1, bg).astype(np.float32)
+    norm = (gray.astype(np.float32) / bg) * 200.0
+    return np.clip(norm, 0, 255).astype(np.uint8)
+
+
+def binarize(gray: np.ndarray) -> np.ndarray:
+    """Adaptive threshold -> clean black writing on white background."""
+    gray = cv2.bilateralFilter(gray, 5, 50, 50)
+    bin_img = cv2.adaptiveThreshold(
+        gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
+        blockSize=31, C=15,
+    )
+    bin_img = cv2.morphologyEx(bin_img, cv2.MORPH_OPEN,
+                               np.ones((2, 2), np.uint8), iterations=1)
+    return bin_img
 
 
 def laplacian_sharpness(img: np.ndarray) -> float:
@@ -92,15 +137,20 @@ def laplacian_sharpness(img: np.ndarray) -> float:
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
 
 
+# ---------- top-level ----------
+
 def preprocess(img: np.ndarray, corners: Optional[np.ndarray] = None) -> np.ndarray:
-    """Full pipeline. If corners None, attempts auto-detection."""
+    """Full pipeline. Returns a 3-channel BGR image of clean B&W text on white,
+    cropped to the whiteboard surface and rectified to RECTIFIED_SIZE."""
     if corners is None:
         corners = detect_board_corners(img)
     if corners is not None:
-        img = rectify(img, corners)
+        rect = rectify(img, corners)
     else:
-        img = cv2.resize(img, RECTIFIED_SIZE)
-    img = remove_glare(img)
-    img = clahe_normalize(img)
-    img = denoise(img)
-    return img
+        rect = crop_to_board_mask(img)
+
+    gray = cv2.cvtColor(rect, cv2.COLOR_BGR2GRAY)
+    gray = remove_glare(gray)
+    gray = shadow_normalize(gray)
+    bin_img = binarize(gray)
+    return cv2.cvtColor(bin_img, cv2.COLOR_GRAY2BGR)
