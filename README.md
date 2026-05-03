@@ -56,13 +56,14 @@ A working `.env` is shipped with a generated 48-byte secret. Replace `STELLEGENT
 .\.venv\Scripts\Activate.ps1
 python -m stellegent.cli initdb
 python scripts/seed_admin.py
-python scripts/make_sample.py
-python -m stellegent.cli process samples/board.jpg --course "CS101"
-python -m stellegent.cli list
 python -m stellegent.cli serve --port 5000
 ```
 
-`seed_admin.py` creates `admin`, `prof`, and `student` development accounts. `make_sample.py` writes a synthetic whiteboard image to `samples/board.jpg`.
+`seed_admin.py` creates `admin`, `prof`, and `student` development accounts. Process a real whiteboard image through the web UI (`/upload` or `/live`) or the CLI:
+
+```powershell
+python -m stellegent.cli process path\to\your_image.jpg --course "CS101"
+```
 
 Open <http://localhost:5000> and log in as `admin / admin123`. Replace these credentials before deploying.
 
@@ -145,7 +146,7 @@ OpenCV native window. SPACE captures, `q` quits. Same overlay as the browser ver
 ### 4. Command-line batch
 
 ```bash
-python -m stellegent.cli process samples/board.jpg --course "CS101"
+python -m stellegent.cli process path/to/your_image.jpg --course "CS101"
 ```
 
 ---
@@ -221,7 +222,7 @@ The included tests for preprocessing, guidance, the database, and export do not 
 ```bash
 python scripts/eval_wer.py pred.txt ref.txt
 python scripts/eval_rouge.py pred.txt ref.txt
-python scripts/bench_latency.py samples/board.jpg 5
+python scripts/bench_latency.py path/to/your_image.jpg 5
 ```
 
 Targets: at least 85 percent character and word recognition rate, and end-to-end processing under 30 seconds on the Raspberry Pi 5.
@@ -234,7 +235,6 @@ Targets: at least 85 percent character and word recognition rate, and end-to-end
 - NumPy is pinned to `<2` because `paddlex` and `skimage` are compiled against the 1.x ABI.
 - `opencv-python` and `opencv-python-headless` are pinned to `<4.11` because newer releases require NumPy `>=2`. PaddleOCR pulls `opencv-python-headless` transitively, so both packages are pinned.
 - On Windows with a CPU build of `paddlepaddle 3.3.x`, MKL-DNN raises `ConvertPirAttribute2RuntimeAttribute`. The engine sets `enable_mkldnn=False` to work around this.
-- `make_sample.py` writes a synthetic board intended for smoke-testing OCR alone. The full preprocessing pipeline is tuned for real whiteboard photographs.
 - Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
 - The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
 - DOCX heading inference is heuristic and based on regular expressions. Replace with PaddleOCR layout analysis output for richer structure.

@@ -6,9 +6,18 @@ from ..config import OCR_CONFIDENCE_THRESHOLD
 from ..ocr.engine import OCRLine
 from . import ollama_client
 
-_PROMPT = """You are a careful proofreader. Fix only obvious spelling and grammar errors in the OCR text below. Preserve technical terms, equations, formulas, proper nouns, code, and structure (line breaks, bullets). Do not add or remove content. Output ONLY the corrected text, no explanations.
+_PROMPT = """You are a strict OCR spell-fixer. Fix ONLY clear spelling typos in the text below.
 
-OCR TEXT:
+HARD RULES:
+- Do NOT rewrite, rephrase, expand, summarize, translate, or explain.
+- Do NOT add words, sentences, punctuation, or formatting that is not already present.
+- Do NOT remove words or lines.
+- Preserve word count and line breaks exactly.
+- Leave unchanged: technical terms, equations, formulas, code, symbols, numbers, abbreviations, proper nouns, and any word you are not certain is misspelled.
+- If the entire input looks correct, return it verbatim.
+- Output ONLY the corrected text. No preamble, no notes, no quotes.
+
+TEXT:
 {text}
 
 CORRECTED:"""
@@ -17,7 +26,11 @@ CORRECTED:"""
 def correct_text(text: str) -> str:
     if not text.strip():
         return text
-    return ollama_client.generate(_PROMPT.format(text=text))
+    out = ollama_client.generate(
+        _PROMPT.format(text=text),
+        options={"temperature": 0.0, "top_p": 0.1, "num_ctx": 4096, "repeat_penalty": 1.0},
+    )
+    return out or text
 
 
 def correct_low_confidence(lines: Sequence[OCRLine],

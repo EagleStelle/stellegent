@@ -1,8 +1,29 @@
 """OCR engine. PaddleOCR v5 (PP-OCRv5, mobile build)."""
 from __future__ import annotations
+import contextlib
+import io
+import os
+import sys
+import warnings
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Sequence
 import numpy as np
+
+
+@contextlib.contextmanager
+def _silence_paddle_init():
+    """Suppress ccache UserWarning + `where ccache` stderr noise from Paddle init."""
+    warnings.filterwarnings("ignore", message=r"No ccache found.*")
+    warnings.filterwarnings("ignore", message=r"`lang` and `ocr_version` will be ignored.*")
+    devnull = open(os.devnull, "w")
+    old_stderr_fd = os.dup(2)
+    try:
+        os.dup2(devnull.fileno(), 2)
+        yield
+    finally:
+        os.dup2(old_stderr_fd, 2)
+        os.close(old_stderr_fd)
+        devnull.close()
 
 
 @dataclass
@@ -33,17 +54,15 @@ class OCREngine:
         self._is_v3 = False
         self._lang = lang
         try:
-            # PaddleOCR 3.x — explicit PP-OCRv5 mobile model names.
-            # `lang` and `ocr_version` are ignored when model names are set,
-            # so omit them to silence the UserWarning.
-            self.ocr = PaddleOCR(
-                text_detection_model_name="PP-OCRv5_mobile_det",
-                text_recognition_model_name="PP-OCRv5_mobile_rec",
-                use_doc_orientation_classify=False,
-                use_doc_unwarping=False,
-                use_textline_orientation=True,
-                enable_mkldnn=False,
-            )
+            with _silence_paddle_init():
+                self.ocr = PaddleOCR(
+                    text_detection_model_name="PP-OCRv5_mobile_det",
+                    text_recognition_model_name="PP-OCRv5_mobile_rec",
+                    use_doc_orientation_classify=False,
+                    use_doc_unwarping=False,
+                    use_textline_orientation=True,
+                    enable_mkldnn=False,
+                )
             self._is_v3 = True
         except TypeError:
             raise RuntimeError(
