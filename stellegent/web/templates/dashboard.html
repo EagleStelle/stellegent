@@ -8,15 +8,10 @@
   <button type="submit">Filter</button>
 </form>
 {% if user.role in ['prof','admin'] %}
-<button id="capture-btn">Capture now</button>
-<script>
-document.getElementById('capture-btn').onclick = async () => {
-  const r = await fetch('/api/capture', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({})});
-  const j = await r.json();
-  if (j.lecture_id) location.href = '/lecture/' + j.lecture_id;
-  else alert(JSON.stringify(j));
-};
-</script>
+<p class="actions">
+  <a href="{{ url_for('ui.live_page') }}"><button type="button">Live capture</button></a>
+  <a href="{{ url_for('ui.upload_page') }}"><button type="button">Upload image</button></a>
+</p>
 {% endif %}
 <table class="lectures">
   <thead><tr><th>Captured</th><th>Course</th><th>Tags</th><th>Summary</th><th></th></tr></thead>

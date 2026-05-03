@@ -43,13 +43,39 @@ python -m stellegent.cli serve --port 5000
 
 Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` and reseed for production).
 
-## Live capture (RPi w/ camera + 7" touchscreen)
+## Three ways to ingest a board
+
+The capture step is **optional** — anything that produces a whiteboard image can feed the pipeline.
+
+### 1. Web upload (drag-drop, no camera needed)
+
+`/upload` — drag image onto dropzone, or click to browse. Optional course field. POSTs to `/api/upload`, runs the full pipeline (preprocess → OCR → correct → summarize → export → DB), redirects to lecture detail.
+
+- Allowed: `.png .jpg .jpeg .webp .bmp .tif .tiff`
+- Max size: 25 MB
+- Roles: prof, admin
+
+### 2. Browser live capture (camera attached to RPi, accessed from any device on LAN)
+
+`/live` — MJPEG stream from `/api/stream` with green/orange board outline overlay. Right-side panel polls `/api/guidance` every 500 ms and shows:
+
+- Live messages: "Move left/right", "Step back / Step closer", "Tilt device — reduce skew", "Zoom out / fill frame", "Hold steady — image blurry", "Ready — capture now"
+- Stats: sharpness (Laplacian variance), distance (m), skew (°), coverage (0–1)
+- Big **Capture** button that turns green when guidance reports `ready`. Click triggers `POST /api/capture` and redirects to lecture detail.
+
+### 3. Native fullscreen UI (RPi 7" touchscreen)
 
 ```bash
 python -m stellegent.cli capture --pi --fullscreen --course "CS101"
 ```
 
-SPACE = capture. `q` = quit. Overlay shows board outline + framing guidance (move left/right, step back, tilt, zoom). Auto-runs full pipeline on each capture.
+OpenCV native window, SPACE = capture, `q` = quit. Same guidance overlay as the web version. Use this when there's no browser, or for kiosk-style operation.
+
+### 4. CLI (offline batch)
+
+```bash
+python -m stellegent.cli process samples\board.jpg --course "CS101"
+```
 
 ## Configuration (env vars)
 
@@ -70,9 +96,14 @@ GET    /api/lecture/<id>                       — detail + manifest + annotatio
 GET    /api/lecture/<id>/file?type=pdf|docx|txt|image|manifest
 POST   /api/lecture/<id>/annotate             — body {note}
 DELETE /api/lecture/<id>                      — prof/admin
-POST   /api/capture                           — prof/admin; triggers camera read + pipeline
+POST   /api/capture                           — prof/admin; single-frame snap from camera + pipeline
+POST   /api/upload                            — prof/admin; multipart 'image' + optional 'course'
+GET    /api/stream                            — prof/admin; MJPEG live preview w/ overlay
+GET    /api/guidance                          — prof/admin; current GuidanceResult JSON
 GET    /api/audit                             — admin
 ```
+
+UI pages: `/` dashboard, `/login`, `/upload`, `/live`, `/lecture/<id>`.
 
 Bearer token via `Authorization: Bearer <jwt>` or `token` cookie. 30-min expiry.
 
@@ -111,3 +142,4 @@ Targets: ≥85% CRR/WRR, ≤30s end-to-end on RPi 5.
 - Phi-3-mini on RPi 5 is the bottleneck. If Ollama is unavailable or slow, `correct_text` falls back to SymSpell and `summarize` falls back to sumy LSA — no network, no model load required.
 - `solvePnP`-style distance estimate uses a 66° HFOV assumption (typical RPi camera). Tune in `capture/guidance.py` for your lens.
 - DOCX layout heading inference is heuristic (numbered/bulleted regex). Extend with PaddleOCR layout-analysis output for richer structure.
+- `/api/stream` opens a single shared `CameraHub`. Flask dev server is single-threaded by default — start with `flask run --with-threads` or `gunicorn -k gthread` if multiple browsers should view the stream simultaneously.

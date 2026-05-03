@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block title %}Live Capture — Stellegent{% endblock %}
+{% block content %}
+<h2>Live capture</h2>
+<p>Stream from camera. Overlay shows board outline + framing guidance. Capture button runs full pipeline.</p>
+
+<form id="meta-form">
+  <label>Course (optional)
+    <input type="text" name="course" placeholder="e.g. CS101">
+  </label>
+</form>
+
+<div class="live-wrap">
+  <img id="live" src="{{ url_for('api.api_stream') }}" alt="live preview">
+  <div id="g-panel" class="g-panel">
+    <div id="g-msgs"></div>
+    <ul class="g-stats">
+      <li>Sharpness: <span id="g-sharp">—</span></li>
+      <li>Distance: <span id="g-dist">—</span> m</li>
+      <li>Skew: <span id="g-skew">—</span>°</li>
+      <li>Coverage: <span id="g-cov">—</span></li>
+    </ul>
+    <button id="cap-btn" type="button">Capture</button>
+    <span id="cap-status"></span>
+  </div>
+</div>
+
+<script>
+const fmt = v => (v == null ? '—' : (typeof v === 'number' ? v.toFixed(2) : v));
+
+async function pollGuidance() {
+  try {
+    const r = await fetch('/api/guidance');
+    if (!r.ok) return;
+    const g = await r.json();
+    document.getElementById('g-sharp').textContent = fmt(g.sharpness);
+    document.getElementById('g-dist').textContent  = fmt(g.distance_m);
+    document.getElementById('g-skew').textContent  = fmt(g.skew_deg);
+    document.getElementById('g-cov').textContent   = fmt(g.coverage);
+    const box = document.getElementById('g-msgs');
+    box.innerHTML = '';
+    (g.messages || []).forEach(m => {
+      const d = document.createElement('div');
+      d.className = 'g-msg' + (g.ready ? ' ready' : '');
+      d.textContent = m;
+      box.appendChild(d);
+    });
+    const btn = document.getElementById('cap-btn');
+    btn.classList.toggle('ready', !!g.ready);
+  } catch (_) { /* ignore */ }
+}
+setInterval(pollGuidance, 500);
+pollGuidance();
+
+document.getElementById('cap-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('cap-btn');
+  const stat = document.getElementById('cap-status');
+  btn.disabled = true;
+  stat.textContent = 'Capturing + processing...';
+  const course = document.querySelector('#meta-form [name=course]').value.trim();
+  try {
+    const r = await fetch('/api/capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(course ? { course } : {})
+    });
+    const j = await r.json();
+    if (j.lecture_id) {
+      location.href = '/lecture/' + j.lecture_id;
+    } else {
+      stat.textContent = 'Error: ' + (j.error || 'unknown');
+      btn.disabled = false;
+    }
+  } catch (err) {
+    stat.textContent = 'Network error: ' + err;
+    btn.disabled = false;
+  }
+});
+</script>
+{% endblock %}
