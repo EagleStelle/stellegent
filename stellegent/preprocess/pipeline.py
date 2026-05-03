@@ -121,7 +121,8 @@ def shadow_normalize(gray: np.ndarray) -> np.ndarray:
 
 
 def binarize(gray: np.ndarray) -> np.ndarray:
-    """Adaptive threshold -> clean black writing on white background."""
+    """Adaptive threshold -> clean black writing on white. For display/export only.
+    Do NOT feed to PaddleOCR; the recognizer needs anti-aliased strokes."""
     gray = cv2.bilateralFilter(gray, 5, 50, 50)
     bin_img = cv2.adaptiveThreshold(
         gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,
@@ -132,6 +133,17 @@ def binarize(gray: np.ndarray) -> np.ndarray:
     return bin_img
 
 
+def enhance_for_ocr(gray: np.ndarray) -> np.ndarray:
+    """Soft enhancement that PaddleOCR likes: flatten lighting, boost contrast,
+    sharpen — but keep grayscale gradients (no hard threshold)."""
+    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(16, 16))
+    g = clahe.apply(gray)
+    # Mild unsharp mask — sharpens stroke edges without halos.
+    blur = cv2.GaussianBlur(g, (0, 0), sigmaX=1.2)
+    g = cv2.addWeighted(g, 1.6, blur, -0.6, 0)
+    return g
+
+
 def laplacian_sharpness(img: np.ndarray) -> float:
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY) if img.ndim == 3 else img
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
@@ -140,8 +152,9 @@ def laplacian_sharpness(img: np.ndarray) -> float:
 # ---------- top-level ----------
 
 def preprocess(img: np.ndarray, corners: Optional[np.ndarray] = None) -> np.ndarray:
-    """Full pipeline. Returns a 3-channel BGR image of clean B&W text on white,
-    cropped to the whiteboard surface and rectified to RECTIFIED_SIZE."""
+    """Full pipeline tuned for PaddleOCR PP-OCRv5: rectify, deglare, flatten
+    lighting, CLAHE + unsharp. Returns 3-ch BGR grayscale (NOT binary).
+    Strokes keep anti-aliasing the recognizer was trained on."""
     if corners is None:
         corners = detect_board_corners(img)
     if corners is not None:
@@ -152,5 +165,17 @@ def preprocess(img: np.ndarray, corners: Optional[np.ndarray] = None) -> np.ndar
     gray = cv2.cvtColor(rect, cv2.COLOR_BGR2GRAY)
     gray = remove_glare(gray)
     gray = shadow_normalize(gray)
-    bin_img = binarize(gray)
-    return cv2.cvtColor(bin_img, cv2.COLOR_GRAY2BGR)
+    gray = enhance_for_ocr(gray)
+    return cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR)
+
+
+def preprocess_for_export(img: np.ndarray,
+                          corners: Optional[np.ndarray] = None) -> np.ndarray:
+    """Hard B&W version for human-readable exports (PNG attached to lecture)."""
+    if corners is None:
+        corners = detect_board_corners(img)
+    rect = rectify(img, corners) if corners is not None else crop_to_board_mask(img)
+    gray = cv2.cvtColor(rect, cv2.COLOR_BGR2GRAY)
+    gray = remove_glare(gray)
+    gray = shadow_normalize(gray)
+    return cv2.cvtColor(binarize(gray), cv2.COLOR_GRAY2BGR)

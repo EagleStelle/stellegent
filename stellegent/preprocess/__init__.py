@@ -1,1 +1,3 @@
-from .pipeline import preprocess, detect_board_corners, rectify, binarize
+from .pipeline import (
+    preprocess, preprocess_for_export, detect_board_corners, rectify, binarize,
+)

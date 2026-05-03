@@ -35,8 +35,9 @@ def test_pipeline_runs():
     img, _ = _synthetic_board()
     out = preprocess(img)
     assert out.shape == (1080, 1920, 3)
-    # Output should be near-binary B&W on white.
-    assert len(np.unique(out)) <= 4
+    # Grayscale output collapsed into 3-ch BGR (R==G==B).
+    assert np.array_equal(out[:, :, 0], out[:, :, 1])
+    assert np.array_equal(out[:, :, 1], out[:, :, 2])
     assert laplacian_sharpness(out) > 0
 
 
