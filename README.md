@@ -15,69 +15,101 @@ Portable, offline whiteboard-to-document system. RPi 5 target. Captures classroo
 | 7   | Flask web + JWT auth                               | `stellegent/web/`                             |
 | —   | Orchestrator + CLI                                 | `stellegent/pipeline.py`, `stellegent/cli.py` |
 
-## Install
+PaddleOCR (PP-OCRv5 mobile) is the only OCR engine. LLM is Phi-3-mini via Ollama.
 
-### Windows dev
+---
+
+## Windows (development)
+
+### 1. Install
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\install_dev.ps1
 .\.venv\Scripts\Activate.ps1
 ```
 
-### Raspberry Pi 5 (Bookworm 64-bit)
-
-```bash
-bash scripts/install_rpi.sh
-source .venv/bin/activate
-```
-
-Pulls `phi3:mini` via Ollama. If pull fails, run `ollama pull phi3:mini` manually. PaddleOCR requires `paddlepaddle>=3.0` and `paddleocr>=3.0` (PP-OCRv5 mobile build). On RPi 5 / ARM64 see https://www.paddlepaddle.org.cn/install/ for the correct wheel. **EasyOCR is not used.**
-
-## Quick start
-
-Always activate the venv first so `stellegent` and its deps are importable:
-
-Windows (PowerShell):
+If you skipped the install script:
 
 ```powershell
+python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-```
-
-Linux/RPi:
-
-```bash
-source .venv/bin/activate
-```
-
-If you skipped the install script, install deps now:
-
-```bash
 pip install -r requirements.txt
 ```
 
-Copy the example env file (a working `.env` is already shipped with a generated secret — replace it for production):
+Optional — install Ollama + pull the model for LLM correction/summarization (otherwise SymSpell + sumy LSA fallbacks are used automatically):
 
-```bash
-# Linux/RPi
-cp .env.example .env
-# Windows PowerShell
-Copy-Item .env.example .env
+```powershell
+# Install from https://ollama.com/download/windows, then:
+ollama pull phi3:mini
 ```
 
-Then:
+### 2. Configure
 
-```bash
+```powershell
+Copy-Item .env.example .env
+# Edit .env if you want to change paths or rotate the JWT secret.
+# A working .env with a generated 48-byte secret is already shipped — replace it for production.
+```
+
+### 3. First run
+
+```powershell
+.\.venv\Scripts\Activate.ps1
 python -m stellegent.cli initdb
-python scripts/seed_admin.py             # creates admin/prof/student dev accounts
+python scripts/seed_admin.py             # creates admin / prof / student dev accounts
 python scripts/make_sample.py            # writes samples/board.jpg (synthetic test image)
 python -m stellegent.cli process samples/board.jpg --course "CS101"
 python -m stellegent.cli list
 python -m stellegent.cli serve --port 5000
 ```
 
-The `process` step requires PaddleOCR (PP-OCRv5 mobile) installed. If it isn't installed yet, skip it and run `serve` first — the engine loads lazily on first use, and the error message tells you exactly what to install.
-
 Open `http://localhost:5000`. Login `admin / admin123` (dev only — change `STELLEGENT_JWT_SECRET` in `.env` and reseed users for production).
+
+> First OCR call downloads the PP-OCRv5 mobile weights (~25 MB) into `~/.paddlex/official_models/`.
+> Windows + CPU has a known MKL-DNN bug in `paddlepaddle 3.3.x`; the engine sets `enable_mkldnn=False` automatically.
+
+---
+
+## 🥧 Raspberry Pi 5 (Bookworm 64-bit, deployment)
+
+### 1. Install
+
+```bash
+bash scripts/install_rpi.sh
+source .venv/bin/activate
+```
+
+`install_rpi.sh` does the following:
+
+- `apt install` of `python3-pip python3-venv python3-picamera2 libgl1 libglib2.0-0 sqlite3 build-essential`
+- creates `.venv` and installs `requirements.txt`
+- installs Ollama (skipped if already present) and pulls `phi3:mini`
+- runs `python -m stellegent.cli initdb`
+
+ARM64 wheels for `paddlepaddle` are not always on PyPI. If the install fails on `paddlepaddle`, follow the official ARM build guide: <https://www.paddlepaddle.org.cn/install/>.
+
+### 2. Configure
+
+```bash
+cp .env.example .env
+# Edit .env — at minimum, replace STELLEGENT_JWT_SECRET for production.
+```
+
+### 3. First run
+
+```bash
+source .venv/bin/activate
+python scripts/seed_admin.py             # creates admin / prof / student dev accounts
+python -m stellegent.cli serve --host 0.0.0.0 --port 5000
+```
+
+For live capture on the 7" touchscreen (no browser needed):
+
+```bash
+python -m stellegent.cli capture --pi --fullscreen --course "CS101"
+```
+
+Access the web UI from any device on the LAN at `http://<pi-ip>:5000`. Login `admin / admin123`.
 
 ## Three ways to ingest a board
 
@@ -185,6 +217,7 @@ Targets: ≥85% CRR/WRR, ≤30s end-to-end on RPi 5.
 
 - PaddleOCR is the only OCR engine (PP-OCRv5 mobile build, `paddleocr>=3.0`). No fallback engine — if init fails, fix the install. ARM wheels: https://www.paddlepaddle.org.cn/install/.
 - `numpy<2` is required (skimage / paddlex compiled against the 1.x ABI). Already pinned in `requirements.txt`.
+- `opencv-python` and `opencv-python-headless` are pinned to `<4.11`. Versions 4.11+ require numpy ≥2 and conflict with the constraint above. PaddleOCR pulls in `opencv-python-headless` transitively, so both are pinned.
 - On Windows + CPU, MKL-DNN in paddlepaddle 3.3.x throws `ConvertPirAttribute2RuntimeAttribute` errors. The engine sets `enable_mkldnn=False` to work around this — leave it disabled unless you've upgraded.
 - `make_sample.py` writes a _synthetic_ board for smoke-testing OCR alone, not the full preprocessing pipeline. Real whiteboard photos work normally; the synthetic image's perfect rectangle interacts badly with CLAHE/glare-inpaint. To verify OCR on the synthetic image, call `stellegent.ocr.run_ocr(cv2.imread('samples/board.jpg'))` directly.
 - Phi-3-mini on RPi 5 is the bottleneck. If Ollama is unavailable or slow, `correct_text` falls back to SymSpell and `summarize` falls back to sumy LSA — no network, no model load required.
