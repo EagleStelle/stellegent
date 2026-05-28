@@ -2,7 +2,7 @@
 
 Portable, offline whiteboard-to-document system targeting the Raspberry Pi 5. Captures a classroom whiteboard, preprocesses the image, performs OCR, applies LLM-assisted spelling and grammar correction, generates a summary, exports DOCX, PDF, TXT, PNG, and a JSON manifest, and stores everything in a local SQLite database that is browseable through a Flask web interface.
 
-OCR uses PaddleOCR (PP-OCRv5 mobile). Text correction and summarization use Phi-3-mini served by Ollama.
+OCR uses PP-OCR models run through RapidOCR on the onnxruntime backend. (PaddlePaddle's PyPI ARM64 wheels segfault during inference on the Raspberry Pi 5, so onnxruntime is used instead; the recognition models are the same PP-OCR weights exported to ONNX.) Text correction and summarization use Phi-3-mini served by Ollama.
 
 ## Modules
 
@@ -10,7 +10,7 @@ OCR uses PaddleOCR (PP-OCRv5 mobile). Text correction and summarization use Phi-
 | --- | -------------------------------------------------- | --------------------------------------------- |
 | 1   | Capture and live preview                           | `stellegent/capture/`                         |
 | 2   | Image preprocessing                                | `stellegent/preprocess/`                      |
-| 3   | OCR (PaddleOCR PP-OCRv5 mobile)                    | `stellegent/ocr/`                             |
+| 3   | OCR (PP-OCR via RapidOCR / onnxruntime)            | `stellegent/ocr/`                             |
 | 4   | Text correction and summarization                  | `stellegent/nlp/`                             |
 | 5   | Export (DOCX, PDF, TXT, PNG, JSON)                 | `stellegent/export/`                          |
 | 6   | SQLite store                                       | `stellegent/db/`                              |
@@ -67,7 +67,7 @@ python -m stellegent.cli process path\to\your_image.jpg --course "CS101"
 
 Open <http://localhost:5000> and log in as `admin / admin123`. Replace these credentials before deploying.
 
-The first OCR call downloads the PP-OCRv5 mobile weights (approximately 25 MB) into `~/.paddlex/official_models/`.
+The PP-OCR ONNX models ship with `rapidocr-onnxruntime`, so no model download is needed on first run (fully offline).
 
 ---
 
@@ -87,7 +87,7 @@ The install script performs the following steps:
 - installs Ollama if it is not already present and pulls `phi3:mini`
 - runs `python -m stellegent.cli initdb`
 
-ARM64 wheels for `paddlepaddle` are not always available on PyPI. If installation fails on `paddlepaddle`, follow the official ARM build guide at <https://www.paddlepaddle.org.cn/install/>.
+OCR runs on `onnxruntime`, which has reliable prebuilt aarch64 wheels on PyPI — no `paddlepaddle` build is required.
 
 ### 2. Configure
 
@@ -198,7 +198,7 @@ Authentication uses `Authorization: Bearer <jwt>` or a `token` cookie. Tokens ex
 `stellegent.pipeline.process_image(image, course_name=None)` runs:
 
 1. `preprocess` detects board corners, rectifies the perspective, removes specular glare, applies CLAHE, and denoises.
-2. `run_ocr` returns a list of `OCRLine(text, confidence, bbox)` from PaddleOCR PP-OCRv5 mobile.
+2. `run_ocr` returns a list of `OCRLine(text, confidence, bbox)` from the PP-OCR models via RapidOCR / onnxruntime.
 3. `correct_low_confidence` rewrites only lines whose confidence is below 0.75.
 4. `summarize` produces a bullet-point summary using the local LLM.
 5. `export_all` writes DOCX, PDF, TXT, PNG, and a JSON manifest under `data/YYYY-MM-DD/<uuid>/`.
@@ -231,10 +231,9 @@ Targets: at least 85 percent character and word recognition rate, and end-to-end
 
 ## Known constraints
 
-- OCR engine: PaddleOCR `>=3.0` with the PP-OCRv5 mobile build. ARM wheels: <https://www.paddlepaddle.org.cn/install/>.
-- NumPy is pinned to `<2` because `paddlex` and `skimage` are compiled against the 1.x ABI.
-- Exactly one OpenCV build must be installed. `paddlex` pins `opencv-contrib-python==4.10.0.84`; installing `opencv-python` or `opencv-python-headless` alongside it leaves multiple `cv2` shared objects whose duplicate native symbols cause a `SIGSEGV` during PaddleOCR inference on ARM64. `requirements.txt` therefore pins only `opencv-contrib-python==4.10.0.84` (NumPy `<2` compatible, includes GUI support for the native capture window). To repair an already-polluted venv: `pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless && pip install opencv-contrib-python==4.10.0.84`.
-- On Windows with a CPU build of `paddlepaddle 3.3.x`, MKL-DNN raises `ConvertPirAttribute2RuntimeAttribute`. The engine sets `enable_mkldnn=False` to work around this.
+- OCR engine: `rapidocr-onnxruntime` running PP-OCR models on `onnxruntime`. PaddlePaddle's PyPI aarch64 wheels segfault during inference on the Raspberry Pi 5 (`SIGSEGV` inside the conv kernels, reproducible even single-threaded with MKL-DNN disabled and `paddle.utils.run_check()` passing), so onnxruntime is used instead. Same PP-OCR weights, ONNX runtime, stable on ARM64.
+- NumPy is pinned to `<2` for OpenCV `<4.11` ABI compatibility.
+- Exactly one OpenCV build must be installed. Multiple `cv2` wheels (`opencv-python` + `opencv-python-headless` + `opencv-contrib-python`) leave duplicate native shared objects whose symbol clashes cause `SIGSEGV` on ARM64. `requirements.txt` pins only `opencv-python` (GUI build, needed for the native capture window); RapidOCR depends on it, so no second OpenCV package is pulled. To repair a polluted venv: `pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless && pip install "opencv-python<4.11"`.
 - Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
 - The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
 - DOCX heading inference is heuristic and based on regular expressions. Replace with PaddleOCR layout analysis output for richer structure.

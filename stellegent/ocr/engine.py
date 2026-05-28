@@ -1,29 +1,15 @@
-"""OCR engine. PaddleOCR v5 (PP-OCRv5, mobile build)."""
+"""OCR engine. PP-OCR models via RapidOCR (onnxruntime backend).
+
+PaddlePaddle's PyPI aarch64 wheels segfault during inference on the Raspberry
+Pi 5 (SIGSEGV inside the conv kernels, even single-threaded with MKL-DNN off),
+so inference runs through onnxruntime instead of paddle. The detection and
+recognition models are the same PP-OCR weights exported to ONNX, so recognition
+accuracy matches PaddleOCR while the runtime is stable on ARM64.
+"""
 from __future__ import annotations
-import contextlib
-import io
-import os
-import sys
-import warnings
 from dataclasses import dataclass, asdict
 from typing import List, Optional, Sequence
 import numpy as np
-
-
-@contextlib.contextmanager
-def _silence_paddle_init():
-    """Suppress ccache UserWarning + `where ccache` stderr noise from Paddle init."""
-    warnings.filterwarnings("ignore", message=r"No ccache found.*")
-    warnings.filterwarnings("ignore", message=r"`lang` and `ocr_version` will be ignored.*")
-    devnull = open(os.devnull, "w")
-    old_stderr_fd = os.dup(2)
-    try:
-        os.dup2(devnull.fileno(), 2)
-        yield
-    finally:
-        os.dup2(old_stderr_fd, 2)
-        os.close(old_stderr_fd)
-        devnull.close()
 
 
 @dataclass
@@ -37,60 +23,30 @@ class OCRLine:
 
 
 class OCREngine:
-    """PaddleOCR PP-OCRv5 mobile. Lazy-init; supports both 3.x and 2.x APIs."""
-    name = "paddleocr-pp-ocrv5-mobile"
+    """PP-OCR detection + recognition via RapidOCR / onnxruntime. Lazy-init."""
+    name = "rapidocr-onnxruntime-ppocr"
 
     def __init__(self, lang: str = "en"):
         try:
-            from paddleocr import PaddleOCR  # type: ignore
+            from rapidocr_onnxruntime import RapidOCR  # type: ignore
         except ImportError as e:
             raise RuntimeError(
-                "PaddleOCR not installed. Install paddlepaddle and paddleocr:\n"
-                "  pip install paddlepaddle paddleocr\n"
-                "On RPi 5 / ARM64, see https://www.paddlepaddle.org.cn/install/ "
-                "for the correct wheel."
+                "RapidOCR not installed. Install the onnxruntime OCR backend:\n"
+                "  pip install rapidocr-onnxruntime onnxruntime"
             ) from e
-
-        self._is_v3 = False
         self._lang = lang
-        try:
-            with _silence_paddle_init():
-                self.ocr = PaddleOCR(
-                    text_detection_model_name="PP-OCRv5_mobile_det",
-                    text_recognition_model_name="PP-OCRv5_mobile_rec",
-                    use_doc_orientation_classify=False,
-                    use_doc_unwarping=False,
-                    use_textline_orientation=True,
-                    enable_mkldnn=False,
-                )
-            self._is_v3 = True
-        except TypeError:
-            raise RuntimeError(
-                "Installed PaddleOCR is too old for PP-OCRv5 mobile. "
-                "Upgrade: pip install -U 'paddleocr>=3.0' 'paddlepaddle>=3.0'"
-            )
+        self.ocr = RapidOCR()
 
     def recognize(self, img: np.ndarray) -> List[OCRLine]:
-        if self._is_v3:
-            return self._recognize_v3(img)
-        return []
-
-    def _recognize_v3(self, img: np.ndarray) -> List[OCRLine]:
-        """PaddleOCR 3.x predict() returns list of dicts with rec_texts/scores/polys."""
-        results = self.ocr.predict(img)
+        if img.ndim == 2:
+            img = np.stack([img] * 3, axis=-1)
+        result, _ = self.ocr(img)
         out: List[OCRLine] = []
-        if not results:
+        if not result:
             return out
-        for page in results:
-            data = page if isinstance(page, dict) else getattr(page, "json", page)
-            if hasattr(page, "json") and isinstance(page.json, dict):
-                data = page.json.get("res", page.json)
-            texts = data.get("rec_texts") or []
-            scores = data.get("rec_scores") or []
-            polys = data.get("rec_polys") or data.get("dt_polys") or []
-            for text, score, poly in zip(texts, scores, polys):
-                box = [[float(p[0]), float(p[1])] for p in poly]
-                out.append(OCRLine(text=str(text), confidence=float(score), bbox=box))
+        for box, text, score in result:
+            bbox = [[float(p[0]), float(p[1])] for p in box]
+            out.append(OCRLine(text=str(text), confidence=float(score), bbox=bbox))
         return out
 
 
@@ -98,7 +54,7 @@ _ENGINE: Optional[OCREngine] = None
 
 
 def make_engine(lang: str = "en") -> OCREngine:
-    """PP-OCRv5 mobile, English by default. Tagalog uses Latin script — same model handles it."""
+    """PP-OCR English by default. Tagalog uses Latin script — same model handles it."""
     return OCREngine(lang=lang)
 
 
