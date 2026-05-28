@@ -1,5 +1,7 @@
-opencv-python>=4.9,<4.11
-opencv-python-headless>=4.9,<4.11
+# Single OpenCV build. paddlex pins opencv-contrib-python==4.10.0.84; installing
+# opencv-python/opencv-python-headless alongside it leaves multiple cv2 .so files
+# whose duplicate native symbols segfault paddle inference on ARM64 (RPi 5).
+opencv-contrib-python==4.10.0.84
 numpy>=1.26,<2
 Pillow>=10.2
 paddleocr>=3.0

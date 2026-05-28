@@ -233,7 +233,7 @@ Targets: at least 85 percent character and word recognition rate, and end-to-end
 
 - OCR engine: PaddleOCR `>=3.0` with the PP-OCRv5 mobile build. ARM wheels: <https://www.paddlepaddle.org.cn/install/>.
 - NumPy is pinned to `<2` because `paddlex` and `skimage` are compiled against the 1.x ABI.
-- `opencv-python` and `opencv-python-headless` are pinned to `<4.11` because newer releases require NumPy `>=2`. PaddleOCR pulls `opencv-python-headless` transitively, so both packages are pinned.
+- Exactly one OpenCV build must be installed. `paddlex` pins `opencv-contrib-python==4.10.0.84`; installing `opencv-python` or `opencv-python-headless` alongside it leaves multiple `cv2` shared objects whose duplicate native symbols cause a `SIGSEGV` during PaddleOCR inference on ARM64. `requirements.txt` therefore pins only `opencv-contrib-python==4.10.0.84` (NumPy `<2` compatible, includes GUI support for the native capture window). To repair an already-polluted venv: `pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless && pip install opencv-contrib-python==4.10.0.84`.
 - On Windows with a CPU build of `paddlepaddle 3.3.x`, MKL-DNN raises `ConvertPirAttribute2RuntimeAttribute`. The engine sets `enable_mkldnn=False` to work around this.
 - Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
 - The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
