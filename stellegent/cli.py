@@ -47,6 +47,8 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 def cmd_serve(args: argparse.Namespace) -> int:
     from .web.app import create_app
+    from .web.camera_stream import get_hub
+    get_hub(prefer_pi=args.pi)  # prime singleton before first request
     app = create_app()
     app.run(host=args.host, port=args.port, debug=args.debug)
     return 0
@@ -85,6 +87,7 @@ def main(argv=None) -> int:
     se.add_argument("--host", default="0.0.0.0")
     se.add_argument("--port", type=int, default=5000)
     se.add_argument("--debug", action="store_true")
+    se.add_argument("--pi", action="store_true", help="prefer picamera2 (CSI cam)")
     se.set_defaults(fn=cmd_serve)
 
     args = p.parse_args(argv)

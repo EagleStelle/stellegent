@@ -1,5 +1,6 @@
 """Camera abstraction. picamera2 on RPi, cv2.VideoCapture elsewhere."""
 from __future__ import annotations
+import sys
 import cv2
 import numpy as np
 from typing import Optional
@@ -45,10 +46,21 @@ class PiCamera2(Camera):
         self.picam.stop()
 
 
+def is_raspberry_pi() -> bool:
+    try:
+        with open("/proc/device-tree/model", "r") as f:
+            return "raspberry pi" in f.read().lower()
+    except OSError:
+        return False
+
+
 def open_camera(prefer_pi: bool = False, index: int = 0) -> Camera:
-    if prefer_pi:
+    # CSI cameras (e.g. RPi Cam v3) only work via libcamera/picamera2, not cv2.
+    # On a Pi, default to picamera2 even if caller didn't pass --pi.
+    if prefer_pi or is_raspberry_pi():
         try:
             return PiCamera2()
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"[camera] picamera2 unavailable ({e!r}); falling back to cv2",
+                  file=sys.stderr)
     return CV2Camera(index=index)
