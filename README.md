@@ -83,7 +83,7 @@ source .venv/bin/activate
 The install script performs the following steps:
 
 - installs system packages: `python3-pip python3-venv python3-picamera2 libgl1 libglib2.0-0 sqlite3 build-essential`
-- creates a virtual environment and installs `requirements.txt`
+- creates a virtual environment with `--system-site-packages` (so the venv can import the apt-installed `picamera2`, which is not pip-installable) and installs `requirements.txt`
 - installs Ollama if it is not already present and pulls `phi3:mini`
 - runs `python -m stellegent.cli initdb`
 
@@ -103,6 +103,18 @@ Edit `.env` and replace `STELLEGENT_JWT_SECRET` before exposing the service.
 source .venv/bin/activate
 python scripts/seed_admin.py
 python -m stellegent.cli serve --host 0.0.0.0 --port 5000
+```
+
+On a Raspberry Pi the camera backend auto-detects (via `/proc/device-tree/model`) and uses `picamera2`, which is required for CSI cameras such as the Camera Module 3 (`imx708`) — these are not accessible through `cv2.VideoCapture`. Pass `--pi` to force the `picamera2` backend explicitly:
+
+```bash
+python -m stellegent.cli serve --host 0.0.0.0 --port 5000 --pi
+```
+
+Verify the camera is detected before serving:
+
+```bash
+rpicam-hello --list-cameras    # Camera Module 3 lists as imx708
 ```
 
 To use the native fullscreen capture UI on the 7-inch touchscreen:
@@ -235,6 +247,7 @@ Targets: at least 85 percent character and word recognition rate, and end-to-end
 - NumPy is pinned to `<2` for OpenCV `<4.11` ABI compatibility.
 - Exactly one OpenCV build must be installed. Multiple `cv2` wheels (`opencv-python` + `opencv-python-headless` + `opencv-contrib-python`) leave duplicate native shared objects whose symbol clashes cause `SIGSEGV` on ARM64. `requirements.txt` pins only `opencv-python` (GUI build, needed for the native capture window); RapidOCR depends on it, so no second OpenCV package is pulled. To repair a polluted venv: `pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless && pip install "opencv-python<4.11"`.
 - Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
+- CSI cameras (Camera Module 3 / `imx708`) are only reachable through `libcamera`/`picamera2`, never `cv2.VideoCapture`. The venv must be created with `--system-site-packages` so it can import the apt-installed `python3-picamera2`; otherwise `open_camera` silently falls back to a `cv2` device index and fails to find the camera. `open_camera` auto-selects `picamera2` on any Raspberry Pi and logs a fallback notice to stderr if it is unavailable.
 - The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
 - DOCX heading inference is heuristic and based on regular expressions. Replace with PaddleOCR layout analysis output for richer structure.
 - `/api/stream` opens a single shared `CameraHub`. The Flask development server is single-threaded by default. Run with `flask run --with-threads` or `gunicorn -k gthread` to allow multiple concurrent stream viewers.
