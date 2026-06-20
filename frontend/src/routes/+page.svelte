@@ -37,7 +37,6 @@
 {#if lectures.isLoading}
 	<p class="text-muted-foreground">Loading…</p>
 {:else if filtered.length === 0}
-	<p class="text-muted-foreground">No lectures yet. Upload or capture one.</p>
 {:else}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as lec (lec.id)}

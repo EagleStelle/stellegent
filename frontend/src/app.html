@@ -4,6 +4,15 @@
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
+		<title>Stellegent</title>
+		<script>
+			// Apply theme before paint to avoid flash of wrong theme.
+			(function () {
+				const stored = localStorage.getItem('theme');
+				const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+				if (dark) document.documentElement.classList.add('dark');
+			})();
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">
