@@ -1,39 +1,95 @@
 @echo off
-REM Local dev launcher (Windows). Runtime state goes under .local\data (NOT
-REM .\data, which is the Docker-image default). Builds the SPA, serves on :8000.
 setlocal
+
+REM Windows development launcher only.
+REM Browser-facing dev app runs on :8000, matching production.
+REM FastAPI runs on :8001 with reload; Vite proxies /api to it.
+REM This script never builds or serves the production SPA.
+
 cd /d "%~dp0"
 set "ROOT=%cd%"
 
-REM Config (JWT secret, GEMINI_API_KEY, OLLAMA_*, OCR_BACKEND) is read from .env
-REM by the app. These scripts only force runtime state under .local\data.
+echo [run] Stellegent dev mode
+echo [run] Open app:    http://127.0.0.1:8000
+echo [run] Backend API: http://127.0.0.1:8001
+echo.
+
 if not exist ".env" (
+  if not exist ".env.example" (
+    echo [run] missing .env and .env.example
+    goto fail
+  )
   copy ".env.example" ".env" >nul
-  echo [run] created .env from .env.example - edit it ^(GEMINI_API_KEY / JWT secret^)
+  echo [run] created .env from .env.example - edit GEMINI_API_KEY / JWT secret as needed
 )
 
+REM Keep all local runtime state out of Docker/prod paths.
 set "STELLEGENT_DATA=%ROOT%\.local\data"
 set "STELLEGENT_DB=%ROOT%\.local\data\stellegent.db"
-set "STATIC_DIR=%ROOT%\frontend\build"
+set "CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000"
+set "STELLEGENT_DEV_API_TARGET=http://127.0.0.1:8001"
+
+REM Force dev-only behavior even if frontend\build exists from an old build.
+set "STATIC_DIR=%TEMP%\stellegent-dev-static-disabled-%RANDOM%-%RANDOM%"
+
 if not exist ".local\data" mkdir ".local\data"
 
 set "PY=%ROOT%\.venv\Scripts\python.exe"
+set "DEV_MARKER=%ROOT%\.venv\.stellegent-dev-installed"
 if not exist "%PY%" (
-  echo [run] creating venv + installing backend...
+  echo [run] creating Python venv...
   python -m venv .venv
-  "%PY%" -m pip install -q -e ./backend
+  if errorlevel 1 goto fail
 )
 
-if not exist "frontend\build\index.html" (
-  echo [run] building frontend...
-  pushd frontend && call npm ci && call npm run build && popd
+if not exist "%DEV_MARKER%" (
+  echo [run] installing backend in editable dev mode...
+  "%PY%" -m pip install -q -e "./backend[dev]"
+  if errorlevel 1 goto fail
+  type nul > "%DEV_MARKER%"
 )
 
+if not exist "frontend\node_modules" (
+  echo [run] installing frontend dependencies...
+  pushd frontend
+  call npm install
+  if errorlevel 1 (
+    popd
+    goto fail
+  )
+  popd
+)
+
+echo [run] initializing dev database...
 pushd backend
 "%PY%" -m stellegent.cli initdb
+if errorlevel 1 (
+  popd
+  goto fail
+)
 "%PY%" scripts\seed_admin.py
-echo [run] http://localhost:8000  (admin / admin123)
-"%PY%" -m uvicorn stellegent.main:app --host 0.0.0.0 --port 8000
+if errorlevel 1 (
+  popd
+  goto fail
+)
 popd
 
-endlocal
+echo.
+echo [run] Starting FastAPI with reload in a new window.
+echo [run] Starting Vite on the production-like app port in this window.
+echo [run] Dev users: admin/admin123, prof/prof123, student/student123
+echo.
+
+start "Stellegent API dev" /D "%ROOT%\backend" cmd /k ""%PY%" -m stellegent.cli serve --host 127.0.0.1 --port 8001 --reload"
+
+pushd frontend
+call npm run dev -- --host 127.0.0.1 --port 8000 --strictPort
+set "FRONTEND_EXIT=%ERRORLEVEL%"
+popd
+
+exit /b %FRONTEND_EXIT%
+
+:fail
+echo.
+echo [run] dev startup failed.
+exit /b 1

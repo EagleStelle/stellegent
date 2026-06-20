@@ -1,45 +1,74 @@
 @import "tailwindcss";
 
-/* Changli (Wuthering Waves) — red, black, gold, warm orange. */
 :root {
-  --background: hsl(40 44% 96%);
-  --foreground: hsl(0 0% 9%);
-  --card: hsl(40 50% 99%);
-  --card-foreground: hsl(0 0% 9%);
-  --primary: hsl(348 86% 46%);
-  --primary-foreground: hsl(40 40% 98%);
-  --secondary: hsl(40 78% 86%);
-  --secondary-foreground: hsl(348 60% 28%);
-  --accent: hsl(42 95% 50%);
-  --accent-foreground: hsl(0 0% 9%);
-  --muted: hsl(40 40% 90%);
-  --muted-foreground: hsl(0 0% 34%);
-  --destructive: hsl(22 92% 50%);
-  --destructive-foreground: hsl(40 40% 98%);
-  --border: hsl(40 34% 80%);
-  --input: hsl(40 34% 80%);
-  --ring: hsl(42 90% 48%);
+  --background: #f7f1ea;
+  --foreground: #181316;
+
+  --card: #fff8f0;
+  --card-foreground: #181316;
+
+  --popover: #fff8f0;
+  --popover-foreground: #181316;
+
+  --primary: #b72a24;
+  --primary-foreground: #fff8f0;
+
+  --secondary: #efe2d7;
+  --secondary-foreground: #181316;
+
+  --muted: #ead8ca;
+  --muted-foreground: #6b5a54;
+
+  --accent: #f26a21;
+  --accent-foreground: #1a1411;
+
+  --destructive: #cf3a1f;
+  --destructive-foreground: #fff8f0;
+
+  --border: #dcc1ad;
+  --input: #dcc1ad;
+  --ring: #c89a4a;
+
+  --flame: #f26a21;
+  --coral: #e98e8b;
+  --gold: #c89a4a;
+
   --radius: 0.5rem;
 }
 
 .dark {
-  --background: hsl(0 0% 6%);
-  --foreground: hsl(40 30% 92%);
-  --card: hsl(0 0% 9%);
-  --card-foreground: hsl(40 30% 92%);
-  --primary: hsl(348 80% 52%);
-  --primary-foreground: hsl(40 38% 96%);
-  --secondary: hsl(0 0% 14%);
-  --secondary-foreground: hsl(42 80% 60%);
-  --accent: hsl(42 85% 55%);
-  --accent-foreground: hsl(0 0% 8%);
-  --muted: hsl(0 0% 13%);
-  --muted-foreground: hsl(40 12% 62%);
-  --destructive: hsl(22 90% 52%);
-  --destructive-foreground: hsl(0 0% 8%);
-  --border: hsl(0 0% 18%);
-  --input: hsl(0 0% 18%);
-  --ring: hsl(42 85% 55%);
+  --background: #100d0f;
+  --foreground: #fff8f0;
+
+  --card: #1a1417;
+  --card-foreground: #fff8f0;
+
+  --popover: #211a1d;
+  --popover-foreground: #fff8f0;
+
+  --primary: #e9473f;
+  --primary-foreground: #fff8f0;
+
+  --secondary: #2a2023;
+  --secondary-foreground: #fff8f0;
+
+  --muted: #211a1d;
+  --muted-foreground: #bba9a1;
+
+  --accent: #fb7a33;
+  --accent-foreground: #181316;
+
+  --destructive: #f5564a;
+  --destructive-foreground: #1a1110;
+
+  --border: #3a2a2d;
+  --input: #3a2a2d;
+  --ring: #d0a253;
+
+  --flame: #ff7a2f;
+  --coral: #e98e8b;
+  --gold: #d0a253;
+
   --radius: 0.5rem;
 }
 
@@ -48,6 +77,8 @@
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
@@ -61,9 +92,15 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-lg: var(--radius);
-  --radius-md: calc(var(--radius) - 2px);
+  --color-flame: var(--flame);
+  --color-coral: var(--coral);
+  --color-gold: var(--gold);
+
   --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-4xl: 2rem;
 }
 
 body {

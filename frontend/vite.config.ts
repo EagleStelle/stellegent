@@ -3,6 +3,13 @@ import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
 import { defineConfig } from 'vite';
 
+const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+const apiTarget = env?.STELLEGENT_DEV_API_TARGET || 'http://localhost:8000';
+const apiProxy = {
+	target: apiTarget,
+	changeOrigin: true
+};
+
 export default defineConfig({
 	plugins: [
 		tailwindcss(),
@@ -19,7 +26,10 @@ export default defineConfig({
 	server: {
 		// During `vite dev`, proxy API + stream to the FastAPI backend.
 		proxy: {
-			'/api': 'http://localhost:8000'
+			'/api': apiProxy,
+			'/docs': apiProxy,
+			'/openapi.json': apiProxy,
+			'/redoc': apiProxy
 		}
 	}
 });

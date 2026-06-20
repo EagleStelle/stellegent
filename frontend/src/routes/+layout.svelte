@@ -80,13 +80,13 @@
 
 {#if !isAuthRoute}
 	<header
-		class="sticky top-0 z-40 border-b border-border bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60"
+		class="sticky top-0 z-40 bg-[hsl(348_80%_40%)] shadow-md"
 	>
 		<div class="flex h-14 w-full items-center gap-4 px-6">
 			<!-- Brand -->
 			<a href="/" class="flex items-center gap-2 font-semibold tracking-tight">
-				<GraduationCap size={26} weight="fill" class="text-primary" />
-				<span class="text-base">Stellegent</span>
+				<GraduationCap size={26} weight="fill" class="text-[hsl(42_95%_55%)]" />
+				<span class="text-base text-[hsl(42_95%_60%)]">Stellegent</span>
 			</a>
 
 			<!-- Primary nav -->
@@ -98,8 +98,8 @@
 							href={link.href}
 							aria-current={active ? 'page' : undefined}
 							class="flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors {active
-								? 'bg-secondary text-foreground'
-								: 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'}"
+								? 'bg-[hsl(42_95%_55%)] text-[hsl(0_0%_10%)]'
+								: 'text-[hsl(40_30%_82%)] hover:bg-white/10 hover:text-white'}"
 						>
 							<link.icon size={18} weight={active ? 'fill' : 'regular'} />
 							<span>{link.label}</span>
@@ -114,7 +114,7 @@
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
 					title={theme.dark ? 'Light mode' : 'Dark mode'}
-					class="grid h-9 w-9 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+					class="grid h-9 w-9 place-items-center rounded-md text-[hsl(40_30%_82%)] transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 				>
 					{#if theme.dark}
 						<Sun size={20} weight="fill" />
@@ -129,17 +129,17 @@
 							onclick={() => (menuOpen = !menuOpen)}
 							aria-haspopup="menu"
 							aria-expanded={menuOpen}
-							class="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 transition-colors hover:bg-secondary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+							class="flex items-center gap-2 rounded-md py-1 pl-1 pr-2 text-white transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 						>
 							<span
-								class="grid h-8 w-8 place-items-center rounded-full bg-primary text-sm font-semibold text-primary-foreground"
+								class="grid h-8 w-8 place-items-center rounded-full bg-[hsl(0_0%_10%)] text-sm font-semibold text-[hsl(42_95%_60%)] ring-1 ring-[hsl(42_80%_50%)]"
 							>
 								{initials}
 							</span>
 							<span class="hidden text-sm font-medium sm:block">{me.data.username}</span>
 							<CaretDown
 								size={14}
-								class="text-muted-foreground transition-transform {menuOpen ? 'rotate-180' : ''}"
+								class="text-[hsl(40_30%_82%)] transition-transform {menuOpen ? 'rotate-180' : ''}"
 							/>
 						</button>
 
