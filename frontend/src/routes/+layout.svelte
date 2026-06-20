@@ -41,6 +41,10 @@
 		['/login', '/register', '/forgot', '/reset'].includes(page.url.pathname)
 	);
 
+	const isFullWidthRoute = $derived(
+		page.url.pathname.startsWith('/live') || page.url.pathname.startsWith('/upload')
+	);
+
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
 
 	const links = $derived(
@@ -99,89 +103,91 @@
 
 {#if !isAuthRoute}
 	<aside
-		class="fixed inset-y-0 left-0 z-30 hidden w-56 flex-col bg-primary p-3 text-zinc-50 md:flex"
+		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-brand-nav px-4 py-6 text-white md:flex border-r border-white/5 shadow-2xl"
 	>
 		<a
 			href="/"
-			class="{navMotion} flex items-center gap-3 rounded-lg px-2.5 py-2.5 text-base font-semibold tracking-tight text-zinc-100 hover:bg-white/15 hover:text-zinc-50"
+			class="{navMotion} mb-6 flex items-center gap-3 rounded-xl px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
-			<span class="grid size-10 place-items-center rounded-lg bg-accent text-zinc-900">
+			<span class="grid size-10 place-items-center rounded-xl bg-brand-accent text-white shadow-sm">
 				<GraduationCap size={24} weight="fill" />
 			</span>
 			<span>Stellegent</span>
 		</a>
 
 		{#if me.data}
-			<nav class="mt-4 grid gap-1.5" aria-label="Primary">
+			<nav class="grid gap-1" aria-label="Primary">
 				{#each links as link (link.href)}
 					{@const active = isActive(link.href)}
 					<a
 						href={link.href}
 						aria-current={active ? 'page' : undefined}
-						class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium {active
-							? 'bg-secondary text-zinc-900'
-							: 'text-zinc-100 hover:bg-white/15 hover:text-zinc-50'}"
+						class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {active
+							? 'bg-brand-accent text-white shadow-sm'
+							: 'text-slate-300 hover:bg-white/10 hover:text-white'}"
 					>
-						<link.icon size={22} weight={active ? 'fill' : 'regular'} />
+						<link.icon size={20} weight={active ? 'fill' : 'regular'} />
 						<span>{link.label}</span>
 					</a>
 				{/each}
 			</nav>
 
-			<button
-				onclick={() => theme.toggle()}
-				aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-				title={theme.dark ? 'Light mode' : 'Dark mode'}
-				class="{navMotion} mt-4 flex items-center gap-3 rounded-lg px-3 py-3 text-base font-medium text-zinc-100 hover:bg-white/15 hover:text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-			>
-				{#if theme.dark}
-					<Sun size={22} weight="fill" />
-				{:else}
-					<Moon size={22} />
-				{/if}
-				<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
-			</button>
-
-			<div class="relative mt-auto" use:clickOutsideDesktop>
+			<div class="mt-auto grid gap-1">
 				<button
-					onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
-					aria-haspopup="menu"
-					aria-expanded={desktopMenuOpen}
-					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-base font-medium text-zinc-100 hover:bg-white/15 hover:text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+					onclick={() => theme.toggle()}
+					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+					title={theme.dark ? 'Light mode' : 'Dark mode'}
+					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
 				>
-					<span class="grid size-10 shrink-0 place-items-center rounded-lg bg-accent text-base font-semibold text-zinc-900">
-						{initials}
-					</span>
-					<span class="min-w-0 flex-1 truncate">{me.data.username}</span>
-					<CaretDown
-						size={18}
-						class="{navMotion} shrink-0 text-zinc-100/80 {desktopMenuOpen ? 'rotate-180' : ''}"
-					/>
+					{#if theme.dark}
+						<Sun size={20} weight="fill" />
+					{:else}
+						<Moon size={20} />
+					{/if}
+					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 				</button>
 
-				{#if desktopMenuOpen}
-					<div
-						role="menu"
-						class="absolute bottom-0 left-full ml-2 w-56 rounded-lg bg-primary p-1.5 text-zinc-50 shadow-lg shadow-zinc-950/20"
+				<div class="relative" use:clickOutsideDesktop>
+					<button
+						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
+						aria-haspopup="menu"
+						aria-expanded={desktopMenuOpen}
+						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
 					>
-						<button
-							onclick={logout}
-							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-zinc-100 hover:bg-white/15 hover:text-zinc-50"
+						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-accent text-xs font-bold text-white shadow-sm">
+							{initials}
+						</span>
+						<span class="min-w-0 flex-1 truncate">{me.data.username}</span>
+						<CaretDown
+							size={16}
+							class="{navMotion} shrink-0 text-slate-400 {desktopMenuOpen ? 'rotate-180' : ''}"
+						/>
+					</button>
+
+					{#if desktopMenuOpen}
+						<div
+							role="menu"
+							class="absolute bottom-0 left-full ml-2 w-64 rounded-xl bg-brand-nav p-1.5 text-white shadow-xl ring-1 ring-white/10"
 						>
-							<SignOut size={22} />
-							<span>Log out</span>
-						</button>
-					</div>
-				{/if}
+							<button
+								onclick={logout}
+								role="menuitem"
+								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+							>
+								<SignOut size={20} />
+								<span>Log out</span>
+							</button>
+						</div>
+					{/if}
+				</div>
 			</div>
 		{/if}
 	</aside>
 
 	{#if me.data}
 		<nav
-			class="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-1.5 bg-primary px-2 pt-2 text-zinc-50 md:hidden"
-			style="padding-bottom: max(0.5rem, env(safe-area-inset-bottom));"
+			class="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-1 bg-brand-nav px-2 pt-2 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)] md:hidden border-t border-white/5"
+			style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));"
 			aria-label="Primary"
 		>
 			{#each links as link (link.href)}
@@ -190,11 +196,13 @@
 					href={link.href}
 					onclick={() => (mobileMenuOpen = false)}
 					aria-current={active ? 'page' : undefined}
-					class="{navMotion} flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 text-xs font-semibold {active
-						? 'bg-secondary text-zinc-900'
-						: 'text-zinc-100 hover:bg-white/15 hover:text-zinc-50'}"
+					class="{navMotion} flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium {active
+						? 'text-brand-accent'
+						: 'text-slate-400 hover:text-white'}"
 				>
-					<link.icon size={23} weight={active ? 'fill' : 'regular'} />
+					<div class="grid size-8 place-items-center rounded-full {active ? 'bg-brand-accent/15' : 'bg-transparent'}">
+						<link.icon size={22} weight={active ? 'fill' : 'regular'} />
+					</div>
 					<span class="max-w-full truncate">{link.label}</span>
 				</a>
 			{/each}
@@ -204,37 +212,39 @@
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 					aria-haspopup="menu"
 					aria-expanded={mobileMenuOpen}
-					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2.5 text-xs font-semibold text-zinc-100 hover:bg-white/15 hover:text-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-slate-400 hover:text-white focus-visible:outline-none"
 				>
-					<span class="grid size-7 place-items-center rounded-lg bg-accent text-xs font-semibold text-zinc-900">
-						{initials}
-					</span>
+					<div class="grid size-8 place-items-center">
+						<span class="grid size-6 place-items-center rounded-full bg-brand-accent text-[10px] font-bold text-white shadow-sm ring-2 ring-brand-nav">
+							{initials}
+						</span>
+					</div>
 					<span class="max-w-full truncate">Me</span>
 				</button>
 
 				{#if mobileMenuOpen}
 					<div
 						role="menu"
-						class="absolute bottom-full right-0 mb-2 w-56 rounded-lg bg-primary p-1.5 text-zinc-50 shadow-lg shadow-zinc-950/20"
+						class="absolute bottom-full right-0 mb-3 w-48 rounded-xl bg-brand-nav p-1.5 text-white shadow-xl ring-1 ring-white/10"
 					>
 						<button
 							onclick={() => theme.toggle()}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-zinc-100 hover:bg-white/15 hover:text-zinc-50"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
 						>
 							{#if theme.dark}
-								<Sun size={22} weight="fill" />
+								<Sun size={20} weight="fill" />
 							{:else}
-								<Moon size={22} />
+								<Moon size={20} />
 							{/if}
 							<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 						</button>
 						<button
 							onclick={logout}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-base text-zinc-100 hover:bg-white/15 hover:text-zinc-50"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
 						>
-							<SignOut size={22} />
+							<SignOut size={20} />
 							<span>Log out</span>
 						</button>
 					</div>
@@ -245,14 +255,16 @@
 {/if}
 
 {#if isAuthRoute}
-	<main class="min-h-[100dvh] bg-zinc-50 px-6 py-8 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-50">
+	<main class="min-h-[100dvh] bg-slate-50 px-6 py-8 text-black dark:bg-black dark:text-white">
 		<div class="mx-auto max-w-5xl">
 			{@render children()}
 		</div>
 	</main>
 {:else}
 	<main
-		class="min-h-[100dvh] bg-zinc-50 px-3 pb-28 pt-4 text-zinc-900 sm:px-4 md:pb-6 md:pl-60 md:pr-4 md:pt-4 dark:bg-zinc-900 dark:text-zinc-50"
+		class="min-h-[100dvh] bg-slate-50 text-black dark:bg-black dark:text-white {isFullWidthRoute
+			? 'md:pl-64'
+			: 'px-4 pb-24 pt-4 md:pb-8 md:pl-68 md:pr-4 md:pt-8'}"
 	>
 		{@render children()}
 	</main>

@@ -5,9 +5,8 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-primary: #b01501;
-  --color-secondary: #a96c33;
-  --color-accent: #fc9790;
+  --color-brand-nav: #0A192F;
+  --color-brand-accent: #E11D48;
 
   --radius-4xl: 2rem;
 }
