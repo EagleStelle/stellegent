@@ -1,43 +1,26 @@
 services:
-  app:
-    build: .
+  stellegent:
+    image: eaglestelle/stellegent:latest
     ports:
       - "8000:8000"
     environment:
-      # Talk to the ollama service below (used by the PP-OCR fallback's NLP).
       OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: ${OLLAMA_MODEL:-phi3:mini}
-      # Gemini is the primary OCR engine — set the key in your .env.
-      OCR_BACKEND: ${OCR_BACKEND:-auto}
-      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
-      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash}
-      STELLEGENT_JWT_SECRET: ${STELLEGENT_JWT_SECRET:?set a 32+ char secret in .env}
-      # SPA is same-origin in the container; allow a dev origin too if needed.
-      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      OLLAMA_MODEL: phi3:mini
+      OCR_BACKEND: auto
+      GEMINI_API_KEY: ""
+      GEMINI_MODEL: gemini-2.5-flash
+      STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret
     volumes:
-      - app_data:/data
+      - ./data:/data
     depends_on:
       - ollama
     restart: unless-stopped
-    # --- Camera passthrough (uncomment on the Raspberry Pi / a host with a cam) ---
-    # USB webcam via OpenCV:
-    # devices:
-    #   - "/dev/video0:/dev/video0"
-    # CSI Camera Module 3 (imx708) needs libcamera + picamera2 inside the image
-    # plus device + udev mounts; this is non-trivial in a container — see README.
-    # devices:
-    #   - "/dev/video0:/dev/video0"
-    # volumes:
-    #   - /run/udev:/run/udev:ro
 
   ollama:
     image: ollama/ollama:latest
     volumes:
       - ollama_models:/root/.ollama
     restart: unless-stopped
-    # Pre-pull the model once after first start:
-    #   docker compose exec ollama ollama pull phi3:mini
 
 volumes:
-  app_data:
   ollama_models:

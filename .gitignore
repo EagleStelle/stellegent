@@ -10,6 +10,7 @@ __pycache__/
 .env
 *.db
 data/
+.local/
 
 # Node / SvelteKit
 node_modules/

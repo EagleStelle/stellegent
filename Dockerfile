@@ -13,6 +13,7 @@ RUN npm run build          # -> /fe/build (adapter-static, SPA fallback)
 
 # ---------- stage 2: python runtime ----------
 FROM python:3.11-slim-bookworm AS runtime
+# Runtime state at /data (bind/volume mount point).
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
     STATIC_DIR=/app/frontend/build \
