@@ -1,253 +1,192 @@
 # Stellegent
 
-Portable, offline whiteboard-to-document system targeting the Raspberry Pi 5. Captures a classroom whiteboard, preprocesses the image, performs OCR, applies LLM-assisted spelling and grammar correction, generates a summary, exports DOCX, PDF, TXT, PNG, and a JSON manifest, and stores everything in a local SQLite database that is browseable through a Flask web interface.
+Whiteboard-to-document capture system targeting the Raspberry Pi 5. Captures a
+classroom whiteboard, preprocesses the image, performs OCR, applies
+LLM-assisted correction, generates a summary, exports DOCX/PDF/TXT/PNG + a JSON
+manifest, stores everything in SQLite, and serves it through a typed REST API
+and a single-page web app.
 
-OCR uses PP-OCR models run through RapidOCR on the onnxruntime backend. (PaddlePaddle's PyPI ARM64 wheels segfault during inference on the Raspberry Pi 5, so onnxruntime is used instead; the recognition models are the same PP-OCR weights exported to ONNX.) Text correction and summarization use Phi-3-mini served by Ollama.
+**OCR is pluggable.** The primary engine is **Google Gemini** (vision) via the
+`google-genai` SDK; the fallback is **PP-OCR** run through RapidOCR on the
+onnxruntime backend (PaddlePaddle's PyPI aarch64 wheels segfault on the Pi 5, so
+onnxruntime runs the same PP-OCR weights exported to ONNX). The fallback path's
+correction/summary use Phi-3-mini via Ollama; Gemini self-corrects in one call.
 
-## Modules
+## Stack
 
-| #   | Module                                             | Path                                          |
-| --- | -------------------------------------------------- | --------------------------------------------- |
-| 1   | Capture and live preview                           | `stellegent/capture/`                         |
-| 2   | Image preprocessing                                | `stellegent/preprocess/`                      |
-| 3   | OCR (PP-OCR via RapidOCR / onnxruntime)            | `stellegent/ocr/`                             |
-| 4   | Text correction and summarization                  | `stellegent/nlp/`                             |
-| 5   | Export (DOCX, PDF, TXT, PNG, JSON)                 | `stellegent/export/`                          |
-| 6   | SQLite store                                       | `stellegent/db/`                              |
-| 7   | Flask web interface and JWT-authenticated API      | `stellegent/web/`                             |
-|     | Pipeline orchestrator and CLI                      | `stellegent/pipeline.py`, `stellegent/cli.py` |
+| Layer     | Tech                                                                   |
+| --------- | ---------------------------------------------------------------------- |
+| Frontend  | SvelteKit (SPA / `adapter-static`) · TypeScript · Tailwind v4 · shadcn-svelte · bits-ui · lucide · TanStack Query · openapi-fetch |
+| Backend   | FastAPI · Pydantic · Uvicorn · OpenCV · RapidOCR/onnxruntime · google-genai · Ollama |
+| Data      | SQLite + a forward-only SQL migration runner                          |
+| Auth      | Local email + password, bcrypt, JWT (cookie + Bearer). Google OAuth columns reserved in schema. |
+| Deploy    | One multi-stage Docker image (Node build → Python runtime serves API + SPA) + Ollama |
+
+## Layout
+
+```
+.
+├── backend/                  # FastAPI app (python package: stellegent)
+│   ├── pyproject.toml
+│   ├── stellegent/
+│   │   ├── main.py           # app + /api/v1 + serves built SPA
+│   │   ├── config.py         # pydantic-settings
+│   │   ├── api/v1/           # auth, lectures, capture, audit routers
+│   │   ├── schemas/          # pydantic models (drive the OpenAPI schema)
+│   │   ├── core/security.py  # JWT
+│   │   ├── deps.py           # auth dependencies
+│   │   ├── db/               # store + migrate.py + migrations/*.sql
+│   │   ├── ocr/              # base + gemini (primary) + paddle (fallback)
+│   │   ├── preprocess/ nlp/ export/ capture/
+│   │   ├── pipeline.py  cli.py
+│   ├── scripts/  tests/
+├── frontend/                 # SvelteKit SPA
+│   └── src/{routes,lib}
+├── Dockerfile                # single multi-stage image
+├── docker-compose.yml        # app + ollama
+└── .env.example
+```
 
 ---
 
-## Windows (development)
+## Quick start (Docker)
 
-### 1. Install
-
-```powershell
-powershell -ExecutionPolicy Bypass -File scripts\install_dev.ps1
-.\.venv\Scripts\Activate.ps1
+```bash
+cp .env.example .env          # set STELLEGENT_JWT_SECRET and GEMINI_API_KEY
+docker compose up --build
+docker compose exec ollama ollama pull phi3:mini   # only needed for PP-OCR fallback
+docker compose exec app python backend/scripts/seed_admin.py
 ```
 
-If the install script is skipped:
+Open <http://localhost:8000>. Log in as `admin / admin123` (change before
+deploying). The image builds the SPA and serves it from FastAPI, so it is one
+origin / one container (plus Ollama).
 
-```powershell
+---
+
+## Local development
+
+Two processes: FastAPI (`:8000`) and the Vite dev server (`:5173`, proxies
+`/api` to the backend).
+
+### Backend
+
+```bash
 python -m venv .venv
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
+.\.venv\Scripts\Activate.ps1        # Windows; or: source .venv/bin/activate
+pip install -e ./backend
+cp .env.example .env                # set GEMINI_API_KEY (or OCR_BACKEND=paddle)
+python -m stellegent.cli initdb     # applies migrations
+python backend/scripts/seed_admin.py
+python -m stellegent.cli serve --reload   # http://localhost:8000  (docs: /docs)
 ```
 
-Install Ollama from <https://ollama.com/download/windows>, then pull the model.
+### Frontend
 
-```powershell
-ollama pull phi3:mini
+```bash
+cd frontend
+npm install
+npm run dev                         # http://localhost:5173
+npm run gen:api                     # regenerate typed API client from the running backend
 ```
 
-### 2. Configure
+`npm run gen:api` runs `openapi-typescript` against `http://localhost:8000/openapi.json`
+and writes `src/lib/api/schema.d.ts`, giving the `openapi-fetch` client end-to-end types.
 
-```powershell
-Copy-Item .env.example .env
+---
+
+## Configuration (`.env`, repo root)
+
+| Variable                | Default                  | Purpose                                            |
+| ----------------------- | ------------------------ | -------------------------------------------------- |
+| `STELLEGENT_JWT_SECRET` | built-in dev default     | JWT signing key. Must be ≥ 32 bytes.               |
+| `STELLEGENT_DATA`       | `./data`                 | Capture artefacts root                             |
+| `STELLEGENT_DB`         | `./data/stellegent.db`   | SQLite path                                        |
+| `OCR_BACKEND`           | `auto`                   | `auto` \| `gemini` \| `paddle`                     |
+| `GEMINI_API_KEY`        | (empty)                  | Google AI Studio key; enables Gemini in `auto`     |
+| `GEMINI_MODEL`          | `gemini-2.5-flash`       | Gemini model tag                                   |
+| `OLLAMA_HOST`           | `http://127.0.0.1:11434` | Ollama endpoint (PP-OCR fallback NLP)              |
+| `OLLAMA_MODEL`          | `phi3:mini`              | Ollama model tag                                   |
+| `CORS_ORIGINS`          | `http://localhost:5173`  | Allowed dev origins (comma-separated)              |
+
+`auto` uses Gemini when `GEMINI_API_KEY` is set, otherwise PP-OCR; if a Gemini
+call fails at runtime it falls back to PP-OCR for that request.
+
+---
+
+## API (`/api/v1`)
+
+```
+POST   /login           {username,password}        -> {token,role,username} (+cookie)
+POST   /register        {username,email,password}  -> creates a 'student', returns token
+POST   /logout
+GET    /me
+POST   /forgot-password {email}                    -> reset token (returned in dev; email TODO)
+POST   /reset-password  {token,password}
+GET    /lectures?date=&course=&q=
+GET    /lectures/{id}
+GET    /lectures/{id}/file?type=pdf|docx|txt|image|manifest
+POST   /lectures/{id}/annotate   {note}
+DELETE /lectures/{id}                               prof|admin
+POST   /upload          multipart image + course   prof|admin
+POST   /capture         {course}                   prof|admin (shared camera)
+GET    /stream          MJPEG live preview          prof|admin
+GET    /guidance        framing guidance JSON       prof|admin
+GET    /audit                                       admin
 ```
 
-A working `.env` is shipped with a generated 48-byte secret. Replace `STELLEGENT_JWT_SECRET` for production. The JWT key must be at least 32 bytes.
+Interactive docs at `/docs`. Auth via `Authorization: Bearer <jwt>` or the
+`token` cookie; tokens expire after 30 minutes.
 
-### 3. First run
+---
 
-```powershell
-.\.venv\Scripts\Activate.ps1
+## Database migrations
+
+Schema lives in `backend/stellegent/db/migrations/NNN_*.sql`, applied in order
+and tracked in `schema_version`. `initdb` (and app startup) apply pending
+migrations idempotently. Add a new file with the next number to evolve the
+schema; the runner is forward-only.
+
+---
+
+## CLI
+
+```bash
 python -m stellegent.cli initdb
-python scripts/seed_admin.py
-python -m stellegent.cli serve --port 5000
+python -m stellegent.cli adduser <user> <pass> --role prof --email a@b.com
+python -m stellegent.cli resetpw <email> <newpass>      # offline password reset
+python -m stellegent.cli process path/to/image.jpg --course CS101
+python -m stellegent.cli capture --pi --fullscreen      # native OpenCV window
+python -m stellegent.cli serve --reload
 ```
-
-`seed_admin.py` creates `admin`, `prof`, and `student` development accounts. Process a real whiteboard image through the web UI (`/upload` or `/live`) or the CLI:
-
-```powershell
-python -m stellegent.cli process path\to\your_image.jpg --course "CS101"
-```
-
-Open <http://localhost:5000> and log in as `admin / admin123`. Replace these credentials before deploying.
-
-The PP-OCR ONNX models ship with `rapidocr-onnxruntime`, so no model download is needed on first run (fully offline).
-
----
-
-## Raspberry Pi 5 (Bookworm 64-bit, deployment)
-
-### 1. Install
-
-```bash
-bash scripts/install_rpi.sh
-source .venv/bin/activate
-```
-
-The install script performs the following steps:
-
-- installs system packages: `python3-pip python3-venv python3-picamera2 libgl1 libglib2.0-0 sqlite3 build-essential`
-- creates a virtual environment with `--system-site-packages` (so the venv can import the apt-installed `picamera2`, which is not pip-installable) and installs `requirements.txt`
-- installs Ollama if it is not already present and pulls `phi3:mini`
-- runs `python -m stellegent.cli initdb`
-
-OCR runs on `onnxruntime`, which has reliable prebuilt aarch64 wheels on PyPI — no `paddlepaddle` build is required.
-
-### 2. Configure
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and replace `STELLEGENT_JWT_SECRET` before exposing the service.
-
-### 3. First run
-
-```bash
-source .venv/bin/activate
-python scripts/seed_admin.py
-python -m stellegent.cli serve --host 0.0.0.0 --port 5000
-```
-
-On a Raspberry Pi the camera backend auto-detects (via `/proc/device-tree/model`) and uses `picamera2`, which is required for CSI cameras such as the Camera Module 3 (`imx708`) — these are not accessible through `cv2.VideoCapture`. Pass `--pi` to force the `picamera2` backend explicitly:
-
-```bash
-python -m stellegent.cli serve --host 0.0.0.0 --port 5000 --pi
-```
-
-Verify the camera is detected before serving:
-
-```bash
-rpicam-hello --list-cameras    # Camera Module 3 lists as imx708
-```
-
-To use the native fullscreen capture UI on the 7-inch touchscreen:
-
-```bash
-python -m stellegent.cli capture --pi --fullscreen --course "CS101"
-```
-
-The web interface is reachable from any device on the local network at `http://<pi-ip>:5000`.
-
----
-
-## Ingest paths
-
-The capture step is optional. Any whiteboard image can feed the pipeline.
-
-### 1. Web upload
-
-`/upload` provides a drag-and-drop dropzone with optional course tagging. The form posts to `/api/upload`, which runs the full pipeline and redirects to the lecture detail page.
-
-- Accepted extensions: `.png`, `.jpg`, `.jpeg`, `.webp`, `.bmp`, `.tif`, `.tiff`
-- Maximum file size: 25 MB
-- Required role: `prof` or `admin`
-
-### 2. Browser live capture
-
-`/live` shows an MJPEG stream from `/api/stream` with a board-outline overlay. The right-hand panel polls `/api/guidance` every 500 ms and displays:
-
-- Status messages such as "Move left", "Step back", "Tilt device", "Zoom out", "Hold steady", and "Ready"
-- Live statistics: sharpness (Laplacian variance), distance in metres, skew in degrees, and frame coverage
-- A capture button that turns green when guidance reports `ready`. Clicking it triggers `POST /api/capture` and redirects to the lecture detail page.
-
-### 3. Native fullscreen UI
-
-```bash
-python -m stellegent.cli capture --pi --fullscreen --course "CS101"
-```
-
-OpenCV native window. SPACE captures, `q` quits. Same overlay as the browser version. Suitable for kiosk use.
-
-### 4. Command-line batch
-
-```bash
-python -m stellegent.cli process path/to/your_image.jpg --course "CS101"
-```
-
----
-
-## Configuration
-
-`stellegent/config.py` automatically loads a `.env` file at the repository root. Process environment variables override file values. Relative paths in `STELLEGENT_DATA` and `STELLEGENT_DB` are resolved against the repository root.
-
-| Variable                | Default                  | Purpose                                       |
-| ----------------------- | ------------------------ | --------------------------------------------- |
-| `STELLEGENT_DATA`       | `./data`                 | Output root for capture artefacts             |
-| `STELLEGENT_DB`         | `./stellegent.db`        | SQLite database path                          |
-| `STELLEGENT_JWT_SECRET` | built-in 48-byte default | JWT signing key. Must be at least 32 bytes.   |
-| `OLLAMA_HOST`           | `http://127.0.0.1:11434` | Ollama HTTP endpoint                          |
-| `OLLAMA_MODEL`          | `phi3:mini`              | Ollama model tag                              |
-
-To generate a fresh secret:
-
-```bash
-python -c "import secrets; print(secrets.token_urlsafe(48))"
-```
-
----
-
-## API
-
-```
-POST   /login                                  body {username,password} -> {token,role}
-GET    /api/lectures?date=&course=&q=          list lectures
-GET    /api/lecture/<id>                       lecture detail, manifest, annotations
-GET    /api/lecture/<id>/file?type=pdf|docx|txt|image|manifest
-POST   /api/lecture/<id>/annotate              body {note}
-DELETE /api/lecture/<id>                       prof or admin
-POST   /api/capture                            prof or admin: single-frame snap and pipeline
-POST   /api/upload                             prof or admin: multipart 'image' and optional 'course'
-GET    /api/stream                             prof or admin: MJPEG live preview with overlay
-GET    /api/guidance                           prof or admin: current GuidanceResult JSON
-GET    /api/audit                              admin
-```
-
-UI pages: `/`, `/login`, `/upload`, `/live`, `/lecture/<id>`.
-
-Authentication uses `Authorization: Bearer <jwt>` or a `token` cookie. Tokens expire after 30 minutes.
-
----
-
-## Pipeline contract
-
-`stellegent.pipeline.process_image(image, course_name=None)` runs:
-
-1. `preprocess` detects board corners, rectifies the perspective, removes specular glare, applies CLAHE, and denoises.
-2. `run_ocr` returns a list of `OCRLine(text, confidence, bbox)` from the PP-OCR models via RapidOCR / onnxruntime.
-3. `correct_low_confidence` rewrites only lines whose confidence is below 0.75.
-4. `summarize` produces a bullet-point summary using the local LLM.
-5. `export_all` writes DOCX, PDF, TXT, PNG, and a JSON manifest under `data/YYYY-MM-DD/<uuid>/`.
-6. `insert_lecture` indexes the result in SQLite.
 
 ---
 
 ## Tests
 
 ```bash
-pip install pytest
-pytest tests/
+pip install -e "./backend[dev]"
+pytest backend/tests
 ```
-
-The included tests for preprocessing, guidance, the database, and export do not require network access or model weights. OCR and NLP tests require the full dependency set.
-
----
-
-## Evaluation scripts
-
-```bash
-python scripts/eval_wer.py pred.txt ref.txt
-python scripts/eval_rouge.py pred.txt ref.txt
-python scripts/bench_latency.py path/to/your_image.jpg 5
-```
-
-Targets: at least 85 percent character and word recognition rate, and end-to-end processing under 30 seconds on the Raspberry Pi 5.
 
 ---
 
 ## Known constraints
 
-- OCR engine: `rapidocr-onnxruntime` running PP-OCR models on `onnxruntime`. PaddlePaddle's PyPI aarch64 wheels segfault during inference on the Raspberry Pi 5 (`SIGSEGV` inside the conv kernels, reproducible even single-threaded with MKL-DNN disabled and `paddle.utils.run_check()` passing), so onnxruntime is used instead. Same PP-OCR weights, ONNX runtime, stable on ARM64.
-- NumPy is pinned to `<2` for OpenCV `<4.11` ABI compatibility.
-- Exactly one OpenCV build must be installed. Multiple `cv2` wheels (`opencv-python` + `opencv-python-headless` + `opencv-contrib-python`) leave duplicate native shared objects whose symbol clashes cause `SIGSEGV` on ARM64. `requirements.txt` pins only `opencv-python` (GUI build, needed for the native capture window); RapidOCR depends on it, so no second OpenCV package is pulled. To repair a polluted venv: `pip uninstall -y opencv-python opencv-python-headless opencv-contrib-python opencv-contrib-python-headless && pip install "opencv-python<4.11"`.
-- Phi-3-mini on the Raspberry Pi 5 is the slowest stage. Expect several seconds per call on 8 GB RAM; pre-pull the model with `ollama pull phi3:mini` so it is warm in memory.
-- CSI cameras (Camera Module 3 / `imx708`) are only reachable through `libcamera`/`picamera2`, never `cv2.VideoCapture`. The venv must be created with `--system-site-packages` so it can import the apt-installed `python3-picamera2`; otherwise `open_camera` silently falls back to a `cv2` device index and fails to find the camera. `open_camera` auto-selects `picamera2` on any Raspberry Pi and logs a fallback notice to stderr if it is unavailable.
-- The distance estimate uses a 66-degree horizontal field of view typical of the Raspberry Pi camera. Adjust in `capture/guidance.py` for other lenses.
-- DOCX heading inference is heuristic and based on regular expressions. Replace with PaddleOCR layout analysis output for richer structure.
-- `/api/stream` opens a single shared `CameraHub`. The Flask development server is single-threaded by default. Run with `flask run --with-threads` or `gunicorn -k gthread` to allow multiple concurrent stream viewers.
+- **One OpenCV build only.** Multiple `cv2` wheels leave duplicate native
+  symbols that `SIGSEGV` on ARM64. `pyproject.toml` pins only `opencv-python`
+  (RapidOCR depends on it). NumPy is pinned `<2` for OpenCV `<4.11` ABI.
+- **OCR fallback on the Pi** uses `rapidocr-onnxruntime` (onnxruntime, stable on
+  aarch64). PaddlePaddle's aarch64 wheels segfault during inference.
+- **Camera in Docker is the hard part.** USB webcams work by mapping
+  `/dev/video0` into the `app` container. CSI cameras (Camera Module 3 /
+  `imx708`) are only reachable via `libcamera`/`picamera2`, which is not
+  pip-installable and needs device + udev mounts inside the image — see the
+  commented `devices:` block in `docker-compose.yml`. For native (non-Docker)
+  Pi capture, create the venv with `--system-site-packages` so it can import the
+  apt-installed `python3-picamera2`, and run `python -m stellegent.cli capture --pi`.
+- **Gemini returns plain text** (no per-line bbox/confidence), so its path skips
+  the confidence-gated correction step and feeds clean text straight to the
+  summarizer. PP-OCR keeps the per-line confidence gating.
+- **Phi-3-mini on the Pi is the slowest stage** of the fallback path; pre-pull it
+  so it stays warm. Gemini moves that work off-device.

@@ -1,0 +1,44 @@
+[project]
+name = "stellegent"
+version = "0.2.0"
+description = "Whiteboard-to-document capture system (FastAPI backend)"
+requires-python = ">=3.11"
+dependencies = [
+    # Vision / OCR. Keep exactly ONE OpenCV build (multi cv2 wheels segfault on
+    # ARM64). RapidOCR pulls opencv-python; do not add another opencv-* package.
+    "opencv-python>=4.9,<4.11",
+    "numpy>=1.26,<2",
+    "Pillow>=10.2",
+    "rapidocr-onnxruntime>=1.3",   # PP-OCR fallback (offline, ARM64-stable)
+    "onnxruntime>=1.17",
+    "google-genai>=0.3",            # Gemini primary OCR (lazy-imported)
+    # NLP (local correction/summary via Ollama)
+    "ollama>=0.1.7",
+    "requests>=2.31",
+    "nltk>=3.8",
+    # Export
+    "python-docx>=1.1",
+    "fpdf2>=2.7",
+    # Web (FastAPI)
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "pydantic>=2.6",
+    "pydantic[email]>=2.6",
+    "pydantic-settings>=2.2",
+    "python-multipart>=0.0.9",      # multipart upload parsing
+    "PyJWT>=2.8",
+    "bcrypt>=4.1",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "jiwer>=3.0", "rouge-score>=0.1.2"]
+
+[project.scripts]
+stellegent = "stellegent.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["stellegent*"]

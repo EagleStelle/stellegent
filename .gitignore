@@ -1,15 +1,26 @@
+# Python
 .venv/
-.env
 __pycache__/
 *.pyc
 *.pyo
+*.egg-info/
+.pytest_cache/
+
+# Secrets + runtime state
+.env
 *.db
 data/
-samples/*.jpg
-samples/*.png
-.pytest_cache/
-.idea/
-.vscode/
-*.egg-info/
+
+# Node / SvelteKit
+node_modules/
+frontend/.svelte-kit/
+frontend/build/
+frontend/.vite/
+
+# Build output
 build/
 dist/
+
+# Editors
+.idea/
+.vscode/
