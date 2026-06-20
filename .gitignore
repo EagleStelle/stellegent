@@ -1,5 +1,8 @@
 .venv/
 .env
+.local/
+node_modules/
+.svelte-kit/
 __pycache__/
 *.pyc
 *.pyo
