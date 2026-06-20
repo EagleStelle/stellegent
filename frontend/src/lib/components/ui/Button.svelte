@@ -2,20 +2,20 @@
 	import { tv, type VariantProps } from 'tailwind-variants';
 
 	export const buttonVariants = tv({
-		base: 'inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50',
+		base: 'inline-flex items-center justify-center gap-2 rounded-md text-base font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:pointer-events-none disabled:opacity-50',
 		variants: {
 			variant: {
-				default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-				destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-				outline: 'border border-input bg-background hover:bg-secondary',
-				secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
-				ghost: 'hover:bg-secondary'
+				default: 'bg-primary text-zinc-50 hover:bg-primary/90',
+				destructive: 'bg-red-600 text-zinc-50 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
+				outline: 'border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-700',
+				secondary: 'bg-secondary text-zinc-900 hover:bg-secondary/90',
+				ghost: 'hover:bg-zinc-100 dark:hover:bg-zinc-700'
 			},
 			size: {
-				default: 'h-10 px-4 py-2',
-				sm: 'h-9 px-3',
-				lg: 'h-11 px-8',
-				icon: 'h-10 w-10'
+				default: 'h-11 px-4 py-2.5',
+				sm: 'h-10 px-3',
+				lg: 'h-12 px-8',
+				icon: 'h-11 w-11'
 			}
 		},
 		defaultVariants: { variant: 'default', size: 'default' }

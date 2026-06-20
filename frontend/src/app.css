@@ -1,114 +1,17 @@
 @import "tailwindcss";
 
-:root {
-  --background: #f7f1ea;
-  --foreground: #181316;
-
-  --card: #fff8f0;
-  --card-foreground: #181316;
-
-  --popover: #fff8f0;
-  --popover-foreground: #181316;
-
-  --primary: #b72a24;
-  --primary-foreground: #fff8f0;
-
-  --secondary: #efe2d7;
-  --secondary-foreground: #181316;
-
-  --muted: #ead8ca;
-  --muted-foreground: #6b5a54;
-
-  --accent: #f26a21;
-  --accent-foreground: #1a1411;
-
-  --destructive: #cf3a1f;
-  --destructive-foreground: #fff8f0;
-
-  --border: #dcc1ad;
-  --input: #dcc1ad;
-  --ring: #c89a4a;
-
-  --flame: #f26a21;
-  --coral: #e98e8b;
-  --gold: #c89a4a;
-
-  --radius: 0.5rem;
-}
-
-.dark {
-  --background: #100d0f;
-  --foreground: #fff8f0;
-
-  --card: #1a1417;
-  --card-foreground: #fff8f0;
-
-  --popover: #211a1d;
-  --popover-foreground: #fff8f0;
-
-  --primary: #e9473f;
-  --primary-foreground: #fff8f0;
-
-  --secondary: #2a2023;
-  --secondary-foreground: #fff8f0;
-
-  --muted: #211a1d;
-  --muted-foreground: #bba9a1;
-
-  --accent: #fb7a33;
-  --accent-foreground: #181316;
-
-  --destructive: #f5564a;
-  --destructive-foreground: #1a1110;
-
-  --border: #3a2a2d;
-  --input: #3a2a2d;
-  --ring: #d0a253;
-
-  --flame: #ff7a2f;
-  --coral: #e98e8b;
-  --gold: #d0a253;
-
-  --radius: 0.5rem;
-}
+/* Class-based dark mode. Tailwind v4 defaults to prefers-color-scheme;
+   this makes `dark:` utilities follow the `.dark` class on <html>. */
+@custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-flame: var(--flame);
-  --color-coral: var(--coral);
-  --color-gold: var(--gold);
+  --color-primary: #b01501;
+  --color-secondary: #a96c33;
+  --color-accent: #fc9790;
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
   --radius-4xl: 2rem;
 }
 
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-}
-
-/* Pointer cursor on all interactive elements. */
 button:not(:disabled),
 a[href],
 label[for],

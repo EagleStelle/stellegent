@@ -29,11 +29,11 @@
 
 <section class="flex min-h-[calc(100dvh-4rem)] items-center justify-center py-10">
 	<div
-		class="flex w-full max-w-sm flex-col gap-5 overflow-hidden rounded-[min(var(--radius-4xl),24px)] border border-border/70 bg-card/90 py-5 text-sm text-card-foreground shadow-xl shadow-primary/10"
+		class="flex w-full max-w-sm flex-col gap-5 overflow-hidden rounded-[min(var(--radius-4xl),24px)] border border-zinc-200/70 dark:border-zinc-700/70 bg-white/90 dark:bg-zinc-800/90 py-5 text-sm text-zinc-900 dark:text-zinc-50 shadow-xl shadow-primary/10"
 	>
 		<div class="grid auto-rows-min grid-cols-[1fr_auto] items-start gap-1.5 px-5">
 			<div class="text-xl font-medium">Sign in to Stellegent</div>
-			<p class="text-sm text-muted-foreground">Review lectures, capture boards, and manage notes.</p>
+			<p class="text-sm text-zinc-500 dark:text-zinc-400">Review lectures, capture boards, and manage notes.</p>
 			<a
 				href="/register"
 				class="col-start-2 row-span-2 row-start-1 inline-flex items-center self-start justify-self-end text-sm font-medium text-primary underline-offset-4 hover:underline"
@@ -56,7 +56,7 @@
 						autocomplete="username"
 						aria-invalid={error ? 'true' : undefined}
 						required
-						class="h-8 w-full min-w-0 rounded-2xl border border-transparent bg-input/50 px-2.5 py-1 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+						class="h-8 w-full min-w-0 rounded-2xl border border-transparent bg-zinc-200/50 dark:bg-zinc-700/50 px-2.5 py-1 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 aria-invalid:border-red-600 aria-invalid:ring-3 aria-invalid:ring-red-600/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 					/>
 				</div>
 				<div class="grid gap-2">
@@ -73,11 +73,11 @@
 						autocomplete="current-password"
 						aria-invalid={error ? 'true' : undefined}
 						required
-						class="h-8 w-full min-w-0 rounded-2xl border border-transparent bg-input/50 px-2.5 py-1 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+						class="h-8 w-full min-w-0 rounded-2xl border border-transparent bg-zinc-200/50 dark:bg-zinc-700/50 px-2.5 py-1 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 aria-invalid:border-red-600 aria-invalid:ring-3 aria-invalid:ring-red-600/20 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 					/>
 				</div>
 				{#if error}
-					<p class="rounded-2xl bg-destructive/10 px-3 py-2 text-sm text-destructive" role="alert">
+					<p class="rounded-2xl bg-red-600/10 px-3 py-2 text-sm text-red-600 dark:text-red-400" role="alert">
 						{error}
 					</p>
 				{/if}
@@ -88,7 +88,7 @@
 				type="submit"
 				form="login-form"
 				disabled={loading}
-				class="inline-flex h-8 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-primary px-3 text-sm font-medium text-primary-foreground outline-none transition-all hover:bg-primary/80 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30 disabled:pointer-events-none disabled:opacity-50"
+				class="inline-flex h-8 w-full shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-primary px-3 text-sm font-medium text-zinc-50 outline-none transition-all hover:bg-primary/80 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 disabled:pointer-events-none disabled:opacity-50"
 			>
 				{#if loading}<CircleNotch size={16} class="animate-spin" />{/if}
 				{loading ? 'Signing in...' : 'Sign in'}
