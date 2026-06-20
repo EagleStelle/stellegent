@@ -1,0 +1,26 @@
+services:
+  stellegent:
+    image: eaglestelle/stellegent:latest
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+      OLLAMA_MODEL: phi3:mini
+      OCR_BACKEND: auto
+      GEMINI_API_KEY: ""
+      GEMINI_MODEL: gemini-2.5-flash
+      STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret
+    volumes:
+      - ./data:/data
+    depends_on:
+      - ollama
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_models:/root/.ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_models:
