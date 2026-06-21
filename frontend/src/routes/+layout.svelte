@@ -10,7 +10,6 @@
 		GraduationCap,
 		House,
 		Broadcast,
-		UploadSimple,
 		Sun,
 		Moon,
 		SignOut,
@@ -41,17 +40,12 @@
 		['/login', '/register', '/forgot', '/reset'].includes(page.url.pathname)
 	);
 
-	const isFullWidthRoute = $derived(
-		page.url.pathname.startsWith('/live') || page.url.pathname.startsWith('/upload')
-	);
-
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
 
 	const links = $derived(
 		[
 			{ href: '/', label: 'Home', icon: House, show: true },
-			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach },
-			{ href: '/upload', label: 'Upload', icon: UploadSimple, show: canTeach }
+			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach }
 		].filter((l) => l.show)
 	);
 
@@ -103,11 +97,11 @@
 
 {#if !isAuthRoute}
 	<aside
-		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-primary px-4 py-6 text-white md:flex border-r border-white/5 shadow-2xl"
+		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-primary p-4 text-white md:flex border-r border-white/5 shadow-2xl"
 	>
 		<a
 			href="/"
-			class="{navMotion} mb-6 flex items-center gap-3 rounded-lg px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
+			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
 			<span class="grid size-10 place-items-center rounded-lg bg-secondary text-white shadow-sm">
 				<GraduationCap size={24} weight="fill" />
@@ -136,7 +130,6 @@
 				<button
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-					title={theme.dark ? 'Light mode' : 'Dark mode'}
 					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 				>
 					{#if theme.dark}
@@ -260,10 +253,11 @@
 	</main>
 {:else}
 	<main
-		class="min-h-[100dvh] bg-gray-50 text-primary dark:bg-gray-950 dark:text-gray-50 {isFullWidthRoute
-			? 'md:pl-64'
-			: 'px-4 pb-24 pt-4 md:pb-8 md:pl-68 md:pr-4 md:pt-8'}"
+		class="min-h-[100dvh] bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-64"
 	>
 		{@render children()}
+		{#if me.data}
+			<div class="h-20 md:hidden" aria-hidden="true"></div>
+		{/if}
 	</main>
 {/if}

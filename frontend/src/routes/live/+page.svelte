@@ -87,7 +87,6 @@
 		<button
 			onclick={toggleFullscreen}
 			aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-			title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
 			class="{overlayPanel} absolute right-3 top-3 z-10 grid size-11 place-items-center transition-transform duration-200 active:scale-[0.98]"
 		>
 			{#if isFullscreen}

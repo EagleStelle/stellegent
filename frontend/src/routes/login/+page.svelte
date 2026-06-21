@@ -49,7 +49,6 @@
 <button
 	onclick={() => theme.toggle()}
 	aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-	title={theme.dark ? 'Light mode' : 'Dark mode'}
 	class="fixed bottom-6 left-6 z-20 hidden size-11 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30 transition-all hover:bg-secondary/90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary md:grid"
 >
 	{#if theme.dark}
@@ -106,13 +105,13 @@
 		</div>
 
 		<div
-			class="{ease} mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-8 md:max-w-lg md:py-10 {mounted
+			class="{ease} mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-6 {mounted
 				? 'translate-y-0 opacity-100'
 				: 'translate-y-6 opacity-0'}"
 		>
-			<h1 class="text-center text-2xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-white">Sign in</h1>
+			<h1 class="text-center text-2xl font-bold tracking-tight text-zinc-900 md:text-3xl dark:text-white">Sign in</h1>
 
-			<form onsubmit={submit} class="mt-6 flex flex-col gap-4 md:mt-10 md:gap-5">
+			<form onsubmit={submit} class="mt-5 flex flex-col gap-3">
 				<Input
 					id="username"
 					label="Username"
@@ -146,7 +145,7 @@
 				<button
 					type="submit"
 					disabled={loading}
-					class="group relative mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-white shadow-lg shadow-primary/25 md:h-14 md:text-base outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-xl hover:shadow-primary/30 focus-visible:ring-4 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+					class="group relative mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-md shadow-primary/20 outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
 				>
 					{#if loading}
 						<CircleNotch size={18} class="animate-spin" />

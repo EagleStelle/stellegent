@@ -59,7 +59,7 @@
 			{type}
 			bind:value
 			aria-invalid={error ? 'true' : undefined}
-			class="h-11 w-full rounded-lg border border-gray-200 bg-white text-base text-primary outline-none transition-all duration-200 md:h-14 md:text-lg placeholder:text-gray-400 focus:border-secondary/60 focus:ring-4 focus:ring-secondary/15 aria-invalid:border-red-500 aria-invalid:ring-4 aria-invalid:ring-red-500/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50 dark:placeholder:text-gray-500 {Icon
+			class="h-10 w-full rounded-lg border border-gray-200 bg-white text-sm text-primary outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 aria-invalid:border-red-500 aria-invalid:ring-3 aria-invalid:ring-red-500/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50 dark:placeholder:text-gray-500 {Icon
 				? 'pl-11'
 				: 'pl-3.5'} {trailing ? 'pr-11' : 'pr-3.5'}"
 		/>

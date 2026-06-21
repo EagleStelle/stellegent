@@ -16,12 +16,12 @@
 			type="button"
 			onclick={() => (show = !show)}
 			aria-label={show ? 'Hide password' : 'Show password'}
-			class="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-gray-200"
+			class="absolute right-2 top-1/2 grid size-7 -translate-y-1/2 place-items-center rounded-lg text-gray-400 transition-colors hover:bg-gray-100 hover:text-primary dark:hover:bg-gray-800 dark:hover:text-gray-200"
 		>
 			{#if show}
-				<EyeSlash size={18} />
+				<EyeSlash size={17} />
 			{:else}
-				<Eye size={18} />
+				<Eye size={17} />
 			{/if}
 		</button>
 	{/snippet}
