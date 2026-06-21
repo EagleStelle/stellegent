@@ -36,6 +36,7 @@ services:
       OLLAMA_MODEL: phi3:mini
       OLLAMA_AUTO_PULL: "true"
       OLLAMA_PULL_TIMEOUT: 1800
+      OLLAMA_REQUEST_TIMEOUT: 1800
     volumes:
       - ./data:/app/data
     depends_on:

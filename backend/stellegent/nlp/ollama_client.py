@@ -12,6 +12,7 @@ from ..config import (
     OLLAMA_HOST,
     OLLAMA_MODEL,
     OLLAMA_PULL_TIMEOUT,
+    OLLAMA_REQUEST_TIMEOUT,
 )
 
 log = logging.getLogger(__name__)
@@ -93,7 +94,7 @@ def _post_with_model(endpoint: str, payload: dict, model: str,
 
 
 def generate(prompt: str, model: Optional[str] = None,
-             host: Optional[str] = None, timeout: int = 120,
+             host: Optional[str] = None, timeout: int = OLLAMA_REQUEST_TIMEOUT,
              options: Optional[dict] = None) -> str:
     target_model = model or OLLAMA_MODEL
     payload = {
@@ -107,7 +108,7 @@ def generate(prompt: str, model: Optional[str] = None,
 
 
 def chat(messages: List[dict], model: Optional[str] = None,
-         host: Optional[str] = None, timeout: int = 120,
+         host: Optional[str] = None, timeout: int = OLLAMA_REQUEST_TIMEOUT,
          options: Optional[dict] = None) -> str:
     target_model = model or OLLAMA_MODEL
     payload = {

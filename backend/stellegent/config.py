@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     ollama_model: str = Field("phi3:mini", validation_alias="OLLAMA_MODEL")
     ollama_auto_pull: bool = Field(True, validation_alias="OLLAMA_AUTO_PULL")
     ollama_pull_timeout_sec: int = Field(1800, validation_alias="OLLAMA_PULL_TIMEOUT")
+    # Per-request generate/chat timeout. Slow CPU-only NAS needs minutes for a
+    # full summary, so default well past the old hard-coded 120s.
+    ollama_request_timeout_sec: int = Field(
+        600, validation_alias="OLLAMA_REQUEST_TIMEOUT"
+    )
 
     # CORS origin for the SvelteKit dev server (prod serves SPA same-origin)
     cors_origins: str = Field("http://localhost:5173", validation_alias="CORS_ORIGINS")
@@ -110,6 +115,7 @@ OLLAMA_HOST = settings.ollama_host
 OLLAMA_MODEL = settings.ollama_model
 OLLAMA_AUTO_PULL = settings.ollama_auto_pull
 OLLAMA_PULL_TIMEOUT = settings.ollama_pull_timeout_sec
+OLLAMA_REQUEST_TIMEOUT = settings.ollama_request_timeout_sec
 JWT_SECRET = settings.jwt_secret
 JWT_EXPIRY_MIN = settings.jwt_expiry_min
 APP_NAME = settings.app_name
