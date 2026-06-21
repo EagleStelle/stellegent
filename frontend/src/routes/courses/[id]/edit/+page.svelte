@@ -150,6 +150,19 @@
 					Edit Course
 				</h1>
 			</div>
+			<Button
+				variant="icon+text"
+				type="button"
+				danger
+				class="ml-auto"
+				onclick={removeCourse}
+				title="Delete course"
+			>
+				{#snippet icon()}
+					<Trash size={18} />
+				{/snippet}
+				Delete
+			</Button>
 		</header>
 
 		<!-- Scrollable Middle -->
@@ -204,17 +217,6 @@
 				</span>
 			</div>
 			<div class="flex shrink-0 items-center gap-3">
-				<Button
-					variant="icon+text"
-					type="button"
-					danger
-					onclick={removeCourse}
-				>
-					{#snippet icon()}
-						<Trash size={18} />
-					{/snippet}
-					Delete Course
-				</Button>
 				<Button secondary type="button" onclick={() => goto("/courses")}
 					>Cancel</Button
 				>

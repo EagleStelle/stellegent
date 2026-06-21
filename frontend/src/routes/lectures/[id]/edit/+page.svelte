@@ -2,7 +2,7 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-	import { apiGet, apiPatch } from "$lib/api/client";
+	import { apiGet, apiPatch, apiDelete } from "$lib/api/client";
 	import type {
 		Course,
 		CourseOptions,
@@ -10,7 +10,7 @@
 		User,
 		Visibility,
 	} from "$lib/types";
-	import { UsersThree, ArrowLeft } from "phosphor-svelte";
+	import { UsersThree, ArrowLeft, Trash } from "phosphor-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
 	import ComboBox from "$lib/components/ui/ComboBox.svelte";
@@ -66,10 +66,32 @@
 		draftStudentIds = [...lecture.data.student_ids];
 	});
 
+	// A lecture on a course is always owned by that course's faculty. When a
+	// course is picked, the owner is locked to it; only course-less lectures
+	// allow the admin to choose an owner directly.
+	const selectedCourse = $derived(
+		(courses.data ?? []).find((c) => String(c.id) === draftCourseId),
+	);
+	$effect(() => {
+		if (selectedCourse) draftOwnerId = String(selectedCourse.faculty_id);
+	});
+
 	function toggleStudent(studentId: number) {
 		draftStudentIds = draftStudentIds.includes(studentId)
 			? draftStudentIds.filter((sid) => sid !== studentId)
 			: [...draftStudentIds, studentId];
+	}
+
+	async function removeLecture() {
+		if (!confirm("Delete this lecture?")) return;
+		editError = "";
+		try {
+			await apiDelete(`/api/v1/lectures/${id}`);
+			await qc.invalidateQueries({ queryKey: ["lectures"] });
+			goto("/lectures");
+		} catch (err) {
+			editError = err instanceof Error ? err.message : "Delete failed";
+		}
 	}
 
 	async function saveLecture(e?: SubmitEvent) {
@@ -129,6 +151,19 @@
 					Edit Lecture
 				</h1>
 			</div>
+			<Button
+				variant="icon+text"
+				type="button"
+				danger
+				class="ml-auto"
+				onclick={removeLecture}
+				title="Delete lecture"
+			>
+				{#snippet icon()}
+					<Trash size={18} />
+				{/snippet}
+				Delete
+			</Button>
 		</header>
 
 		<!-- Scrollable Middle -->
@@ -168,11 +203,17 @@
 						<ComboBox
 							bind:value={draftOwnerId}
 							placeholder="Unassigned"
+							disabled={Boolean(selectedCourse)}
 							options={(options.data?.faculty ?? []).map((f) => ({
 								value: String(f.id),
 								label: f.username,
 							}))}
 						/>
+						{#if selectedCourse}
+							<span class="text-xs text-gray-500 dark:text-gray-400">
+								Owner follows the course faculty ({selectedCourse.faculty_username}).
+							</span>
+						{/if}
 					</label>
 				{/if}
 			</div>

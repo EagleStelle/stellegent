@@ -2,6 +2,7 @@
 	import { Plus } from "phosphor-svelte";
 	import type { LectureSummary, ManagedUser } from "$lib/types";
 	import Button from "$lib/components/ui/Button.svelte";
+	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 
 	type Props = {
 		students?: ManagedUser[];
@@ -84,6 +85,19 @@
 		return `${student.username} - ${student.email ?? "No email"}`;
 	}
 
+	const studentChoices = $derived(
+		availableStudents.map((student: ManagedUser) => ({
+			value: String(student.id),
+			label: studentLabel(student),
+		})),
+	);
+	const lectureChoices = $derived(
+		availableLectures.map((lecture: LectureSummary) => ({
+			value: lecture.id,
+			label: lectureLabel(lecture),
+		})),
+	);
+
 	function lectureTitle(lecture: LectureSummary) {
 		return lecture.course_name ?? lecture.course_title ?? "Untitled lecture";
 	}
@@ -137,15 +151,12 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<select
+			<ComboBox
 				bind:value={pendingStudentId}
-				class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3.5 text-sm text-primary outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50 dark:placeholder:text-gray-500"
-			>
-				<option value="">Select student</option>
-				{#each availableStudents as student (student.id)}
-					<option value={String(student.id)}>{studentLabel(student)}</option>
-				{/each}
-			</select>
+				placeholder="Search students…"
+				options={studentChoices}
+				class="flex-1"
+			/>
 			<Button
 				variant="icon"
 				type="button"
@@ -200,15 +211,12 @@
 		</div>
 
 		<div class="flex items-center gap-2">
-			<select
+			<ComboBox
 				bind:value={pendingLectureId}
-				class="h-10 w-full rounded-lg border border-gray-200 bg-white px-3.5 text-sm text-primary outline-none transition-all duration-200 placeholder:text-gray-400 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50 dark:placeholder:text-gray-500"
-			>
-				<option value="">Select lecture</option>
-				{#each availableLectures as lecture (lecture.id)}
-					<option value={lecture.id}>{lectureLabel(lecture)}</option>
-				{/each}
-			</select>
+				placeholder="Search lectures…"
+				options={lectureChoices}
+				class="flex-1"
+			/>
 			<Button
 				variant="icon"
 				type="button"

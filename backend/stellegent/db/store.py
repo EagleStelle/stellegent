@@ -196,12 +196,16 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
         _validate_visibility(updates["visibility"])
     if not updates:
         return get_lecture(lecture_id)
-    if updates.get("course_id") is not None and "course_name" not in updates:
+    if updates.get("course_id") is not None:
         with get_conn() as c:
-            course = c.execute("SELECT name FROM courses WHERE id = ?",
+            course = c.execute("SELECT name, faculty_id FROM courses WHERE id = ?",
                                (updates["course_id"],)).fetchone()
             if course:
-                updates["course_name"] = course["name"]
+                if "course_name" not in updates:
+                    updates["course_name"] = course["name"]
+                # A lecture is owned by the faculty of the course it sits on, so
+                # moving it to another course transfers ownership accordingly.
+                updates["owner_user_id"] = course["faculty_id"]
     parts = [f"{k} = ?" for k in updates]
     args = list(updates.values()) + [lecture_id]
     with get_conn() as c:
@@ -701,6 +705,12 @@ def update_course(course_id: int, *, name: Optional[str] = None,
         args.append(course_id)
         with get_conn() as c:
             c.execute(f"UPDATE courses SET {', '.join(parts)} WHERE id = ?", args)
+            # Lectures follow their course's owner: changing the course faculty
+            # re-owns every lecture currently attached to it.
+            if faculty_id is not None:
+                c.execute(
+                    "UPDATE lectures SET owner_user_id = ? WHERE course_id = ?",
+                    (faculty_id, course_id))
     return get_course(course_id)
 
 
@@ -761,7 +771,7 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
                             owner_user_id: Optional[int] = None) -> None:
     ids = list(dict.fromkeys(str(lid) for lid in lecture_ids))
     with get_conn() as c:
-        course = c.execute("SELECT name FROM courses WHERE id = ?",
+        course = c.execute("SELECT name, faculty_id FROM courses WHERE id = ?",
                            (course_id,)).fetchone()
         if not course:
             raise ValueError("course not found")
@@ -788,11 +798,14 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
                 WHERE course_id = ?
                   AND owner_user_id = ?
             """, (course_id, owner_user_id))
+        # A lecture belongs to exactly one course and is owned by that course's
+        # faculty: attaching it here transfers ownership to the course owner.
         c.executemany("""
             UPDATE lectures
-            SET course_id = ?, course_name = ?
+            SET course_id = ?, course_name = ?, owner_user_id = ?
             WHERE id = ?
-        """, [(course_id, course["name"], lid) for lid in ids])
+        """, [(course_id, course["name"], course["faculty_id"], lid)
+              for lid in ids])
 
 
 def list_lecture_student_ids(lecture_id: str) -> List[int]:
