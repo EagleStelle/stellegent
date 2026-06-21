@@ -46,6 +46,7 @@ def _validate_task_status(status: str) -> None:
 @contextmanager
 def get_conn(db_path: Optional[Path] = None):
     p = Path(db_path or cfg.DB_PATH)
+    p.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(str(p))
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
@@ -59,6 +60,17 @@ def get_conn(db_path: Optional[Path] = None):
 def init_db(db_path: Optional[Path] = None) -> None:
     with get_conn(db_path) as c:
         run_migrations(c)
+        
+    if cfg.settings.admin_email and cfg.settings.admin_password:
+        if not admin_exists():
+            create_user(
+                username="admin",
+                password=cfg.settings.admin_password,
+                role="admin",
+                email=cfg.settings.admin_email
+            )
+
+
 
 
 # ---------- lectures ----------

@@ -15,6 +15,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 ROOT = Path(__file__).resolve().parents[2]
 
 
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=ROOT / ".env", env_file_encoding="utf-8", extra="ignore"
@@ -23,6 +24,10 @@ class Settings(BaseSettings):
     data_dir: Path = Field(Path("data"), validation_alias="STELLEGENT_DATA")
     # Keep all runtime state under data/ (one gitignored dir / one Docker volume).
     db_path: Path = Field(Path("data/stellegent.db"), validation_alias="STELLEGENT_DB")
+
+    # Initial admin account (auto-provisioned on startup if no admin exists)
+    admin_email: str = Field("admin@example.com", validation_alias="ADMIN_EMAIL")
+    admin_password: str = Field("admin123", validation_alias="ADMIN_PASSWORD")
 
     jwt_secret: str = Field(
         "change-me-in-prod-please-use-32-plus-chars-secret-key",

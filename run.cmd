@@ -24,16 +24,14 @@ if not exist ".env" (
   echo [run] created .env from .env.example - edit GEMINI_API_KEY / JWT secret as needed
 )
 
-REM Keep all local runtime state out of Docker/prod paths.
-set "STELLEGENT_DATA=%ROOT%\.local\data"
-set "STELLEGENT_DB=%ROOT%\.local\data\stellegent.db"
+REM Keep all local runtime state in the default gitignored data/ path.
 set "CORS_ORIGINS=http://localhost:8000,http://127.0.0.1:8000"
 set "STELLEGENT_DEV_API_TARGET=http://127.0.0.1:8001"
 
 REM Force dev-only behavior even if frontend\build exists from an old build.
 set "STATIC_DIR=%TEMP%\stellegent-dev-static-disabled-%RANDOM%-%RANDOM%"
 
-if not exist ".local\data" mkdir ".local\data"
+if not exist "data" mkdir "data"
 
 set "PY=%ROOT%\.venv\Scripts\python.exe"
 set "DEV_MARKER=%ROOT%\.venv\.stellegent-dev-installed"
@@ -64,11 +62,6 @@ if not exist "frontend\node_modules" (
 echo [run] initializing dev database...
 pushd backend
 "%PY%" -m stellegent.cli initdb
-if errorlevel 1 (
-  popd
-  goto fail
-)
-"%PY%" scripts\seed_admin.py
 if errorlevel 1 (
   popd
   goto fail

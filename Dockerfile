@@ -42,17 +42,14 @@ FROM python:3.11-slim-bookworm AS runner
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PATH="/opt/venv/bin:${PATH}" \
-    PYTHONPATH=/app/backend \
-    STATIC_DIR=/app/frontend/build \
-    STELLEGENT_DATA=/data \
-    STELLEGENT_DB=/data/stellegent.db
+    PYTHONPATH=/app/backend
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libgomp1 \
     && rm -rf /var/lib/apt/lists/* \
     && groupadd --system --gid 10001 app \
     && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app \
-    && install -d -o app -g app /app /data
+    && install -d -o app -g app /app
 
 WORKDIR /app
 
@@ -60,7 +57,6 @@ COPY --from=builder /opt/venv /opt/venv
 COPY --from=builder --chown=app:app /build/frontend/build /app/frontend/build
 COPY --chown=app:app backend/stellegent /app/backend/stellegent
 
-VOLUME ["/data"]
 
 EXPOSE 8000
 

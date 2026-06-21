@@ -10,7 +10,9 @@ services:
       OLLAMA_PULL_TIMEOUT: 1800
       OCR_BACKEND: auto
       GEMINI_API_KEY: ""
-      GEMINI_MODEL: gemini-2.5-flash
+      GEMINI_MODEL: gemini-3.5-flash
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "admin123"
       STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret
       GOOGLE_OAUTH_CLIENT_ID: ""
       GOOGLE_OAUTH_CLIENT_SECRET: ""
@@ -19,7 +21,7 @@ services:
       RESEND_FROM_EMAIL: "Stellegent <no-reply@example.com>"
       RESEND_REPLY_TO: ""
     volumes:
-      - ./data:/data
+      - ./data:/app/data
     depends_on:
       - ollama
     restart: unless-stopped

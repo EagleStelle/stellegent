@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Local dev launcher. Runtime state goes under .local/data (NOT ./data, which is
-# the Docker-image default). Builds the SPA, then serves API + SPA on :8000.
+# Local dev launcher. Runtime state goes under data.
+# Builds the SPA, then serves API + SPA on :8000.
 set -euo pipefail
 cd "$(dirname "$0")"
 ROOT="$(pwd)"
@@ -12,10 +12,8 @@ if [ ! -f .env ]; then
   echo "[run] created .env from .env.example — edit it (GEMINI_API_KEY / JWT secret)"
 fi
 
-export STELLEGENT_DATA="$ROOT/.local/data"
-export STELLEGENT_DB="$ROOT/.local/data/stellegent.db"
 export STATIC_DIR="$ROOT/frontend/build"
-mkdir -p "$STELLEGENT_DATA"
+mkdir -p "$ROOT/data"
 
 # venv python (Unix or Git-Bash on Windows)
 if [ -x ".venv/Scripts/python.exe" ]; then
@@ -35,8 +33,8 @@ if [ ! -f frontend/build/index.html ]; then
   (cd frontend && npm ci && npm run build)
 fi
 
-# migrate + seed dev accounts (run from backend/ so the new package wins)
-( cd backend && "$PY" -m stellegent.cli initdb && "$PY" scripts/seed_admin.py )
+# migrate (run from backend/ so the new package wins)
+( cd backend && "$PY" -m stellegent.cli initdb )
 
 echo "[run] http://localhost:8000  (admin / admin123)"
 cd backend
