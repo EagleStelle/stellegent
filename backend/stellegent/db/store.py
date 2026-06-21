@@ -248,8 +248,39 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
 
 
 def delete_lecture(lecture_id: str) -> None:
+    row = get_lecture(lecture_id)
+    if row is not None:
+        _delete_lecture_files(row)
     with get_conn() as c:
         c.execute("DELETE FROM lectures WHERE id = ?", (lecture_id,))
+
+
+# Each lecture owns a directory (DATA_DIR/<date>/<lecture_id>/) holding its
+# image, docs and manifest. Dropping the DB row alone orphans those files, so
+# remove the whole directory on delete.
+_LECTURE_FILE_KEYS = ("manifest_path", "image_path", "raw_image_path",
+                      "docx_path", "pdf_path", "txt_path")
+
+
+def _delete_lecture_files(row: sqlite3.Row) -> None:
+    import shutil
+
+    data_dir = Path(cfg.DATA_DIR).resolve()
+    keys = row.keys()
+    for key in _LECTURE_FILE_KEYS:
+        if key not in keys or not row[key]:
+            continue
+        p = Path(row[key])
+        if not p.is_absolute():
+            p = (cfg.ROOT / p).resolve()
+        else:
+            p = p.resolve()
+        lecture_dir = p.parent
+        # Safety: only remove paths that actually live under the data dir.
+        if data_dir not in lecture_dir.parents:
+            continue
+        shutil.rmtree(lecture_dir, ignore_errors=True)
+        return
 
 
 # ---------- processing tasks ----------
