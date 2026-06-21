@@ -99,7 +99,7 @@
 	);
 
 	function lectureTitle(lecture: LectureSummary) {
-		return lecture.course_name ?? lecture.course_title ?? "Untitled lecture";
+		return lecture.title ?? lecture.course_name ?? lecture.course_title ?? "Untitled lecture";
 	}
 
 	function formatLectureDate(lecture: LectureSummary) {

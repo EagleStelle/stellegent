@@ -48,3 +48,13 @@ services:
     volumes:
       - ./ollama:/root/.ollama
     restart: unless-stopped
+    # GPU acceleration (local dev only; NOT used on Raspberry Pi 5 production).
+    # Requires an NVIDIA GPU + nvidia-container-toolkit on the host.
+    # Uncomment to offload inference to the GPU instead of CPU.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
