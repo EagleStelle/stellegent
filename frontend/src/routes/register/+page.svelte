@@ -30,7 +30,7 @@
 		try {
 			await apiPost<TokenResponse>('/api/v1/register', { username, email, password });
 			await qc.invalidateQueries({ queryKey: ['me'] });
-			goto('/lectures');
+			goto('/courses');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Registration failed';
 		} finally {

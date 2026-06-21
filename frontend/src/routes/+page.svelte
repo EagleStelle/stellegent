@@ -29,7 +29,7 @@
 		try {
 			await apiPost<TokenResponse>('/api/v1/login', { username, password });
 			await qc.invalidateQueries({ queryKey: ['me'] });
-			goto('/lectures');
+			goto('/courses');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Sign in failed';
 		} finally {

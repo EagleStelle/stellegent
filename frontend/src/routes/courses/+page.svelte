@@ -5,7 +5,7 @@
 	import type { Course, CourseDetail, CourseOptions, LectureSummary, User } from "$lib/types";
 	import Card from "$lib/components/ui/Card.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
-	import Select from "$lib/components/ui/Select.svelte";
+	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Modal from "$lib/components/ui/Modal.svelte";
 	import {
@@ -192,7 +192,7 @@
 	<div class="min-w-0 flex-1">
 		<Input id="search" bind:value={q} icon={MagnifyingGlass} />
 	</div>
-	<Select
+	<ComboBox
 		bind:value={facultyFilter}
 		placeholder="All faculty"
 		class="w-48 shrink-0"
@@ -214,43 +214,37 @@
 {:else if filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as course (course.id)}
-			<Card padding="default" class="group flex h-full flex-col">
-				<button
-					type="button"
-					onclick={() => openCourse(course.id)}
-					class="flex h-full w-full flex-col gap-3 text-left outline-none"
-				>
-					<div class="flex items-start justify-between gap-3">
-						<div class="min-w-0">
-							<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
-								{course.name}
-							</h3>
-							<p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-								Prof. {course.faculty_username}
-							</p>
-						</div>
-						<span class="shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-							{course.lecture_count}
-						</span>
-					</div>
-
-					{#if course.description}
-						<p class="line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-400">
-							{course.description}
+			<Card padding="default" type="button" onclick={() => openCourse(course.id)} class="group flex h-full w-full flex-col gap-3 outline-none">
+				<div class="flex items-start justify-between gap-3">
+					<div class="min-w-0">
+						<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
+							{course.name}
+						</h3>
+						<p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+							Prof. {course.faculty_username}
 						</p>
-					{/if}
-
-					<div class="mt-auto flex items-center gap-3 pt-1 text-xs text-gray-500 dark:text-gray-400">
-						<span class="flex items-center gap-1.5">
-							<BookOpen size={14} weight="bold" />
-							{course.lecture_count} lectures
-						</span>
-						<span class="flex items-center gap-1.5">
-							<UsersThree size={14} weight="bold" />
-							{course.student_count} students
-						</span>
 					</div>
-				</button>
+					<span class="shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+						{course.lecture_count}
+					</span>
+				</div>
+
+				{#if course.description}
+					<p class="line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-400">
+						{course.description}
+					</p>
+				{/if}
+
+				<div class="mt-auto flex items-center gap-3 pt-1 text-xs text-gray-500 dark:text-gray-400">
+					<span class="flex items-center gap-1.5">
+						<BookOpen size={14} weight="bold" />
+						{course.lecture_count} lectures
+					</span>
+					<span class="flex items-center gap-1.5">
+						<UsersThree size={14} weight="bold" />
+						{course.student_count} students
+					</span>
+				</div>
 			</Card>
 		{/each}
 	</div>
@@ -278,7 +272,7 @@
 			{#if isAdmin}
 				<label class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100">
 					<span>Faculty</span>
-					<Select
+					<ComboBox
 						bind:value={newFacultyId}
 						options={facultyOptions.map((f) => ({
 							value: String(f.id),
@@ -353,7 +347,7 @@
 				{#if isAdmin}
 					<label class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100">
 						<span>Faculty</span>
-						<Select
+						<ComboBox
 							bind:value={draftFacultyId}
 							options={facultyOptions.map((f) => ({
 								value: String(f.id),

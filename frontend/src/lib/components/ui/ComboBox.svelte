@@ -1,0 +1,132 @@
+<script lang="ts" module>
+	export type ComboBoxOption = {
+		value: string;
+		label: string;
+	};
+</script>
+
+<script lang="ts">
+	import { Combobox } from "bits-ui";
+	import { CaretUpDown, Check } from "phosphor-svelte";
+	import { twMerge } from "tailwind-merge";
+	import type { Component } from 'svelte';
+
+	let {
+		value = $bindable(""),
+		options = [] as ComboBoxOption[],
+		placeholder = "Select or type an option",
+		class: className = "",
+		disabled = false,
+		icon: Icon,
+	} = $props<{
+		value?: string;
+		options: ComboBoxOption[];
+		placeholder?: string;
+		class?: string;
+		disabled?: boolean;
+		icon?: Component<any>;
+	}>();
+
+	let open = $state(false);
+	let inputValue = $state("");
+
+	// Initialize inputValue based on value
+	$effect(() => {
+		if (value !== undefined) {
+			const matchedOpt = options.find((opt) => opt.value === value);
+			if (matchedOpt) {
+				if (inputValue !== matchedOpt.label) {
+					inputValue = matchedOpt.label;
+				}
+			} else {
+				if (inputValue !== value) {
+					inputValue = value;
+				}
+			}
+		}
+	});
+
+	// Update value based on inputValue
+	$effect(() => {
+		if (inputValue !== undefined) {
+			const matchedOpt = options.find((opt) => opt.label === inputValue);
+			if (matchedOpt) {
+				if (value !== matchedOpt.value) {
+					value = matchedOpt.value;
+				}
+			} else {
+				if (value !== inputValue) {
+					value = inputValue;
+				}
+			}
+		}
+	});
+
+	const filtered = $derived(
+		inputValue
+			? options.filter((opt: ComboBoxOption) =>
+					opt.label.toLowerCase().includes(inputValue.toLowerCase()),
+				)
+			: options,
+	);
+
+	function onOpenChange(next: boolean) {
+		open = next;
+	}
+
+
+</script>
+
+<Combobox.Root type="single" bind:value bind:inputValue bind:open {disabled} {onOpenChange}>
+	<div
+		class={twMerge(
+			"relative flex h-10 w-full items-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-primary outline-none transition-all duration-200 focus-within:border-secondary/60 focus-within:ring-3 focus-within:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50",
+			disabled && "pointer-events-none opacity-60",
+			className,
+		)}
+	>
+		{#if Icon}
+			<div class="pointer-events-none absolute left-3 z-10 flex items-center text-gray-500">
+				<Icon size={18} />
+			</div>
+		{/if}
+		<Combobox.Input
+			{placeholder}
+			onclick={() => (open = true)}
+			class={twMerge(
+				"h-full w-full rounded-lg bg-transparent leading-none outline-none placeholder:text-gray-500",
+				Icon ? "pl-9" : "pl-3",
+				"pr-8"
+			)}
+		/>
+		<Combobox.Trigger class="absolute right-3 z-10 flex shrink-0 items-center text-gray-500">
+			<CaretUpDown size={16} />
+		</Combobox.Trigger>
+	</div>
+
+	<Combobox.Portal>
+		<Combobox.Content
+			sideOffset={6}
+			class="z-50 max-h-96 w-(--bits-floating-anchor-width) overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-lg outline-none dark:border-gray-800 dark:bg-gray-900"
+		>
+			<Combobox.Viewport>
+				{#each filtered as option (option.value)}
+					<Combobox.Item
+						value={option.value}
+						label={option.label}
+						class="flex w-full cursor-pointer select-none items-center justify-between gap-2 rounded-sm px-2 py-1.5 text-sm text-gray-700 outline-none data-highlighted:bg-secondary data-highlighted:text-white dark:text-gray-200"
+					>
+						{#snippet children({ selected })}
+							<span class="truncate">{option.label}</span>
+							{#if selected}
+								<Check size={16} weight="bold" class="shrink-0" />
+							{/if}
+						{/snippet}
+					</Combobox.Item>
+				{:else}
+					<div class="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">No results</div>
+				{/each}
+			</Combobox.Viewport>
+		</Combobox.Content>
+	</Combobox.Portal>
+</Combobox.Root>

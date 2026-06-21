@@ -2,14 +2,15 @@
 	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet } from '$lib/api/client';
-	import type { Course, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
+	import type { Course, CourseOptions, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import Select from '$lib/components/ui/Select.svelte';
+	import ComboBox from '$lib/components/ui/ComboBox.svelte';
 	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank } from 'phosphor-svelte';
 
 	let q = $state('');
+	let facultyFilter = $state('');
 	let uploadInput: HTMLInputElement | null = $state(null);
 	let uploading = $state(false);
 	let uploadError = $state('');
@@ -36,9 +37,17 @@
 		queryFn: () => apiGet<Course[]>('/api/v1/courses'),
 		enabled: canUpload
 	}));
+	const options = createQuery(() => ({
+		queryKey: ['course-options'],
+		queryFn: () => apiGet<CourseOptions>('/api/v1/courses/options'),
+		enabled: canUpload
+	}));
+
+	const facultyOptions = $derived(options.data?.faculty ?? []);
 
 	const filtered = $derived(
 		(lectures.data ?? []).filter((l) => {
+			if (facultyFilter && String(l.owner_user_id) !== facultyFilter) return false;
 			if (!q.trim()) return true;
 			const hay = `${l.course_name ?? ''} ${l.summary ?? ''} ${l.tags ?? ''}`.toLowerCase();
 			return hay.includes(q.toLowerCase());
@@ -98,7 +107,16 @@
 	</div>
 	{#if canUpload}
 		<div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-			<Select
+			<ComboBox
+				bind:value={facultyFilter}
+				placeholder="All faculty"
+				class="w-48 shrink-0"
+				options={facultyOptions.map((f) => ({
+					value: String(f.id),
+					label: f.username,
+				}))}
+			/>
+			<ComboBox
 				bind:value={selectedCourseId}
 				placeholder="All courses"
 				class="w-48 shrink-0"

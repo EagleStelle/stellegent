@@ -29,7 +29,7 @@
 	import TextModal from "$lib/components/modal/Text.svelte";
 	import Modal from "$lib/components/ui/Modal.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
-	import Select from "$lib/components/ui/Select.svelte";
+	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 
 	const qc = useQueryClient();
 	const id = $derived(page.params.id);
@@ -340,7 +340,7 @@
 						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 					>
 						<span>Course</span>
-						<Select
+						<ComboBox
 							bind:value={draftCourseId}
 							placeholder="No course"
 							options={(courses.data ?? []).map((c) => ({
@@ -353,7 +353,7 @@
 						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 					>
 						<span>Visibility</span>
-						<Select
+						<ComboBox
 							bind:value={draftVisibility}
 							options={[
 								{ value: "public", label: "Public" },
@@ -366,7 +366,7 @@
 							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100 md:col-span-3"
 						>
 							<span>Owner</span>
-							<Select
+							<ComboBox
 								bind:value={draftOwnerId}
 								placeholder="Unassigned"
 								options={(options.data?.faculty ?? []).map(

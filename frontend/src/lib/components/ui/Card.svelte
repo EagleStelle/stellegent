@@ -20,23 +20,28 @@
 
 <script lang="ts">
 	import type { Snippet } from 'svelte';
-	import type { HTMLAnchorAttributes, HTMLAttributes } from 'svelte/elements';
+	import type { HTMLAnchorAttributes, HTMLAttributes, HTMLButtonAttributes } from 'svelte/elements';
 	import { cn } from '$lib/utils';
 
-	type Props = HTMLAnchorAttributes & {
+	type Props = HTMLAnchorAttributes & HTMLButtonAttributes & HTMLAttributes<HTMLDivElement> & {
 		padding?: 'none' | 'sm' | 'default';
 		href?: string;
+		onclick?: (e: MouseEvent) => void;
 		children: Snippet;
 	};
 
-	let { padding = 'default', href, class: className, children, ...rest }: Props =
+	let { padding = 'default', href, onclick, class: className, children, ...rest }: Props =
 		$props();
 </script>
 
 {#if href}
-	<a {href} class={cn(cardVariants({ interactive: true, padding }), className)} {...rest}>
+	<a {href} {onclick} class={cn(cardVariants({ interactive: true, padding }), className)} {...rest as HTMLAnchorAttributes}>
 		{@render children()}
 	</a>
+{:else if onclick}
+	<button {onclick} class={cn(cardVariants({ interactive: true, padding }), className)} {...rest as HTMLButtonAttributes}>
+		{@render children()}
+	</button>
 {:else}
 	<div
 		class={cn(cardVariants({ interactive: false, padding }), className)}

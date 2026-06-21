@@ -4,7 +4,7 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet, apiPost } from '$lib/api/client';
 	import type { CapturePayload, Course, Guidance, PipelineResult, Visibility } from '$lib/types';
-	import Select from '$lib/components/ui/Select.svelte';
+	import ComboBox from '$lib/components/ui/ComboBox.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { ArrowsIn, ArrowsOut, Camera, CircleNotch, Pulse } from 'phosphor-svelte';
 
@@ -135,7 +135,7 @@
 
 			<div class="flex flex-col gap-2 sm:items-end">
 				<div class="flex flex-col gap-2 sm:flex-row">
-					<Select
+					<ComboBox
 						bind:value={selectedCourseId}
 						placeholder="No course"
 						class="{overlayPanel} h-10 min-w-40 border-0 !text-white !bg-transparent px-3 text-sm font-medium focus:ring-3 focus:ring-secondary/40"

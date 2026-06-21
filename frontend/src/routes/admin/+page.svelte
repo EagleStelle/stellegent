@@ -6,7 +6,7 @@
 	import Input from "$lib/components/ui/Input.svelte";
 	import InputPassword from "$lib/components/ui/InputPassword.svelte";
 	import Modal from "$lib/components/ui/Modal.svelte";
-	import Select from "$lib/components/ui/Select.svelte";
+	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import {
 		CaretDown,
@@ -229,7 +229,7 @@
 			/>
 		</div>
 
-		<Select
+		<ComboBox
 			bind:value={roleFilter}
 			class="{selectClass} w-40 shrink-0"
 			options={[
@@ -392,7 +392,7 @@
 		<InputPassword id="new-password" label="Password" bind:value={newPassword} minlength={8} required />
 		<label class="grid gap-1.5 text-sm font-semibold text-gray-100">
 			<span>Role</span>
-			<Select
+			<ComboBox
 				bind:value={newRole}
 				class={selectClass}
 				options={[
@@ -433,7 +433,7 @@
 			<InputPassword id="draft-password" label="New password" bind:value={draftPassword} />
 			<label class="grid gap-1.5 text-sm font-semibold text-gray-100">
 				<span>Role</span>
-				<Select
+				<ComboBox
 					bind:value={draftRole}
 					disabled={editing.role === "admin"}
 					class={selectClass}
