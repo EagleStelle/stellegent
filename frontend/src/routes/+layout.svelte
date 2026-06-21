@@ -6,15 +6,8 @@
 	import { apiGet, apiPost } from '$lib/api/client';
 	import type { User } from '$lib/types';
 	import { theme } from '$lib/theme.svelte';
-	import {
-		GraduationCap,
-		House,
-		Broadcast,
-		Sun,
-		Moon,
-		SignOut,
-		CaretDown
-	} from 'phosphor-svelte';
+	import { House, Broadcast, Sun, Moon, SignOut, CaretDown } from 'phosphor-svelte';
+	import Logo from '$lib/components/ui/Logo.svelte';
 
 	let { children } = $props();
 
@@ -101,11 +94,9 @@
 	>
 		<a
 			href="/"
-			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
+			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3.5 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
-			<span class="grid size-10 place-items-center rounded-lg bg-secondary text-white shadow-sm">
-				<GraduationCap size={24} weight="fill" />
-			</span>
+			<Logo size={40} />
 			<span>Stellegent</span>
 		</a>
 
@@ -116,11 +107,11 @@
 					<a
 						href={link.href}
 						aria-current={active ? 'page' : undefined}
-						class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {active
+						class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium {active
 							? 'bg-secondary text-white shadow-sm'
 							: 'text-gray-300 hover:bg-white/10 hover:text-white'}"
 					>
-						<link.icon size={20} weight={active ? 'fill' : 'regular'} />
+						<link.icon size={18} weight={active ? 'fill' : 'regular'} />
 						<span>{link.label}</span>
 					</a>
 				{/each}
@@ -130,12 +121,12 @@
 				<button
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+					class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 				>
 					{#if theme.dark}
-						<Sun size={20} weight="fill" />
+						<Sun size={18} weight="fill" />
 					{:else}
-						<Moon size={20} />
+						<Moon size={18} />
 					{/if}
 					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 				</button>
@@ -145,7 +136,7 @@
 						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
 						aria-haspopup="menu"
 						aria-expanded={desktopMenuOpen}
-						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 					>
 						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-white shadow-sm">
 							{initials}
@@ -165,9 +156,9 @@
 							<button
 								onclick={logout}
 								role="menuitem"
-								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 							>
-								<SignOut size={20} />
+								<SignOut size={18} />
 								<span>Log out</span>
 							</button>
 						</div>
@@ -223,21 +214,21 @@
 						<button
 							onclick={() => theme.toggle()}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 						>
 							{#if theme.dark}
-								<Sun size={20} weight="fill" />
+								<Sun size={18} weight="fill" />
 							{:else}
-								<Moon size={20} />
+								<Moon size={18} />
 							{/if}
 							<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 						</button>
 						<button
 							onclick={logout}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 						>
-							<SignOut size={20} />
+							<SignOut size={18} />
 							<span>Log out</span>
 						</button>
 					</div>

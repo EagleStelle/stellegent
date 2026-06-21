@@ -12,9 +12,9 @@
 				ghost: 'hover:bg-zinc-100 dark:hover:bg-zinc-700'
 			},
 			size: {
-				default: 'h-10 px-4',
+				default: 'h-10 px-3.5',
 				sm: 'h-9 px-3',
-				lg: 'h-11 px-6',
+				lg: 'h-11 px-5',
 				icon: 'h-10 w-10'
 			}
 		},

@@ -90,7 +90,7 @@
 			onclick={chooseUpload}
 			disabled={uploading}
 			aria-label="Upload board image"
-			class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-3 text-sm font-medium text-white shadow-sm shadow-primary/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60 sm:px-4"
+			class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-medium text-white shadow-sm shadow-primary/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
 		>
 			{#if uploading}
 				<CircleNotch size={18} class="animate-spin" />
@@ -118,11 +118,11 @@
 				href={`/lecture/${lec.id}`}
 				class="rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700"
 			>
-				<div class="mb-1 text-base font-medium">{lec.course_name ?? 'Untitled'}</div>
-				<div class="mb-2 text-sm text-zinc-500 dark:text-zinc-400">
+				<div class="mb-1 text-sm font-medium">{lec.course_name ?? 'Untitled'}</div>
+				<div class="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
 					{new Date(lec.captured_at).toLocaleString()}
 				</div>
-				<p class="line-clamp-3 text-base leading-7 text-zinc-500 dark:text-zinc-400">{lec.summary ?? ''}</p>
+				<p class="line-clamp-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{lec.summary ?? ''}</p>
 			</a>
 		{/each}
 	</div>

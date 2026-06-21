@@ -7,15 +7,8 @@
 	import { theme } from '$lib/theme.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
-	import {
-		CircleNotch,
-		User,
-		Lock,
-		ArrowRight,
-		GraduationCap,
-		Sun,
-		Moon
-	} from 'phosphor-svelte';
+	import Logo from '$lib/components/ui/Logo.svelte';
+	import { CircleNotch, User, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
 	let username = $state('');
@@ -75,9 +68,7 @@
 		></div>
 
 		<a href="/" class="relative flex w-max items-center gap-3">
-			<span class="grid size-11 place-items-center rounded-lg bg-secondary shadow-lg shadow-secondary/30">
-				<GraduationCap size={24} weight="fill" />
-			</span>
+			<Logo size={44} />
 			<span class="text-lg font-bold tracking-tight">Stellegent</span>
 		</a>
 	</aside>
@@ -86,9 +77,7 @@
 	<div class="flex flex-col px-6 py-10 sm:px-10">
 		<div class="flex items-center justify-between md:hidden">
 			<a href="/" class="flex w-max items-center gap-2.5">
-				<span class="grid size-9 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30">
-					<GraduationCap size={20} weight="fill" />
-				</span>
+				<Logo size={36} />
 				<span class="text-base font-bold tracking-tight text-zinc-900 dark:text-white">Stellegent</span>
 			</a>
 			<button
@@ -145,7 +134,7 @@
 				<button
 					type="submit"
 					disabled={loading}
-					class="group relative mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-semibold text-white shadow-md shadow-primary/20 outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+					class="group relative mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/20 outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
 				>
 					{#if loading}
 						<CircleNotch size={18} class="animate-spin" />
