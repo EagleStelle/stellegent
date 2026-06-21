@@ -110,7 +110,7 @@
 	$effect(() => {
 		if (seeded || !lecture.data) return;
 		seeded = true;
-		draftTitle = lecture.data.course_name ?? "";
+		draftTitle = lecture.data.title ?? lecture.data.course_name ?? "";
 		draftVisibility = lecture.data.visibility;
 		draftCourseId = lecture.data.course_id
 			? String(lecture.data.course_id)
@@ -135,7 +135,7 @@
 		saving = true;
 		editError = "";
 		const body: Record<string, unknown> = {
-			course_name: draftTitle.trim() || null,
+			title: draftTitle.trim() || null,
 			course_id: draftCourseId ? Number(draftCourseId) : null,
 			visibility: draftVisibility,
 			student_ids: draftStudentIds,

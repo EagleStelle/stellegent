@@ -45,8 +45,6 @@ def update_managed_user(user_id: int, body: ManagedUserUpdate,
         kwargs["email"] = str(body.email)
     if "role" in fields:
         kwargs["role"] = body.role
-    if "password" in fields:
-        kwargs["password"] = body.password
     if "disabled" in fields:
         kwargs["disabled"] = body.disabled
     try:

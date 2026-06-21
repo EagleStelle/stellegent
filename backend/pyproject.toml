@@ -43,3 +43,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["stellegent*"]
+
+[tool.setuptools.package-data]
+# Embedded unicode font for the pure-Python PDF renderer (export/exporter.py).
+stellegent = ["export/assets/fonts/*.ttf"]

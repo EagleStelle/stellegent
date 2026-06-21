@@ -1,8 +1,12 @@
 <script lang="ts">
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
-	import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-	import { apiDelete, apiGet } from "$lib/api/client";
+	import {
+		createMutation,
+		createQuery,
+		useQueryClient,
+	} from "@tanstack/svelte-query";
+	import { apiDelete, apiGet, apiPost } from "$lib/api/client";
 	import type { LectureDetail, User } from "$lib/types";
 	import {
 		Trash,
@@ -16,6 +20,9 @@
 		FileTxt,
 		BookOpen,
 		ArrowRight,
+		ArrowLeft,
+		Sparkle,
+		CircleNotch,
 	} from "phosphor-svelte";
 	import Card, { cardVariants } from "$lib/components/ui/Card.svelte";
 	import ImageModal from "$lib/components/modal/Image.svelte";
@@ -39,6 +46,14 @@
 			(me.data?.role === "prof" &&
 				lecture.data?.owner_user_id === me.data.uid),
 	);
+
+	const generateSummary = createMutation(() => ({
+		mutationFn: () =>
+			apiPost<LectureDetail>(`/api/v1/lectures/${id}/summarize`),
+		onSuccess: (data) => {
+			qc.setQueryData(["lecture", id], data);
+		},
+	}));
 	const downloads = [
 		{ type: "pdf", label: "PDF", Icon: FilePdf },
 		{ type: "docx", label: "DOCX", Icon: FileDoc },
@@ -54,10 +69,13 @@
 		const blob = await res.blob();
 		const url = URL.createObjectURL(blob);
 		const a = document.createElement("a");
-		const base = (lecture.data?.course_name ?? "lecture").replace(
-			/[^\w-]+/g,
-			"_",
-		);
+		const base = (
+			lecture.data?.title ??
+			lecture.data?.course_name ??
+			"lecture"
+		)
+			.replace(/[^\w-]+/g, "_")
+			.replace(/^_+|_+$/g, "");
 		a.href = url;
 		a.download = `${base}.${type}`;
 		document.body.appendChild(a);
@@ -134,7 +152,18 @@
 		<header
 			class="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
 		>
-			<div class="flex flex-col gap-2">
+			<div class="flex items-start gap-3 sm:gap-4">
+				<Button
+					variant="icon"
+					ghost
+					onclick={() => goto("/lectures")}
+					title="Back to lectures"
+				>
+					{#snippet icon()}
+						<ArrowLeft size={20} />
+					{/snippet}
+				</Button>
+				<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-3">
 					<h1
 						class="text-2xl font-bold tracking-tight text-balance text-primary dark:text-gray-50"
@@ -190,6 +219,7 @@
 					</div>
 				</div>
 			</div>
+			</div>
 
 			<div class="flex flex-wrap items-center gap-2">
 				{#each downloads as d (d.type)}
@@ -239,16 +269,20 @@
 		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 			<ImageModal
 				src={fileUrl("image")}
+				rawSrc={fileUrl("image_raw")}
 				alt={`Board capture — ${lec.course_name ?? "lecture"}`}
 			/>
 		</div>
 
 		<div class="grid shrink-0 gap-4 md:grid-cols-2">
-			<button
-				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left")}
+			<div
+				role="button"
+				tabindex="0"
+				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left outline-none")}
 				onclick={() => goto(`/lectures/${id}/transcript`)}
+				onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/lectures/${id}/transcript`); } }}
 			>
-				<div class="flex w-full items-center justify-between gap-2">
+				<div class="flex min-h-8 w-full items-center justify-between gap-2">
 					<h2 class="text-sm font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
 						Transcript
 					</h2>
@@ -257,22 +291,48 @@
 				<p class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300" style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;">
 					{lec.corrected_text?.trim() ? lec.corrected_text : "No text yet."}
 				</p>
-			</button>
+			</div>
 
-			<button
-				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left")}
+			<div
+				role="button"
+				tabindex="0"
+				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left outline-none")}
 				onclick={() => goto(`/lectures/${id}/summary`)}
+				onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); goto(`/lectures/${id}/summary`); } }}
 			>
-				<div class="flex w-full items-center justify-between gap-2">
+				<div class="flex min-h-8 w-full items-center justify-between gap-2">
 					<h2 class="text-sm font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
 						Summary
 					</h2>
-					<ArrowRight size={16} class="shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-secondary" />
+					<div class="flex items-center gap-1">
+						{#if canManage}
+							<Button
+								variant="icon"
+								ghost
+								onclick={(e) => { e.stopPropagation(); generateSummary.mutate(); }}
+								onkeydown={(e) => { e.stopPropagation(); }}
+								disabled={generateSummary.isPending}
+								title="Generate summary"
+							>
+								{#snippet icon()}
+									{#if generateSummary.isPending}
+										<CircleNotch size={16} class="animate-spin" />
+									{:else}
+										<Sparkle size={16} />
+									{/if}
+								{/snippet}
+							</Button>
+						{/if}
+						<ArrowRight size={16} class="shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-secondary" />
+					</div>
 				</div>
-				<p class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300" style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;">
+				<p
+					class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300"
+					style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;"
+				>
 					{lec.summary?.trim() ? lec.summary : "No summary yet."}
 				</p>
-			</button>
+			</div>
 		</div>
 	</section>
 {/if}

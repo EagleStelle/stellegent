@@ -27,7 +27,8 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
                   course_id: Optional[int] = None) -> dict:
     init_db()
     rectified = preprocess(image)
-    result_ocr = run_ocr(rectified)
+    # OCR reads the raw capture; the preprocessed image is for display/export.
+    result_ocr = run_ocr(image)
     raw_text = result_ocr.full_text
 
     if result_ocr.has_layout:
@@ -42,7 +43,7 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
 
     result = export_all(rectified, result_ocr.lines, corrected, summary,
                         base_dir=DATA_DIR, course_name=course_name,
-                        raw_text=raw_text)
+                        raw_text=raw_text, raw_image=image)
 
     manifest = json.loads(Path(result.manifest_path).read_text(encoding="utf-8"))
     insert_lecture(
@@ -52,6 +53,7 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
         title=title,
         captured_at=result.captured_at,
         image_path=result.image_path,
+        raw_image_path=result.raw_image_path,
         docx_path=result.docx_path,
         pdf_path=result.pdf_path,
         txt_path=result.txt_path,

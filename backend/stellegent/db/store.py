@@ -58,7 +58,8 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                    tags: Iterable[str], title: Optional[str] = None,
                    owner_user_id: Optional[int] = None,
                    visibility: str = "public",
-                   course_id: Optional[int] = None) -> None:
+                   course_id: Optional[int] = None,
+                   raw_image_path: Optional[str] = None) -> None:
     _validate_visibility(visibility)
     with get_conn() as c:
         if course_id is not None and course_name is None:
@@ -68,12 +69,12 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                 course_name = course["name"]
         c.execute("""
             INSERT OR REPLACE INTO lectures
-            (id,date,course_name,title,captured_at,image_path,docx_path,pdf_path,
-             txt_path,manifest_path,raw_ocr_text,corrected_text,summary,tags,
-             owner_user_id,visibility,course_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            (id,date,course_name,title,captured_at,image_path,raw_image_path,
+             docx_path,pdf_path,txt_path,manifest_path,raw_ocr_text,
+             corrected_text,summary,tags,owner_user_id,visibility,course_id)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (lecture_id, date, course_name, title, captured_at, image_path,
-              docx_path, pdf_path, txt_path, manifest_path,
+              raw_image_path, docx_path, pdf_path, txt_path, manifest_path,
               raw_ocr_text, corrected_text, summary, json.dumps(list(tags)),
               owner_user_id, visibility, course_id))
 
@@ -197,7 +198,7 @@ def can_manage_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
 
 def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
     allowed = {
-        "course_name", "summary", "corrected_text", "visibility",
+        "course_name", "title", "summary", "corrected_text", "visibility",
         "owner_user_id", "course_id",
     }
     updates = {k: v for k, v in fields.items() if k in allowed}

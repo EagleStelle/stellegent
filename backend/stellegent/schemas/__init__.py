@@ -127,7 +127,6 @@ class ManagedUserCreate(BaseModel):
 class ManagedUserUpdate(BaseModel):
     username: Optional[str] = Field(default=None, min_length=3, max_length=64)
     email: Optional[EmailStr] = None
-    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
     role: Optional[EditableRole] = None
     disabled: Optional[bool] = None
 
@@ -224,6 +223,7 @@ class LectureDetail(BaseModel):
 
 
 class LectureUpdateRequest(BaseModel):
+    title: Optional[str] = Field(default=None, max_length=160)
     course_name: Optional[str] = Field(default=None, max_length=160)
     course_id: Optional[int] = None
     owner_user_id: Optional[int] = None

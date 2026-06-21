@@ -13,6 +13,8 @@ from ...db import (can_manage_lecture, can_view_lecture, delete_lecture,
                    list_lectures, set_lecture_students, update_lecture,
                    user_has_role, add_annotation, get_annotations)
 from ...deps import current_user, log_action
+from ...export import write_documents
+from ...nlp import summarize
 from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
                         AnnotateRequest, LectureUpdateRequest,
                         MessageResponse)
@@ -20,7 +22,9 @@ from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
 router = APIRouter(prefix="/lectures", tags=["lectures"])
 
 _FILE_KEYS = {"pdf": "pdf_path", "docx": "docx_path", "txt": "txt_path",
-              "image": "image_path", "manifest": "manifest_path"}
+              "image": "image_path", "image_raw": "raw_image_path",
+              "manifest": "manifest_path"}
+_INLINE_TYPES = {"image", "image_raw"}
 
 
 @router.get("", response_model=List[LectureSummary])
@@ -67,7 +71,7 @@ def download(lecture_id: str, request: Request, type: str = "pdf",
     if not p.exists():
         raise HTTPException(status.HTTP_404_NOT_FOUND, "file missing")
     log_action(request, user, f"download:{type}", lecture_id)
-    disposition = "inline" if type == "image" else "attachment"
+    disposition = "inline" if type in _INLINE_TYPES else "attachment"
     return FileResponse(str(p), filename=p.name,
                         content_disposition_type=disposition)
 
@@ -86,6 +90,30 @@ def annotate(lecture_id: str, body: AnnotateRequest, request: Request,
     return next(a for a in notes if a["id"] == nid)
 
 
+@router.post("/{lecture_id}/summarize", response_model=LectureDetail)
+def regenerate_summary(lecture_id: str, request: Request,
+                       user: dict = Depends(current_user)):
+    """Regenerate the summary from the transcript via Ollama, then rewrite the
+    downloadable documents so PDF/DOCX/TXT stay in sync."""
+    row = get_lecture(lecture_id)
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
+    source = (row["corrected_text"] or row["raw_ocr_text"] or "").strip()
+    new_summary = summarize(source)
+    update_lecture(lecture_id, summary=new_summary)
+    if row["docx_path"] and row["pdf_path"] and row["txt_path"]:
+        try:
+            write_documents(docx_path=row["docx_path"], pdf_path=row["pdf_path"],
+                            txt_path=row["txt_path"], summary=new_summary,
+                            corrected=row["corrected_text"] or "")
+        except Exception:  # noqa: BLE001 — DB summary already saved; files best-effort
+            pass
+    log_action(request, user, "summarize", lecture_id)
+    return _detail_payload(get_lecture(lecture_id))
+
+
 @router.patch("/{lecture_id}", response_model=LectureDetail)
 def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
            user: dict = Depends(current_user)):
@@ -97,6 +125,8 @@ def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
 
     fields = body.model_fields_set
     updates = {}
+    if "title" in fields:
+        updates["title"] = body.title
     if "course_name" in fields:
         updates["course_name"] = body.course_name
     if "summary" in fields:
@@ -131,8 +161,20 @@ def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
         raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
     if not updated:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
-    log_action(request, user, "update_lecture", lecture_id)
     refreshed = get_lecture(lecture_id)
+    # Keep the downloadable docs in sync when the text changed (also re-renders
+    # them through the current PDF/TXT writers).
+    if ({"summary", "corrected_text"} & fields) and refreshed["docx_path"] \
+            and refreshed["pdf_path"] and refreshed["txt_path"]:
+        try:
+            write_documents(docx_path=refreshed["docx_path"],
+                            pdf_path=refreshed["pdf_path"],
+                            txt_path=refreshed["txt_path"],
+                            summary=refreshed["summary"] or "",
+                            corrected=refreshed["corrected_text"] or "")
+        except Exception:  # noqa: BLE001 — DB already saved; files best-effort
+            pass
+    log_action(request, user, "update_lecture", lecture_id)
     return _detail_payload(refreshed)
 
 
