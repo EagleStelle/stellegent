@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet, apiPost } from '$lib/api/client';
-	import type { Guidance, PipelineResult } from '$lib/types';
+	import type { CapturePayload, Course, Guidance, PipelineResult, Visibility } from '$lib/types';
 	import { ArrowsIn, ArrowsOut, Camera, CircleNotch, Pulse } from 'phosphor-svelte';
 
 	let g = $state<Guidance | null>(null);
@@ -10,6 +11,13 @@
 	let status = $state('');
 	let isFullscreen = $state(false);
 	let cameraShell: HTMLElement | null = null;
+	let selectedCourseId = $state('');
+	let visibility = $state<Visibility>('public');
+
+	const courses = createQuery(() => ({
+		queryKey: ['courses'],
+		queryFn: () => apiGet<Course[]>('/api/v1/courses')
+	}));
 
 	const fmt = (v: number | null | undefined, suffix = '') =>
 		v == null ? '-' : `${typeof v === 'number' ? v.toFixed(2) : v}${suffix}`;
@@ -26,7 +34,11 @@
 		capturing = true;
 		status = 'Processing...';
 		try {
-			const res = await apiPost<PipelineResult>('/api/v1/capture', {});
+			const payload: CapturePayload = {
+				visibility,
+				course_id: selectedCourseId ? Number(selectedCourseId) : null
+			};
+			const res = await apiPost<PipelineResult>('/api/v1/capture', payload);
 			goto(`/lecture/${res.lecture_id}`);
 		} catch (err) {
 			status = err instanceof Error ? err.message : 'Capture failed';
@@ -116,18 +128,53 @@
 				</div>
 			</dl>
 
-			<button
-				onclick={capture}
-				disabled={capturing}
-				class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-zinc-50 shadow-lg shadow-black/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/40 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]"
-			>
-				{#if capturing}
-					<CircleNotch size={22} class="animate-spin" />
-				{:else}
-					<Camera size={22} />
-				{/if}
-				{capturing ? 'Processing...' : 'Capture'}
-			</button>
+			<div class="flex flex-col gap-2 sm:items-end">
+				<div class="flex flex-col gap-2 sm:flex-row">
+					<select
+						bind:value={selectedCourseId}
+						aria-label="Course"
+						class="{overlayPanel} h-10 min-w-40 rounded-lg border-0 px-3 text-sm font-medium outline-none focus:ring-3 focus:ring-secondary/40"
+					>
+						<option value="">No course</option>
+						{#each courses.data ?? [] as course (course.id)}
+							<option value={String(course.id)}>{course.name}</option>
+						{/each}
+					</select>
+					<div class="{overlayPanel} grid h-10 grid-cols-2 p-1 text-sm font-semibold">
+						<button
+							type="button"
+							onclick={() => (visibility = 'public')}
+							class="rounded-md px-3 transition-colors {visibility === 'public'
+								? 'bg-secondary text-white'
+								: 'text-zinc-300 hover:text-white'}"
+						>
+							Public
+						</button>
+						<button
+							type="button"
+							onclick={() => (visibility = 'private')}
+							class="rounded-md px-3 transition-colors {visibility === 'private'
+								? 'bg-secondary text-white'
+								: 'text-zinc-300 hover:text-white'}"
+						>
+							Private
+						</button>
+					</div>
+				</div>
+
+				<button
+					onclick={capture}
+					disabled={capturing}
+					class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-zinc-50 shadow-lg shadow-black/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/40 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]"
+				>
+					{#if capturing}
+						<CircleNotch size={22} class="animate-spin" />
+					{:else}
+						<Camera size={22} />
+					{/if}
+					{capturing ? 'Processing...' : 'Capture'}
+				</button>
+			</div>
 		</div>
 	</div>
 </section>

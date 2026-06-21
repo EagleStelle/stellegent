@@ -1,9 +1,12 @@
 export type Role = 'student' | 'prof' | 'admin';
+export type EditableRole = 'student' | 'prof';
+export type Visibility = 'public' | 'private';
 
 export interface User {
 	uid: number;
 	username: string;
 	role: Role;
+	email?: string | null;
 }
 
 export interface TokenResponse {
@@ -16,6 +19,11 @@ export interface LectureSummary {
 	id: string;
 	date: string;
 	course_name: string | null;
+	course_id: number | null;
+	course_title: string | null;
+	owner_user_id: number | null;
+	owner_username: string | null;
+	visibility: Visibility;
 	captured_at: string;
 	summary: string | null;
 	tags: string | null;
@@ -34,7 +42,40 @@ export interface LectureDetail extends LectureSummary {
 	raw_ocr_text: string | null;
 	corrected_text: string | null;
 	manifest: Record<string, unknown> | null;
+	student_ids: number[];
 	annotations: Annotation[];
+}
+
+export interface ManagedUser {
+	id: number;
+	username: string;
+	email: string | null;
+	role: Role;
+	auth_provider: string;
+	email_verified: number;
+	created_at: string;
+}
+
+export interface Course {
+	id: number;
+	name: string;
+	faculty_id: number;
+	faculty_username: string;
+	description: string | null;
+	student_count: number;
+	lecture_count: number;
+	created_at: string;
+	updated_at: string;
+}
+
+export interface CourseDetail extends Course {
+	student_ids: number[];
+	lecture_ids: string[];
+}
+
+export interface CourseOptions {
+	students: ManagedUser[];
+	faculty: ManagedUser[];
 }
 
 export interface Guidance {
@@ -55,4 +96,10 @@ export interface PipelineResult {
 	corrected_text: string;
 	summary: string;
 	tags: string[];
+}
+
+export interface CapturePayload {
+	course?: string | null;
+	course_id?: number | null;
+	visibility?: Visibility;
 }

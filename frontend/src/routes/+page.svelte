@@ -2,15 +2,17 @@
 	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet } from '$lib/api/client';
-	import type { LectureSummary, PipelineResult, User } from '$lib/types';
+	import type { Course, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
-	import LectureCard from '$lib/components/LectureCard.svelte';
-	import { CircleNotch, MagnifyingGlass, UploadSimple } from 'phosphor-svelte';
+	import Card from '$lib/components/ui/Card.svelte';
+	import { CircleNotch, MagnifyingGlass, UploadSimple, CalendarBlank } from 'phosphor-svelte';
 
 	let q = $state('');
 	let uploadInput: HTMLInputElement | null = $state(null);
 	let uploading = $state(false);
 	let uploadError = $state('');
+	let selectedCourseId = $state('');
+	let visibility = $state<Visibility>('public');
 
 	const lectures = createQuery(() => ({
 		queryKey: ['lectures'],
@@ -27,6 +29,11 @@
 	});
 
 	const canUpload = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
+	const courses = createQuery(() => ({
+		queryKey: ['courses'],
+		queryFn: () => apiGet<Course[]>('/api/v1/courses'),
+		enabled: canUpload
+	}));
 
 	const filtered = $derived(
 		(lectures.data ?? []).filter((l) => {
@@ -53,6 +60,8 @@
 		uploading = true;
 		const fd = new FormData();
 		fd.append('image', selected);
+		fd.append('visibility', visibility);
+		if (selectedCourseId) fd.append('course_id', selectedCourseId);
 
 		try {
 			const res = await fetch('/api/v1/upload', {
@@ -71,13 +80,55 @@
 			uploading = false;
 		}
 	}
+
+	function getTags(tags: string | null | undefined) {
+		return (tags ?? '')
+			.split(',')
+			.map((t) => t.trim())
+			.filter(Boolean)
+			.slice(0, 3);
+	}
 </script>
 
-<div class="mb-4 flex gap-2">
+<div class="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center">
 	<div class="min-w-0 flex-1">
 		<Input id="search" bind:value={q} icon={MagnifyingGlass} placeholder="Search" />
 	</div>
 	{#if canUpload}
+		<div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+			<select
+				bind:value={selectedCourseId}
+				aria-label="Course"
+				class="h-10 min-w-0 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-primary outline-none transition-all focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50"
+			>
+				<option value="">No course</option>
+				{#each courses.data ?? [] as course (course.id)}
+					<option value={String(course.id)}>{course.name}</option>
+				{/each}
+			</select>
+			<div
+				class="grid h-10 grid-cols-2 rounded-lg border border-gray-200 bg-white p-1 text-sm font-semibold dark:border-gray-800 dark:bg-gray-900"
+			>
+				<button
+					type="button"
+					onclick={() => (visibility = 'public')}
+					class="rounded-md px-3 transition-colors {visibility === 'public'
+						? 'bg-secondary text-white'
+						: 'text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-gray-100'}"
+				>
+					Public
+				</button>
+				<button
+					type="button"
+					onclick={() => (visibility = 'private')}
+					class="rounded-md px-3 transition-colors {visibility === 'private'
+						? 'bg-secondary text-white'
+						: 'text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-gray-100'}"
+				>
+					Private
+				</button>
+			</div>
+		</div>
 		<input
 			bind:this={uploadInput}
 			type="file"
@@ -115,7 +166,34 @@
 {:else if filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as lec (lec.id)}
-			<LectureCard lecture={lec} />
+			{@const tags = getTags(lec.tags)}
+			<Card href={`/lecture/${lec.id}`} class="group flex h-full flex-col gap-3">
+				<div class="flex flex-col gap-1">
+					<h3 class="text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
+						{lec.course_name ?? 'Untitled'}
+					</h3>
+					<div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+						<CalendarBlank size={14} weight="bold" />
+						<span>{new Date(lec.captured_at).toLocaleString()}</span>
+					</div>
+				</div>
+
+				{#if lec.summary}
+					<p class="line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-400">
+						{lec.summary}
+					</p>
+				{/if}
+
+				{#if tags.length}
+					<div class="mt-auto flex flex-wrap gap-1.5 pt-1">
+						{#each tags as tag (tag)}
+							<span class="rounded-full bg-secondary/10 px-2.5 py-0.5 text-[11px] font-medium text-secondary">
+								{tag}
+							</span>
+						{/each}
+					</div>
+				{/if}
+			</Card>
 		{/each}
 	</div>
 {/if}

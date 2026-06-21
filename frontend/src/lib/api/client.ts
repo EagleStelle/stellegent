@@ -36,3 +36,36 @@ export async function apiPost<T = unknown>(path: string, body?: unknown): Promis
 	}
 	return res.json() as Promise<T>;
 }
+
+export async function apiPatch<T = unknown>(path: string, body?: unknown): Promise<T> {
+	const res = await fetch(path, {
+		method: 'PATCH',
+		credentials: 'include',
+		headers: { 'Content-Type': 'application/json' },
+		body: body === undefined ? undefined : JSON.stringify(body)
+	});
+	if (!res.ok) {
+		let detail = res.statusText;
+		try {
+			detail = (await res.json()).detail ?? detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(detail);
+	}
+	return res.json() as Promise<T>;
+}
+
+export async function apiDelete<T = unknown>(path: string): Promise<T> {
+	const res = await fetch(path, { method: 'DELETE', credentials: 'include' });
+	if (!res.ok) {
+		let detail = res.statusText;
+		try {
+			detail = (await res.json()).detail ?? detail;
+		} catch {
+			/* ignore */
+		}
+		throw new Error(detail);
+	}
+	return res.json() as Promise<T>;
+}

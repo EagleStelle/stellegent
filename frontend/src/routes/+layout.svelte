@@ -6,7 +6,16 @@
 	import { apiGet, apiPost } from '$lib/api/client';
 	import type { User } from '$lib/types';
 	import { theme } from '$lib/theme.svelte';
-	import { House, Broadcast, Sun, Moon, SignOut, CaretDown } from 'phosphor-svelte';
+	import {
+		House,
+		Broadcast,
+		BookOpen,
+		UsersThree,
+		Sun,
+		Moon,
+		SignOut,
+		CaretDown
+	} from 'phosphor-svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 
 	let { children } = $props();
@@ -34,11 +43,14 @@
 	);
 
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
+	const isAdmin = $derived(me.data?.role === 'admin');
 
 	const links = $derived(
 		[
 			{ href: '/', label: 'Home', icon: House, show: true },
-			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach }
+			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach },
+			{ href: '/courses', label: 'Courses', icon: BookOpen, show: canTeach },
+			{ href: '/admin', label: 'Admin', icon: UsersThree, show: isAdmin }
 		].filter((l) => l.show)
 	);
 
