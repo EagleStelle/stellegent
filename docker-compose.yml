@@ -4,22 +4,38 @@ services:
     ports:
       - "8000:8000"
     environment:
+      # Core security
+      STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret # openssl rand -hex 32
+      ADMIN_EMAIL: "admin@example.com"
+      ADMIN_PASSWORD: "admin123"
+      STELLEGENT_REQUIRE_SECURE_CONFIG: "false"
+
+      # Public URL
+      STELLEGENT_PUBLIC_BASE_URL: ""
+      STELLEGENT_COOKIE_SECURE: "true"
+      STELLEGENT_COOKIE_SAMESITE: "lax"
+      STELLEGENT_SECURITY_HEADERS: "true"
+      STELLEGENT_SECURITY_HSTS: "true"
+
+      # Google OAuth
+      GOOGLE_OAUTH_CLIENT_ID: ""
+      GOOGLE_OAUTH_CLIENT_SECRET: ""
+
+      # Email (Resend)
+      RESEND_API_KEY: ""
+      RESEND_FROM_EMAIL: "Stellegent <no-reply@example.com>"
+      RESEND_REPLY_TO: ""
+
+      # OCR
+      OCR_BACKEND: auto
+      GEMINI_API_KEY: ""
+      GEMINI_MODEL: gemini-3.5-flash
+
+      # Local NLP (Ollama)
       OLLAMA_HOST: http://ollama:11434
       OLLAMA_MODEL: phi3:mini
       OLLAMA_AUTO_PULL: "true"
       OLLAMA_PULL_TIMEOUT: 1800
-      OCR_BACKEND: auto
-      GEMINI_API_KEY: ""
-      GEMINI_MODEL: gemini-3.5-flash
-      ADMIN_EMAIL: "admin@example.com"
-      ADMIN_PASSWORD: "admin123"
-      STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret
-      GOOGLE_OAUTH_CLIENT_ID: ""
-      GOOGLE_OAUTH_CLIENT_SECRET: ""
-      GOOGLE_ALLOWED_DOMAIN: ""
-      RESEND_API_KEY: ""
-      RESEND_FROM_EMAIL: "Stellegent <no-reply@example.com>"
-      RESEND_REPLY_TO: ""
     volumes:
       - ./data:/app/data
     depends_on:
