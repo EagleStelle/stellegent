@@ -4,15 +4,18 @@
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { apiPost } from '$lib/api/client';
 	import type { TokenResponse } from '$lib/types';
+	import { theme } from '$lib/theme.svelte';
+	import Input from '$lib/components/ui/Input.svelte';
+	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import {
 		CircleNotch,
 		User,
 		EnvelopeSimple,
 		Lock,
-		Eye,
-		EyeSlash,
 		ArrowRight,
-		GraduationCap
+		GraduationCap,
+		Sun,
+		Moon
 	} from 'phosphor-svelte';
 
 	const qc = useQueryClient();
@@ -21,7 +24,6 @@
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
-	let showPassword = $state(false);
 	let mounted = $state(false);
 
 	onMount(() => {
@@ -46,16 +48,29 @@
 	const ease = 'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]';
 </script>
 
+<button
+	onclick={() => theme.toggle()}
+	aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+	title={theme.dark ? 'Light mode' : 'Dark mode'}
+	class="fixed bottom-6 left-6 z-20 hidden size-11 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30 transition-all hover:bg-secondary/90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary md:grid"
+>
+	{#if theme.dark}
+		<Sun size={20} weight="fill" />
+	{:else}
+		<Moon size={20} />
+	{/if}
+</button>
+
 <div class="grid min-h-dvh md:grid-cols-2">
 	<!-- Brand showcase (navy) -->
 	<aside
 		class="relative hidden flex-col justify-between overflow-hidden bg-primary p-12 text-white lg:p-16 md:flex"
 	>
 		<div
-			class="pointer-events-none absolute -right-24 -top-32 size-96 rounded-full bg-secondary/40 blur-[120px]"
+			class="pointer-events-none absolute -right-24 -top-32 size-96 rounded-lg bg-secondary/40 blur-[120px]"
 		></div>
 		<div
-			class="pointer-events-none absolute -bottom-32 -left-16 size-96 rounded-full bg-secondary/20 blur-[130px]"
+			class="pointer-events-none absolute -bottom-32 -left-16 size-96 rounded-lg bg-secondary/20 blur-[130px]"
 		></div>
 		<div
 			class="pointer-events-none absolute inset-0 opacity-[0.06]"
@@ -63,7 +78,7 @@
 		></div>
 
 		<a href="/" class="relative flex w-max items-center gap-3">
-			<span class="grid size-11 place-items-center rounded-2xl bg-secondary shadow-lg shadow-secondary/30">
+			<span class="grid size-11 place-items-center rounded-lg bg-secondary shadow-lg shadow-secondary/30">
 				<GraduationCap size={24} weight="fill" />
 			</span>
 			<span class="text-lg font-bold tracking-tight">Stellegent</span>
@@ -72,112 +87,69 @@
 
 	<!-- Form panel -->
 	<div class="flex flex-col px-6 py-10 sm:px-10">
-		<!-- compact logo (mobile only) -->
-		<a href="/" class="flex w-max items-center gap-2.5 md:hidden">
-			<span class="grid size-9 place-items-center rounded-xl bg-secondary text-white shadow-lg shadow-secondary/30">
-				<GraduationCap size={20} weight="fill" />
-			</span>
-			<span class="text-base font-bold tracking-tight text-zinc-900 dark:text-white">Stellegent</span>
-		</a>
+		<div class="flex items-center justify-between md:hidden">
+			<a href="/" class="flex w-max items-center gap-2.5">
+				<span class="grid size-9 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30">
+					<GraduationCap size={20} weight="fill" />
+				</span>
+				<span class="text-base font-bold tracking-tight text-zinc-900 dark:text-white">Stellegent</span>
+			</a>
+			<button
+				onclick={() => theme.toggle()}
+				aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+				class="grid size-9 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30 transition-all hover:bg-secondary/90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+			>
+				{#if theme.dark}
+					<Sun size={20} weight="fill" />
+				{:else}
+					<Moon size={20} />
+				{/if}
+			</button>
+		</div>
 
 		<div
-			class="{ease} mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-8 md:max-w-md md:py-10 {mounted
+			class="{ease} mx-auto flex w-full max-w-md flex-1 flex-col justify-center py-8 md:max-w-lg md:py-10 {mounted
 				? 'translate-y-0 opacity-100'
 				: 'translate-y-6 opacity-0'}"
 		>
-			<h2 class="text-2xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-white">Create account</h2>
+			<h1 class="text-center text-2xl font-bold tracking-tight text-zinc-900 md:text-4xl dark:text-white">Create account</h1>
 
-			<form onsubmit={submit} class="mt-6 space-y-4 md:mt-10 md:space-y-5">
-				<!-- Username -->
-				<div class="space-y-1.5">
-					<label
-						for="username"
-						class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 md:text-xs dark:text-zinc-400"
-					>
-						Username
-					</label>
-					<div class="group relative">
-						<User
-							size={18}
-							class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-secondary"
-						/>
-						<input
-							id="username"
-							bind:value={username}
-							autocomplete="username"
-							aria-invalid={error ? 'true' : undefined}
-							required
-							class="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 pl-11 md:h-14 pr-3.5 text-base text-zinc-900 outline-none transition-all duration-200 md:text-lg placeholder:text-zinc-400 focus:border-secondary/60 focus:bg-white focus:ring-4 focus:ring-secondary/15 aria-invalid:border-red-500 aria-invalid:ring-4 aria-invalid:ring-red-500/15 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-white dark:focus:bg-zinc-800"
-						/>
-					</div>
-				</div>
+			<form onsubmit={submit} class="mt-6 flex flex-col gap-4 md:mt-10 md:gap-5">
+				<Input
+					id="username"
+					label="Username"
+					bind:value={username}
+					icon={User}
+					autocomplete="username"
+					required
+					error={!!error}
+				/>
 
-				<!-- Email -->
-				<div class="space-y-1.5">
-					<label
-						for="email"
-						class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 md:text-xs dark:text-zinc-400"
-					>
-						Email
-					</label>
-					<div class="group relative">
-						<EnvelopeSimple
-							size={18}
-							class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-secondary"
-						/>
-						<input
-							id="email"
-							bind:value={email}
-							type="email"
-							autocomplete="email"
-							aria-invalid={error ? 'true' : undefined}
-							required
-							class="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 pl-11 md:h-14 pr-3.5 text-base text-zinc-900 outline-none transition-all duration-200 md:text-lg placeholder:text-zinc-400 focus:border-secondary/60 focus:bg-white focus:ring-4 focus:ring-secondary/15 aria-invalid:border-red-500 aria-invalid:ring-4 aria-invalid:ring-red-500/15 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-white dark:focus:bg-zinc-800"
-						/>
-					</div>
-				</div>
+				<Input
+					id="email"
+					label="Email"
+					type="email"
+					bind:value={email}
+					icon={EnvelopeSimple}
+					autocomplete="email"
+					required
+					error={!!error}
+				/>
 
-				<!-- Password -->
-				<div class="space-y-1.5">
-					<label
-						for="password"
-						class="text-[11px] font-semibold uppercase tracking-wide text-zinc-500 md:text-xs dark:text-zinc-400"
-					>
-						Password
-					</label>
-					<div class="group relative">
-						<Lock
-							size={18}
-							class="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-400 transition-colors group-focus-within:text-secondary"
-						/>
-						<input
-							id="password"
-							bind:value={password}
-							type={showPassword ? 'text' : 'password'}
-							autocomplete="new-password"
-							minlength="8"
-							aria-invalid={error ? 'true' : undefined}
-							required
-							class="h-11 w-full rounded-2xl border border-zinc-200 bg-zinc-50 pl-11 md:h-14 pr-11 text-base text-zinc-900 outline-none transition-all duration-200 md:text-lg placeholder:text-zinc-400 focus:border-secondary/60 focus:bg-white focus:ring-4 focus:ring-secondary/15 aria-invalid:border-red-500 aria-invalid:ring-4 aria-invalid:ring-red-500/15 dark:border-zinc-700 dark:bg-zinc-800/60 dark:text-white dark:focus:bg-zinc-800"
-						/>
-						<button
-							type="button"
-							onclick={() => (showPassword = !showPassword)}
-							aria-label={showPassword ? 'Hide password' : 'Show password'}
-							class="absolute right-2 top-1/2 grid size-8 -translate-y-1/2 place-items-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:hover:bg-zinc-700/60 dark:hover:text-zinc-200"
-						>
-							{#if showPassword}
-								<EyeSlash size={18} />
-							{:else}
-								<Eye size={18} />
-							{/if}
-						</button>
-					</div>
-				</div>
+				<InputPassword
+					id="password"
+					label="Password"
+					bind:value={password}
+					icon={Lock}
+					autocomplete="new-password"
+					minlength={8}
+					required
+					error={!!error}
+				/>
 
 				{#if error}
 					<p
-						class="rounded-2xl bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
+						class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
 						role="alert"
 					>
 						{error}
@@ -188,7 +160,7 @@
 				<button
 					type="submit"
 					disabled={loading}
-					class="group relative mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-primary px-6 text-sm font-semibold text-white shadow-lg shadow-primary/25 md:h-14 md:text-base outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-xl hover:shadow-primary/30 focus-visible:ring-4 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+					class="group relative mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-6 text-sm font-semibold text-white shadow-lg shadow-primary/25 md:h-14 md:text-base outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:shadow-xl hover:shadow-primary/30 focus-visible:ring-4 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
 				>
 					{#if loading}
 						<CircleNotch size={18} class="animate-spin" />

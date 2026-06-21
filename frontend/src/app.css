@@ -1,15 +1,10 @@
 @import "tailwindcss";
 
-/* Class-based dark mode. Tailwind v4 defaults to prefers-color-scheme;
-   this makes `dark:` utilities follow the `.dark` class on <html>. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme inline {
-  /* Brand palette. primary = deep navy, secondary = rose accent. */
   --color-primary: #0A192F;
   --color-secondary: #E11D48;
-
-  --radius-4xl: 2rem;
 
   --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
 }

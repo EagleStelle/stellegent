@@ -63,7 +63,7 @@
 <section class="h-[calc(100dvh-8rem)] min-h-[34rem] md:h-[calc(100dvh-2rem)]">
 	<div
 		bind:this={cameraShell}
-		class="relative h-full overflow-hidden rounded-xl bg-black shadow-xl shadow-primary/10 [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:rounded-none"
+		class="relative h-full overflow-hidden rounded-lg bg-black shadow-xl shadow-primary/10 [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:rounded-none"
 	>
 		<img src="/api/v1/stream" alt="Live camera preview" class="h-full w-full object-contain" />
 

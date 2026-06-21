@@ -3,6 +3,8 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet } from '$lib/api/client';
 	import type { LectureSummary } from '$lib/types';
+	import Input from '$lib/components/ui/Input.svelte';
+	import { MagnifyingGlass } from 'phosphor-svelte';
 
 	let q = $state('');
 
@@ -25,11 +27,9 @@
 </script>
 
 <div class="mb-4 flex justify-end">
-	<input
-		bind:value={q}
-		placeholder="Search…"
-		class="w-full rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2.5 text-base sm:max-w-sm dark:border-zinc-700 dark:bg-zinc-900"
-	/>
+	<div class="w-full sm:max-w-sm">
+		<Input id="search" bind:value={q} icon={MagnifyingGlass} placeholder="Search…" />
+	</div>
 </div>
 
 {#if lectures.isLoading}

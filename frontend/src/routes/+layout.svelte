@@ -107,9 +107,9 @@
 	>
 		<a
 			href="/"
-			class="{navMotion} mb-6 flex items-center gap-3 rounded-xl px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
+			class="{navMotion} mb-6 flex items-center gap-3 rounded-lg px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
-			<span class="grid size-10 place-items-center rounded-xl bg-secondary text-white shadow-sm">
+			<span class="grid size-10 place-items-center rounded-lg bg-secondary text-white shadow-sm">
 				<GraduationCap size={24} weight="fill" />
 			</span>
 			<span>Stellegent</span>
@@ -124,7 +124,7 @@
 						aria-current={active ? 'page' : undefined}
 						class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {active
 							? 'bg-secondary text-white shadow-sm'
-							: 'text-slate-300 hover:bg-white/10 hover:text-white'}"
+							: 'text-gray-300 hover:bg-white/10 hover:text-white'}"
 					>
 						<link.icon size={20} weight={active ? 'fill' : 'regular'} />
 						<span>{link.label}</span>
@@ -137,7 +137,7 @@
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
 					title={theme.dark ? 'Light mode' : 'Dark mode'}
-					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 				>
 					{#if theme.dark}
 						<Sun size={20} weight="fill" />
@@ -152,7 +152,7 @@
 						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
 						aria-haspopup="menu"
 						aria-expanded={desktopMenuOpen}
-						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 					>
 						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-white shadow-sm">
 							{initials}
@@ -160,19 +160,19 @@
 						<span class="min-w-0 flex-1 truncate">{me.data.username}</span>
 						<CaretDown
 							size={16}
-							class="{navMotion} shrink-0 text-slate-400 {desktopMenuOpen ? 'rotate-180' : ''}"
+							class="{navMotion} shrink-0 text-gray-400 {desktopMenuOpen ? 'rotate-180' : ''}"
 						/>
 					</button>
 
 					{#if desktopMenuOpen}
 						<div
 							role="menu"
-							class="absolute bottom-0 left-full ml-2 w-64 rounded-xl bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
+							class="absolute bottom-0 left-full ml-2 w-64 rounded-lg bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 						>
 							<button
 								onclick={logout}
 								role="menuitem"
-								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 							>
 								<SignOut size={20} />
 								<span>Log out</span>
@@ -196,11 +196,11 @@
 					href={link.href}
 					onclick={() => (mobileMenuOpen = false)}
 					aria-current={active ? 'page' : undefined}
-					class="{navMotion} flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium {active
+					class="{navMotion} flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium {active
 						? 'text-secondary'
-						: 'text-slate-400 hover:text-white'}"
+						: 'text-gray-400 hover:text-white'}"
 				>
-					<div class="grid size-8 place-items-center rounded-full {active ? 'bg-secondary/15' : 'bg-transparent'}">
+					<div class="grid size-8 place-items-center rounded-lg {active ? 'bg-secondary/15' : 'bg-transparent'}">
 						<link.icon size={22} weight={active ? 'fill' : 'regular'} />
 					</div>
 					<span class="max-w-full truncate">{link.label}</span>
@@ -212,10 +212,10 @@
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 					aria-haspopup="menu"
 					aria-expanded={mobileMenuOpen}
-					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-slate-400 hover:text-white focus-visible:outline-none"
+					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium text-gray-400 hover:text-white focus-visible:outline-none"
 				>
 					<div class="grid size-8 place-items-center">
-						<span class="grid size-6 place-items-center rounded-full bg-secondary text-[10px] font-bold text-white shadow-sm ring-2 ring-primary">
+						<span class="grid size-6 place-items-center rounded-lg bg-secondary text-[10px] font-bold text-white shadow-sm ring-2 ring-primary">
 							{initials}
 						</span>
 					</div>
@@ -225,12 +225,12 @@
 				{#if mobileMenuOpen}
 					<div
 						role="menu"
-						class="absolute bottom-full right-0 mb-3 w-48 rounded-xl bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
+						class="absolute bottom-full right-0 mb-3 w-48 rounded-lg bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 					>
 						<button
 							onclick={() => theme.toggle()}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 						>
 							{#if theme.dark}
 								<Sun size={20} weight="fill" />
@@ -242,7 +242,7 @@
 						<button
 							onclick={logout}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
 						>
 							<SignOut size={20} />
 							<span>Log out</span>
@@ -255,12 +255,12 @@
 {/if}
 
 {#if isAuthRoute}
-	<main class="min-h-[100dvh] bg-white text-black dark:bg-zinc-900 dark:text-white">
+	<main class="min-h-[100dvh] bg-gray-50 text-primary dark:bg-gray-950 dark:text-gray-50">
 		{@render children()}
 	</main>
 {:else}
 	<main
-		class="min-h-[100dvh] bg-slate-50 text-black dark:bg-black dark:text-white {isFullWidthRoute
+		class="min-h-[100dvh] bg-gray-50 text-primary dark:bg-gray-950 dark:text-gray-50 {isFullWidthRoute
 			? 'md:pl-64'
 			: 'px-4 pb-24 pt-4 md:pb-8 md:pl-68 md:pr-4 md:pt-8'}"
 	>

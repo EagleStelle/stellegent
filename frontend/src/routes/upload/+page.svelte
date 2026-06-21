@@ -52,10 +52,10 @@
 
 	<label
 		for="board-image"
-		class="group grid cursor-pointer place-items-center rounded-xl border border-dashed border-zinc-300 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:border-primary hover:bg-zinc-50 active:scale-[0.995] dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-800/80"
+		class="group grid cursor-pointer place-items-center rounded-lg border border-dashed border-zinc-300 bg-white p-6 text-center shadow-sm transition-all duration-200 hover:border-primary hover:bg-zinc-50 active:scale-[0.995] dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-800/80"
 	>
 		<span class="grid gap-5 justify-items-center">
-			<span class="grid size-24 place-items-center rounded-xl bg-primary text-zinc-50 shadow-lg shadow-primary/20 transition-transform duration-200 group-hover:scale-105">
+			<span class="grid size-24 place-items-center rounded-lg bg-primary text-zinc-50 shadow-lg shadow-primary/20 transition-transform duration-200 group-hover:scale-105">
 				{#if busy}
 					<CircleNotch size={44} class="animate-spin" />
 				{:else}
