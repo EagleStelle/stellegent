@@ -596,12 +596,10 @@ def create_email_verification_token(user_id: int, ttl_min: int = 60 * 24) -> str
         raise ValueError("user not found")
     token = secrets.token_urlsafe(32)
     expires = (datetime.now(timezone.utc) + timedelta(minutes=ttl_min)).isoformat()
+    # Keep previously issued (unused, unexpired) tokens valid: a user sent several
+    # verification emails must be able to click any of them, not only the latest.
+    # Tokens stay single-use (consume marks the clicked one) and self-expire via TTL.
     with get_conn() as c:
-        c.execute("""
-            UPDATE email_verifications
-            SET used = 1
-            WHERE user_id = ? AND used = 0
-        """, (user_id,))
         c.execute("""
             INSERT INTO email_verifications
             (token,user_id,email,expires_at,used,created_at)
@@ -659,10 +657,13 @@ def list_courses(*, user_id: Optional[int] = None,
             args.append(user_id)
         elif role == "student":
             sql += """
-                AND EXISTS (
-                    SELECT 1 FROM course_students cs
-                    WHERE cs.course_id = c.id
-                      AND cs.user_id = ?
+                AND (
+                    c.visibility = 'public'
+                    OR EXISTS (
+                        SELECT 1 FROM course_students cs
+                        WHERE cs.course_id = c.id
+                          AND cs.user_id = ?
+                    )
                 )
             """
             args.append(user_id)

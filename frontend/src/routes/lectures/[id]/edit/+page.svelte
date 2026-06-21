@@ -8,6 +8,7 @@
 		CourseOptions,
 		LectureDetail,
 		User,
+		ManagedUser,
 		Visibility,
 	} from "$lib/types";
 	import { Plus, ArrowLeft, Trash } from "phosphor-svelte";
@@ -55,25 +56,25 @@
 	);
 
 	const availableStudents = $derived.by(
-		(): User[] =>
+		(): ManagedUser[] =>
 			(options.data?.students ?? []).filter(
 				(student) => !selectedStudentSet.has(student.id),
 			),
 	);
 
 	const selectedStudents = $derived.by(
-		(): User[] =>
+		(): ManagedUser[] =>
 			(draftStudentIds ?? [])
 				.map((studentId: number) =>
 					(options.data?.students ?? []).find(
 						(student) => student.id === studentId,
 					),
 				)
-			.filter((student): student is User => Boolean(student)),
+			.filter((student): student is ManagedUser => Boolean(student)),
 	);
 
 	const pendingStudent = $derived.by(
-		(): User | undefined =>
+		(): ManagedUser | undefined =>
 			availableStudents.find(
 				(student) =>
 					String(student.id) === pendingStudentId,
@@ -81,7 +82,7 @@
 	);
 	const canAddStudent = $derived(Boolean(pendingStudent));
 
-	function studentLabel(student: User) {
+	function studentLabel(student: ManagedUser) {
 		return `${student.username} - ${student.email ?? "No email"}`;
 	}
 
@@ -263,7 +264,7 @@
 						</Button>
 					</div>
 
-					<div class="grid max-h-[32rem] gap-2 overflow-auto pr-1">
+					<div class="grid max-h-128 gap-2 overflow-auto pr-1">
 						{#each selectedStudents as student (student.id)}
 							<div
 								class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-950"

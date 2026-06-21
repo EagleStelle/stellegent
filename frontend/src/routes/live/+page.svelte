@@ -294,7 +294,7 @@
 		'rounded-lg bg-black/55 text-zinc-50 shadow-lg shadow-black/20 ring-1 ring-white/10 backdrop-blur-md';
 </script>
 
-<section class="h-[calc(100dvh-8rem)] min-h-[34rem] md:h-[calc(100dvh-2rem)]">
+<section class="h-[calc(100dvh-8rem)] min-h-136 md:h-[calc(100dvh-2rem)]">
 	<div
 		bind:this={cameraShell}
 		class="relative h-full overflow-hidden rounded-lg bg-black shadow-xl shadow-primary/10 [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:rounded-none"
@@ -333,7 +333,7 @@
 				onclick={() => useSource(source === 'client' ? 'server' : 'client')}
 				aria-label={source === 'client' ? 'Switch to server camera' : 'Switch to my camera'}
 				title={source === 'client' ? 'Using my camera — switch to server/Pi camera' : 'Using server camera — switch to my camera'}
-				class="{overlayPanel} !bg-black/55 shadow-none"
+				class="{overlayPanel} bg-black/55! shadow-none"
 			>
 				{#snippet icon()}
 					<ArrowsClockwise size={22} />
@@ -343,7 +343,7 @@
 				variant="icon"
 				onclick={toggleFullscreen}
 				aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-				class="{overlayPanel} !bg-black/55 shadow-none"
+				class="{overlayPanel} bg-black/55! shadow-none"
 			>
 				{#snippet icon()}
 					{#if isFullscreen}

@@ -1,4 +1,4 @@
-"""Course management for faculty and the single admin."""
+"""Course catalog reads plus faculty/admin course management."""
 from __future__ import annotations
 import sqlite3
 from typing import List
@@ -30,7 +30,7 @@ def _course_detail(course_id: int) -> dict:
 
 
 @router.get("", response_model=List[CourseOut])
-def all_courses(user: dict = Depends(require_roles("prof", "admin"))):
+def all_courses(user: dict = Depends(require_roles("student", "prof", "admin"))):
     return [
         dict(r)
         for r in list_courses(user_id=user["uid"], role=user["role"])
@@ -38,7 +38,27 @@ def all_courses(user: dict = Depends(require_roles("prof", "admin"))):
 
 
 @router.get("/options", response_model=CourseOptionsOut)
-def options(user: dict = Depends(require_roles("prof", "admin"))):
+def options(user: dict = Depends(require_roles("student", "prof", "admin"))):
+    if user["role"] == "student":
+        faculty_by_id: dict[int, str] = {}
+        for course in list_courses(user_id=user["uid"], role=user["role"]):
+            faculty_by_id.setdefault(
+                int(course["faculty_id"]),
+                str(course["faculty_username"]),
+            )
+        return CourseOptionsOut(
+            students=[],
+            faculty=[
+                ManagedUserOut(
+                    id=faculty_id,
+                    username=username,
+                    role="prof",
+                    created_at="",
+                )
+                for faculty_id, username in faculty_by_id.items()
+            ],
+        )
+
     users = [dict(r) for r in list_users()]
     students = [u for u in users if u["role"] == "student"]
     if user["role"] == "admin":

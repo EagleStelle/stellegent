@@ -7,11 +7,24 @@
 	import { CheckCircle, CircleNotch, WarningCircle } from 'phosphor-svelte';
 
 	const token = $derived(page.url.searchParams.get('token') ?? '');
+	const verified = $derived(page.url.searchParams.get('verified') === '1');
+	const error = $derived(page.url.searchParams.get('error') ?? '');
 	let loading = $state(true);
 	let ok = $state(false);
 	let message = $state('');
 
 	onMount(async () => {
+		if (verified) {
+			ok = true;
+			loading = false;
+			message = 'Email verified';
+			return;
+		}
+		if (error) {
+			loading = false;
+			message = error === 'invalid' ? 'Invalid or expired token.' : 'Verification failed';
+			return;
+		}
 		if (!token) {
 			loading = false;
 			message = 'Verification token missing.';

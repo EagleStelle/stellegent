@@ -11,6 +11,7 @@ import requests
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import RedirectResponse
 
+from ...core import ratelimit
 from ...core.email import (
     EmailNotConfigured, email_configured, send_email_verification,
     send_password_reset_email,
@@ -50,6 +51,10 @@ _OAUTH_COOKIE_MAX_AGE = 10 * 60
 _GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth"
 _GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 _GOOGLE_JWKS_URL = "https://www.googleapis.com/oauth2/v3/certs"
+_EMAIL_RATE_WINDOW_S = 60 * 60
+_EMAIL_PER_ADDRESS_LIMIT = 3
+_EMAIL_PER_ACCOUNT_LIMIT = 3
+_EMAIL_PER_IP_LIMIT = 20
 
 
 def _is_https_request(request: Request) -> bool:
@@ -207,6 +212,48 @@ def _app_url(request: Request, path: str) -> str:
     return f"{_public_base(request)}{path}"
 
 
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for", "").split(",", 1)[0].strip()
+    if forwarded:
+        return forwarded
+    return request.client.host if request.client else ""
+
+
+def _email_send_allowed(request: Request, *, kind: str, to: str,
+                        user_id: int | None = None) -> bool:
+    address = to.strip().lower()
+    rules: list[tuple[str, int, float]] = [
+        (
+            f"email:{kind}:address:{address}",
+            _EMAIL_PER_ADDRESS_LIMIT,
+            _EMAIL_RATE_WINDOW_S,
+        )
+    ]
+    if user_id is not None:
+        rules.append((
+            f"email:{kind}:user:{user_id}",
+            _EMAIL_PER_ACCOUNT_LIMIT,
+            _EMAIL_RATE_WINDOW_S,
+        ))
+    ip = _client_ip(request)
+    if ip:
+        rules.append((
+            f"email:{kind}:ip:{ip}",
+            _EMAIL_PER_IP_LIMIT,
+            _EMAIL_RATE_WINDOW_S,
+        ))
+    return ratelimit.allow_many(rules)
+
+
+def _require_email_send_allowed(request: Request, *, kind: str, to: str,
+                                user_id: int | None = None) -> None:
+    if not _email_send_allowed(request, kind=kind, to=to, user_id=user_id):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "too many email requests; please wait before trying again",
+        )
+
+
 def _maybe_current_user(request: Request) -> dict | None:
     try:
         return current_user(request)
@@ -302,8 +349,13 @@ def _google_user(claims: dict):
 
 
 def _send_email_verification_for(row, request: Request) -> str:
+    if not email_configured():
+        raise EmailNotConfigured("Resend email is not configured")
+    _require_email_send_allowed(
+        request, kind="email_verify", to=row["email"], user_id=row["id"],
+    )
     token = create_email_verification_token(row["id"])
-    verify_url = _app_url(request, f"/verify-email?{urlencode({'token': token})}")
+    verify_url = _app_url(request, f"/api/v1/verify-email?{urlencode({'token': token})}")
     send_email_verification(to=row["email"], verify_url=verify_url)
     return token
 
@@ -416,6 +468,8 @@ def send_account_verification(request: Request, user: dict = Depends(current_use
         return MessageResponse(ok=True, message="email already verified")
     try:
         token = _send_email_verification_for(row, request)
+    except HTTPException:
+        raise
     except EmailNotConfigured:
         token = create_email_verification_token(row["id"])
         return MessageResponse(
@@ -429,9 +483,17 @@ def send_account_verification(request: Request, user: dict = Depends(current_use
     return MessageResponse(ok=True, message="verification email sent")
 
 
+@router.get("/verify-email", include_in_schema=False)
+def verify_email_link(token: str = Query(...)):
+    uid = consume_email_verification_token(token.strip())
+    if uid is None:
+        return RedirectResponse("/verify-email?error=invalid", status_code=303)
+    return RedirectResponse("/verify-email?verified=1", status_code=303)
+
+
 @router.post("/verify-email", response_model=MessageResponse)
 def verify_email(body: VerifyEmailRequest):
-    uid = consume_email_verification_token(body.token)
+    uid = consume_email_verification_token(body.token.strip())
     if uid is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid or expired token")
     return MessageResponse(ok=True, message="email verified")
@@ -627,6 +689,11 @@ def forgot_password(body: ForgotPasswordRequest, request: Request):
     """Always returns ok to avoid account enumeration."""
     user = get_user_by_email(body.email)
     if not user:
+        return MessageResponse(ok=True, message="if the email exists, a reset link was sent")
+    if email_configured() and not _email_send_allowed(
+        request, kind="password_reset", to=user["email"], user_id=user["id"],
+    ):
+        log.info("password reset email rate limited for user %s", user["id"])
         return MessageResponse(ok=True, message="if the email exists, a reset link was sent")
     token = create_reset_token(user["id"])
     reset_url = _app_url(request, f"/reset?{urlencode({'token': token})}")

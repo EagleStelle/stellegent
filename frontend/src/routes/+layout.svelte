@@ -31,6 +31,9 @@
 		queryFn: () => apiGet<User>('/api/v1/me')
 	}));
 
+	const signedInRedirectRoutes = ['/', '/register'];
+	const publicRoutes = [...signedInRedirectRoutes, '/forgot', '/reset', '/verify-email', '/mfa'];
+
 	async function logout() {
 		desktopMenuOpen = false;
 		mobileMenuOpen = false;
@@ -39,16 +42,27 @@
 		goto('/');
 	}
 
-	const isAuthRoute = $derived(
-		['/', '/register', '/forgot', '/reset', '/verify-email', '/mfa'].includes(page.url.pathname)
-	);
+	const isAuthRoute = $derived(publicRoutes.includes(page.url.pathname));
+
+	$effect(() => {
+		const pathname = page.url.pathname;
+
+		if (me.data && signedInRedirectRoutes.includes(pathname)) {
+			void goto('/courses', { replaceState: true });
+			return;
+		}
+
+		if (me.isError && !publicRoutes.includes(pathname)) {
+			void goto('/', { replaceState: true });
+		}
+	});
 
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
 	const isAdmin = $derived(me.data?.role === 'admin');
 
 	const links = $derived(
 		[
-			{ href: '/courses', label: 'Courses', icon: BookOpen, show: canTeach },
+			{ href: '/courses', label: 'Courses', icon: BookOpen, show: true },
 			{ href: '/lectures', label: 'Lectures', icon: Chalkboard, show: true },
 			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach },
 			{ href: '/admin', label: 'Admin', icon: UsersThree, show: isAdmin }
@@ -208,7 +222,7 @@
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 					aria-haspopup="menu"
 					aria-expanded={mobileMenuOpen}
-					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium !text-gray-400 hover:!text-white focus-visible:outline-none !bg-transparent !shadow-none !h-auto"
+					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium text-gray-400! hover:text-white! focus-visible:outline-none bg-transparent! shadow-none! h-auto!"
 				>
 					<div class="grid size-8 place-items-center">
 						<span class="grid size-6 place-items-center rounded-lg bg-secondary text-[10px] font-bold text-white shadow-sm ring-2 ring-primary">
@@ -227,7 +241,7 @@
 							variant="icon+text"
 							onclick={() => theme.toggle()}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300! hover:bg-white/10! hover:text-white! bg-transparent! shadow-none! h-auto! justify-start!"
 						>
 							{#snippet icon()}
 								{#if theme.dark}
@@ -243,7 +257,7 @@
 							href="/settings"
 							onclick={() => (mobileMenuOpen = false)}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300! hover:bg-white/10! hover:text-white! bg-transparent! shadow-none! h-auto! justify-start!"
 						>
 							{#snippet icon()}
 								<Gear size={18} />
@@ -254,7 +268,7 @@
 							variant="icon+text"
 							onclick={logout}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300! hover:bg-white/10! hover:text-white! bg-transparent! shadow-none! h-auto! justify-start!"
 						>
 							{#snippet icon()}
 								<SignOut size={18} />
@@ -269,12 +283,12 @@
 {/if}
 
 {#if isAuthRoute}
-	<main class="min-h-[100dvh] bg-gray-50 text-primary dark:bg-gray-950 dark:text-gray-50">
+	<main class="min-h-dvh bg-gray-50 text-primary dark:bg-gray-950 dark:text-gray-50">
 		{@render children()}
 	</main>
 {:else}
 	<main
-		class="min-h-[100dvh] bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-64"
+		class="min-h-dvh bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-64"
 	>
 		{@render children()}
 		{#if me.data}

@@ -309,8 +309,8 @@
 							<Button
 								variant="icon"
 								ghost
-								onclick={(e) => { e.stopPropagation(); generateSummary.mutate(); }}
-								onkeydown={(e) => { e.stopPropagation(); }}
+								onclick={(e: MouseEvent) => { e.stopPropagation(); generateSummary.mutate(); }}
+								onkeydown={(e: KeyboardEvent) => { e.stopPropagation(); }}
 								disabled={generateSummary.isPending}
 								title="Generate summary"
 							>

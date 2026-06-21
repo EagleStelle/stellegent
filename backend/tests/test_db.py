@@ -88,3 +88,36 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
     private_row = db.get_lecture("private-course")
     assert db.can_manage_lecture(private_row, user_id=prof_id, role="prof")
     assert not db.can_manage_lecture(private_row, user_id=student_id, role="student")
+
+
+def test_student_courses_are_readable_without_management_roster(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "courses.db")
+    from stellegent import db
+    from stellegent.api.v1 import courses as courses_api
+
+    db.init_db()
+    prof_id = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
+    other_prof_id = db.create_user("prof2", "secret123", "prof", email="prof2@example.com")
+    student_id = db.create_user("student1", "secret123", "student", email="student1@example.com")
+    other_student_id = db.create_user("student2", "secret123", "student", email="student2@example.com")
+
+    public_id = db.create_course(name="Public Math", faculty_id=prof_id, visibility="public")
+    assigned_private_id = db.create_course(
+        name="Assigned Lab",
+        faculty_id=prof_id,
+        visibility="private",
+    )
+    unassigned_private_id = db.create_course(
+        name="Closed Seminar",
+        faculty_id=other_prof_id,
+        visibility="private",
+    )
+    db.set_course_students(assigned_private_id, [student_id])
+    db.set_course_students(unassigned_private_id, [other_student_id])
+
+    rows = courses_api.all_courses({"uid": student_id, "role": "student"})
+    assert {row["id"] for row in rows} == {public_id, assigned_private_id}
+
+    opts = courses_api.options({"uid": student_id, "role": "student"})
+    assert opts.students == []
+    assert {faculty.id for faculty in opts.faculty} == {prof_id}

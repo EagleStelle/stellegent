@@ -37,13 +37,11 @@
 	const canUpload = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
 	const courses = createQuery(() => ({
 		queryKey: ['courses'],
-		queryFn: () => apiGet<Course[]>('/api/v1/courses'),
-		enabled: canUpload
+		queryFn: () => apiGet<Course[]>('/api/v1/courses')
 	}));
 	const options = createQuery(() => ({
 		queryKey: ['course-options'],
-		queryFn: () => apiGet<CourseOptions>('/api/v1/courses/options'),
-		enabled: canUpload
+		queryFn: () => apiGet<CourseOptions>('/api/v1/courses/options')
 	}));
 
 	const facultyOptions = $derived(options.data?.faculty ?? []);
@@ -149,24 +147,24 @@
 	<div class="min-w-0 flex-1">
 		<Input id="search" bind:value={q} icon={MagnifyingGlass} />
 	</div>
+	<div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
+		<ComboBox
+			bind:value={facultyFilter}
+			placeholder="All faculty"
+			class="w-48 shrink-0"
+			options={facultyOptions.map((f) => ({
+				value: String(f.id),
+				label: f.username,
+			}))}
+		/>
+		<ComboBox
+			bind:value={selectedCourseId}
+			placeholder="All courses"
+			class="w-48 shrink-0"
+			options={courseFilterOptions}
+		/>
+	</div>
 	{#if canUpload}
-		<div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
-			<ComboBox
-				bind:value={facultyFilter}
-				placeholder="All faculty"
-				class="w-48 shrink-0"
-				options={facultyOptions.map((f) => ({
-					value: String(f.id),
-					label: f.username,
-				}))}
-			/>
-			<ComboBox
-				bind:value={selectedCourseId}
-				placeholder="All courses"
-				class="w-48 shrink-0"
-				options={courseFilterOptions}
-			/>
-		</div>
 		<input
 			bind:this={uploadInput}
 			type="file"

@@ -45,7 +45,7 @@
 	variant="icon"
 	onclick={() => theme.toggle()}
 	aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-	class="fixed bottom-6 left-6 z-20 hidden shadow-lg shadow-secondary/30 md:grid"
+	class="fixed bottom-6 right-6 z-20 hidden shadow-lg shadow-secondary/30 md:grid"
 >
 	{#snippet icon()}
 		{#if theme.dark}

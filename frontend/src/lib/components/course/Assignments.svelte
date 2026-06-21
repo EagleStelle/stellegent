@@ -170,7 +170,7 @@
 			</Button>
 		</div>
 
-		<div class="grid max-h-[32rem] gap-2 overflow-auto pr-1">
+		<div class="grid max-h-128 gap-2 overflow-auto pr-1">
 			{#each selectedStudents as student (student.id)}
 				<div
 					class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-950"
@@ -230,7 +230,7 @@
 			</Button>
 		</div>
 
-		<div class="grid max-h-[32rem] gap-2 overflow-auto pr-1">
+		<div class="grid max-h-128 gap-2 overflow-auto pr-1">
 			{#each selectedLectures as lecture (lecture.id)}
 				<div
 					class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-950"

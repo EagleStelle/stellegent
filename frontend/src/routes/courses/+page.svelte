@@ -37,13 +37,15 @@
 
 	$effect(() => {
 		if (me.isError || courses.isError) goto("/");
-		if (me.data?.role === "student") goto("/lectures");
 	});
 
 	let q = $state("");
 	let facultyFilter = $state("");
 
 	const isAdmin = $derived(me.data?.role === "admin");
+	const canTeach = $derived(
+		me.data?.role === "prof" || me.data?.role === "admin",
+	);
 	const facultyOptions = $derived(options.data?.faculty ?? []);
 
 	const filtered = $derived(
@@ -98,12 +100,14 @@
 			label: f.username,
 		}))}
 	/>
-	<Button variant="icon+text" type="button" onclick={openCreate}>
-		{#snippet icon()}
-			<Plus size={18} />
-		{/snippet}
-		Add course
-	</Button>
+	{#if canTeach}
+		<Button variant="icon+text" type="button" onclick={openCreate}>
+			{#snippet icon()}
+				<Plus size={18} />
+			{/snippet}
+			Add course
+		</Button>
+	{/if}
 </div>
 
 {#if courses.isLoading}
@@ -129,33 +133,35 @@
 						</p>
 					</div>
 
-					<div class="flex shrink-0 items-center gap-1 -mr-2 -mt-1">
-						<Button
-							variant="icon"
-							ghost
-							type="button"
-							onclick={(event) => editCourse(event, course.id)}
-							aria-label={`Edit ${course.name}`}
-							title="Edit"
-						>
-							{#snippet icon()}
-								<PencilSimple size={16} />
-							{/snippet}
-						</Button>
-						<Button
-							variant="icon"
-							ghost
-							danger
-							type="button"
-							onclick={(event) => deleteCourse(event, course.id)}
-							aria-label={`Delete ${course.name}`}
-							title="Delete"
-						>
-							{#snippet icon()}
-								<Trash size={16} />
-							{/snippet}
-						</Button>
-					</div>
+					{#if canTeach}
+						<div class="flex shrink-0 items-center gap-1 -mr-2 -mt-1">
+							<Button
+								variant="icon"
+								ghost
+								type="button"
+								onclick={(event) => editCourse(event, course.id)}
+								aria-label={`Edit ${course.name}`}
+								title="Edit"
+							>
+								{#snippet icon()}
+									<PencilSimple size={16} />
+								{/snippet}
+							</Button>
+							<Button
+								variant="icon"
+								ghost
+								danger
+								type="button"
+								onclick={(event) => deleteCourse(event, course.id)}
+								aria-label={`Delete ${course.name}`}
+								title="Delete"
+							>
+								{#snippet icon()}
+									<Trash size={16} />
+								{/snippet}
+							</Button>
+						</div>
+					{/if}
 				</div>
 
 				{#if course.description}
