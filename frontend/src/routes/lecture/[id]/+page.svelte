@@ -28,6 +28,8 @@
 	import ImageModal from "$lib/components/modal/Image.svelte";
 	import TextModal from "$lib/components/modal/Text.svelte";
 	import Modal from "$lib/components/ui/Modal.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
+	import Select from "$lib/components/ui/Select.svelte";
 
 	const qc = useQueryClient();
 	const id = $derived(page.params.id);
@@ -280,33 +282,42 @@
 
 			<div class="flex flex-wrap items-center gap-2">
 				{#each downloads as d (d.type)}
-					<button
+					<Button
+						variant="icon+text"
 						onclick={() => downloadFile(d.type)}
-						class="{pill} border-gray-200 bg-white text-gray-700 hover:border-secondary/40 hover:text-secondary focus-visible:ring-secondary/30 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200"
+						class="!bg-white !text-gray-700 hover:!text-secondary border border-gray-200 dark:border-gray-800 dark:!bg-gray-900 dark:!text-gray-200 hover:border-secondary/40"
 						title={`Download ${d.label}`}
 					>
-						<d.Icon size={16} />
-						<span class="hidden sm:inline">{d.label}</span>
-					</button>
+						{#snippet icon()}
+							<d.Icon size={16} />
+						{/snippet}
+						{d.label}
+					</Button>
 				{/each}
 				{#if canManage}
 					<div class="mx-1 h-6 w-px rounded-full bg-gray-200 dark:bg-gray-800"></div>
-					<button
+					<Button
+						variant="icon+text"
 						onclick={() => (editOpen = !editOpen)}
-						class="{pill} border-gray-200 bg-white text-gray-700 hover:border-secondary/40 hover:text-secondary focus-visible:ring-secondary/30 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200"
+						class="!bg-white !text-gray-700 hover:!text-secondary border border-gray-200 dark:border-gray-800 dark:!bg-gray-900 dark:!text-gray-200 hover:border-secondary/40"
 						title="Edit lecture"
 					>
-						<PencilSimple size={16} />
-						<span class="hidden sm:inline">Edit</span>
-					</button>
-					<button
+						{#snippet icon()}
+							<PencilSimple size={16} />
+						{/snippet}
+						Edit
+					</Button>
+					<Button
+						variant="icon+text"
 						onclick={remove}
-						class="{pill} border-transparent bg-secondary/10 text-secondary hover:bg-secondary/20 focus-visible:ring-secondary/30"
+						class="!bg-secondary/10 !text-secondary hover:!bg-secondary/20"
 						title="Delete lecture"
 					>
-						<Trash size={16} />
-						<span class="hidden sm:inline">Delete</span>
-					</button>
+						{#snippet icon()}
+							<Trash size={16} />
+						{/snippet}
+						Delete
+					</Button>
 				{/if}
 			</div>
 		</header>
@@ -329,46 +340,42 @@
 						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 					>
 						<span>Course</span>
-						<select
+						<Select
 							bind:value={draftCourseId}
-							class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						>
-							<option value="">No course</option>
-							{#each courses.data ?? [] as course (course.id)}
-								<option value={String(course.id)}
-									>{course.name}</option
-								>
-							{/each}
-						</select>
+							placeholder="No course"
+							options={(courses.data ?? []).map((c) => ({
+								value: String(c.id),
+								label: c.name,
+							}))}
+						/>
 					</label>
 					<label
 						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 					>
 						<span>Visibility</span>
-						<select
+						<Select
 							bind:value={draftVisibility}
-							class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						>
-							<option value="public">Public</option>
-							<option value="private">Private</option>
-						</select>
+							options={[
+								{ value: "public", label: "Public" },
+								{ value: "private", label: "Private" },
+							]}
+						/>
 					</label>
 					{#if me.data?.role === "admin"}
 						<label
 							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100 md:col-span-3"
 						>
 							<span>Owner</span>
-							<select
+							<Select
 								bind:value={draftOwnerId}
-								class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-							>
-								<option value="">Unassigned</option>
-								{#each options.data?.faculty ?? [] as faculty (faculty.id)}
-									<option value={String(faculty.id)}
-										>{faculty.username}</option
-									>
-								{/each}
-							</select>
+								placeholder="Unassigned"
+								options={(options.data?.faculty ?? []).map(
+									(f) => ({
+										value: String(f.id),
+										label: f.username,
+									}),
+								)}
+							/>
 						</label>
 					{/if}
 				</div>
@@ -436,14 +443,17 @@
 				{/if}
 
 				<div class="flex justify-end">
-					<button
+					<Button
+						variant="icon+text"
 						onclick={saveLecture}
 						disabled={saving}
-						class="{pill} border-transparent bg-primary text-white hover:bg-primary/90 focus-visible:ring-secondary/30 disabled:pointer-events-none disabled:opacity-60"
+						class="!bg-primary hover:!bg-primary/90"
 					>
-						<FloppyDisk size={16} />
+						{#snippet icon()}
+							<FloppyDisk size={16} />
+						{/snippet}
 						{saving ? "Saving" : "Save"}
-					</button>
+					</Button>
 				</div>
 				</Card>
 			</Modal>

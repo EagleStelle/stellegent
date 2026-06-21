@@ -53,6 +53,7 @@ export interface ManagedUser {
 	role: Role;
 	auth_provider: string;
 	email_verified: number;
+	disabled: number;
 	created_at: string;
 }
 

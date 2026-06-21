@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ...core.security import issue_token
 from ...config import JWT_EXPIRY_MIN
-from ...db import (verify_user, create_user, get_user, get_user_by_email,
+from ...db import (verify_user, create_user, get_user, get_user_by_id, get_user_by_email,
                    create_reset_token, consume_reset_token, set_password)
 from ...deps import current_user, log_action
 from ...schemas import (LoginRequest, RegisterRequest, TokenResponse, UserOut,
@@ -35,6 +35,8 @@ def login(body: LoginRequest, response: Response):
     user = verify_user(body.username, body.password)
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")
+    if user["disabled"]:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "account disabled")
     token = issue_token(user["id"], user["username"], user["role"])
     _set_cookie(response, token)
     return TokenResponse(token=token, role=user["role"], username=user["username"])
@@ -64,7 +66,11 @@ def logout(response: Response):
 
 @router.get("/me", response_model=UserOut)
 def me(user: dict = Depends(current_user)):
-    return UserOut(uid=user["uid"], username=user["username"], role=user["role"])
+    row = get_user_by_id(user["uid"])
+    if not row:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    return UserOut(uid=row["id"], username=row["username"], role=row["role"],
+                   email=row["email"])
 
 
 @router.post("/forgot-password", response_model=MessageResponse)

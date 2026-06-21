@@ -8,6 +8,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 	import { CircleNotch, User, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
@@ -39,17 +40,20 @@
 	const ease = 'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]';
 </script>
 
-<button
+<Button
+	variant="icon"
 	onclick={() => theme.toggle()}
 	aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-	class="fixed bottom-6 left-6 z-20 hidden size-11 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30 transition-all hover:bg-secondary/90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary md:grid"
+	class="fixed bottom-6 left-6 z-20 hidden shadow-lg shadow-secondary/30 md:grid"
 >
-	{#if theme.dark}
-		<Sun size={20} weight="fill" />
-	{:else}
-		<Moon size={20} />
-	{/if}
-</button>
+	{#snippet icon()}
+		{#if theme.dark}
+			<Sun size={20} weight="fill" />
+		{:else}
+			<Moon size={20} />
+		{/if}
+	{/snippet}
+</Button>
 
 <div class="grid min-h-dvh md:grid-cols-2">
 	<!-- Brand showcase (navy) -->
@@ -80,17 +84,20 @@
 				<Logo size={36} />
 				<span class="text-base font-bold tracking-tight text-zinc-900 dark:text-white">Stellegent</span>
 			</a>
-			<button
+			<Button
+				variant="icon"
 				onclick={() => theme.toggle()}
 				aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-				class="grid size-9 place-items-center rounded-lg bg-secondary text-white shadow-lg shadow-secondary/30 transition-all hover:bg-secondary/90 active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+				class="shadow-lg shadow-secondary/30"
 			>
-				{#if theme.dark}
-					<Sun size={20} weight="fill" />
-				{:else}
-					<Moon size={20} />
-				{/if}
-			</button>
+				{#snippet icon()}
+					{#if theme.dark}
+						<Sun size={20} weight="fill" />
+					{:else}
+						<Moon size={20} />
+					{/if}
+				{/snippet}
+			</Button>
 		</div>
 
 		<div
@@ -131,10 +138,10 @@
 				{/if}
 
 				<!-- Magnetic CTA with button-in-button icon -->
-				<button
+				<Button
 					type="submit"
 					disabled={loading}
-					class="group relative mt-1 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-semibold text-white shadow-md shadow-primary/20 outline-none transition-all duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] hover:bg-primary/90 focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+					class="mt-1 w-full text-sm font-semibold shadow-md shadow-primary/20"
 				>
 					{#if loading}
 						<CircleNotch size={18} class="animate-spin" />
@@ -142,7 +149,7 @@
 					{:else}
 						<span>Sign in</span>
 					{/if}
-				</button>
+				</Button>
 			</form>
 
 			<a

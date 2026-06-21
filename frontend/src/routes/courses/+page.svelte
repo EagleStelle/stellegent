@@ -5,6 +5,8 @@
 	import type { Course, CourseDetail, CourseOptions, LectureSummary, User } from "$lib/types";
 	import Card from "$lib/components/ui/Card.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
+	import Select from "$lib/components/ui/Select.svelte";
+	import Button from "$lib/components/ui/Button.svelte";
 	import {
 		BookOpen,
 		CircleNotch,
@@ -191,28 +193,29 @@
 				{#if isAdmin}
 					<label class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100">
 						<span>Faculty</span>
-						<select
+						<Select
 							bind:value={newFacultyId}
-							class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						>
-							{#each facultyOptions as faculty (faculty.id)}
-								<option value={String(faculty.id)}>{faculty.username}</option>
-							{/each}
-						</select>
+							options={facultyOptions.map((f) => ({
+								value: String(f.id),
+								label: f.username,
+							}))}
+						/>
 					</label>
 				{/if}
-				<button
+				<Button
 					type="submit"
 					disabled={creating}
-					class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-semibold text-white transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:pointer-events-none disabled:opacity-60"
+					class="w-full text-sm font-semibold"
 				>
-					{#if creating}
-						<CircleNotch size={18} class="animate-spin" />
-					{:else}
-						<Plus size={18} />
-					{/if}
+					{#snippet icon()}
+						{#if creating}
+							<CircleNotch size={18} class="animate-spin" />
+						{:else}
+							<Plus size={18} />
+						{/if}
+					{/snippet}
 					Create
-				</button>
+				</Button>
 			</form>
 		</Card>
 
@@ -221,13 +224,13 @@
 				<p class="text-sm text-gray-500 dark:text-gray-400">Loading</p>
 			{:else}
 				{#each courses.data ?? [] as course (course.id)}
-					<button
+					<Button
 						onclick={() => selectCourse(course.id)}
-						class="rounded-lg border p-3 text-left transition-all {activeCourse?.id === course.id
-							? 'border-secondary bg-secondary/10'
-							: 'border-gray-200 bg-white hover:border-secondary/40 dark:border-gray-800 dark:bg-gray-900'}"
+						class="!h-auto !w-full !justify-start !p-3 !text-left border shadow-none {activeCourse?.id === course.id
+							? 'border-secondary !bg-secondary/10'
+							: 'border-gray-200 !bg-white hover:border-secondary/40 dark:border-gray-800 dark:!bg-gray-900'}"
 					>
-						<div class="flex items-start justify-between gap-3">
+						<div class="flex w-full items-start justify-between gap-3">
 							<div class="min-w-0">
 								<h2 class="truncate text-sm font-semibold text-primary dark:text-gray-50">
 									{course.name}
@@ -240,7 +243,7 @@
 								{course.lecture_count}
 							</span>
 						</div>
-					</button>
+					</Button>
 				{/each}
 			{/if}
 		</div>
@@ -261,25 +264,31 @@
 						</p>
 					</div>
 					<div class="flex gap-2">
-						<button
+						<Button
+							variant="icon+text"
 							onclick={saveCourse}
 							disabled={saving}
-							class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-semibold text-white transition-all hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:pointer-events-none disabled:opacity-60"
+							class="!bg-primary hover:!bg-primary/90"
 						>
-							{#if saving}
-								<CircleNotch size={18} class="animate-spin" />
-							{:else}
-								<FloppyDisk size={18} />
-							{/if}
+							{#snippet icon()}
+								{#if saving}
+									<CircleNotch size={18} class="animate-spin" />
+								{:else}
+									<FloppyDisk size={18} />
+								{/if}
+							{/snippet}
 							Save
-						</button>
-						<button
+						</Button>
+						<Button
+							variant="icon+text"
 							onclick={removeCourse}
-							class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-secondary/10 px-3.5 text-sm font-semibold text-secondary transition-all hover:bg-secondary/20 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30"
+							class="!bg-secondary/10 !text-secondary hover:!bg-secondary/20"
 						>
-							<Trash size={18} />
+							{#snippet icon()}
+								<Trash size={18} />
+							{/snippet}
 							Delete
-						</button>
+						</Button>
 					</div>
 				</div>
 
@@ -294,14 +303,13 @@
 					{#if isAdmin}
 						<label class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100">
 							<span>Faculty</span>
-							<select
+							<Select
 								bind:value={draftFacultyId}
-								class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-							>
-								{#each facultyOptions as faculty (faculty.id)}
-									<option value={String(faculty.id)}>{faculty.username}</option>
-								{/each}
-							</select>
+								options={facultyOptions.map((f) => ({
+									value: String(f.id),
+									label: f.username,
+								}))}
+							/>
 						</label>
 					{/if}
 					<label class="grid gap-1.5 text-sm font-semibold text-primary md:col-span-2 dark:text-gray-100">

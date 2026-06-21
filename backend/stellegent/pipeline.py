@@ -21,7 +21,10 @@ from .export import export_all
 from .db import init_db, insert_lecture
 
 
-def process_image(image: np.ndarray, course_name: Optional[str] = None) -> dict:
+def process_image(image: np.ndarray, course_name: Optional[str] = None,
+                  owner_user_id: Optional[int] = None,
+                  visibility: str = "public",
+                  course_id: Optional[int] = None) -> dict:
     init_db()
     rectified = preprocess(image)
     result_ocr = run_ocr(rectified)
@@ -55,6 +58,9 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None) -> dict:
         corrected_text=corrected,
         summary=summary,
         tags=manifest.get("tags", []),
+        owner_user_id=owner_user_id,
+        visibility=visibility,
+        course_id=course_id,
     )
     return {
         "lecture_id": result.lecture_id,

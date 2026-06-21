@@ -4,6 +4,8 @@
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet, apiPost } from '$lib/api/client';
 	import type { CapturePayload, Course, Guidance, PipelineResult, Visibility } from '$lib/types';
+	import Select from '$lib/components/ui/Select.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 	import { ArrowsIn, ArrowsOut, Camera, CircleNotch, Pulse } from 'phosphor-svelte';
 
 	let g = $state<Guidance | null>(null);
@@ -96,17 +98,20 @@
 			{/each}
 		</div>
 
-		<button
+		<Button
+			variant="icon"
 			onclick={toggleFullscreen}
 			aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
-			class="{overlayPanel} absolute right-3 top-3 z-10 grid size-11 place-items-center transition-transform duration-200 active:scale-[0.98]"
+			class="{overlayPanel} absolute right-3 top-3 z-10 !bg-black/55 shadow-none"
 		>
-			{#if isFullscreen}
-				<ArrowsIn size={22} />
-			{:else}
-				<ArrowsOut size={22} />
-			{/if}
-		</button>
+			{#snippet icon()}
+				{#if isFullscreen}
+					<ArrowsIn size={22} />
+				{:else}
+					<ArrowsOut size={22} />
+				{/if}
+			{/snippet}
+		</Button>
 
 		<div class="absolute inset-x-3 bottom-3 z-10 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
 			<dl class="grid max-w-2xl grid-cols-2 gap-2 text-sm text-zinc-50 sm:grid-cols-4">
@@ -130,42 +135,41 @@
 
 			<div class="flex flex-col gap-2 sm:items-end">
 				<div class="flex flex-col gap-2 sm:flex-row">
-					<select
+					<Select
 						bind:value={selectedCourseId}
-						aria-label="Course"
-						class="{overlayPanel} h-10 min-w-40 rounded-lg border-0 px-3 text-sm font-medium outline-none focus:ring-3 focus:ring-secondary/40"
-					>
-						<option value="">No course</option>
-						{#each courses.data ?? [] as course (course.id)}
-							<option value={String(course.id)}>{course.name}</option>
-						{/each}
-					</select>
+						placeholder="No course"
+						class="{overlayPanel} h-10 min-w-40 border-0 !text-white !bg-transparent px-3 text-sm font-medium focus:ring-3 focus:ring-secondary/40"
+						options={(courses.data ?? []).map((c) => ({
+							value: String(c.id),
+							label: c.name,
+						}))}
+					/>
 					<div class="{overlayPanel} grid h-10 grid-cols-2 p-1 text-sm font-semibold">
-						<button
+						<Button
 							type="button"
 							onclick={() => (visibility = 'public')}
-							class="rounded-md px-3 transition-colors {visibility === 'public'
-								? 'bg-secondary text-white'
-								: 'text-zinc-300 hover:text-white'}"
+							class="h-8 {visibility === 'public'
+								? ''
+								: '!bg-transparent !text-zinc-300 hover:!text-white'}"
 						>
 							Public
-						</button>
-						<button
+						</Button>
+						<Button
 							type="button"
 							onclick={() => (visibility = 'private')}
-							class="rounded-md px-3 transition-colors {visibility === 'private'
-								? 'bg-secondary text-white'
-								: 'text-zinc-300 hover:text-white'}"
+							class="h-8 {visibility === 'private'
+								? ''
+								: '!bg-transparent !text-zinc-300 hover:!text-white'}"
 						>
 							Private
-						</button>
+						</Button>
 					</div>
 				</div>
 
-				<button
+				<Button
 					onclick={capture}
 					disabled={capturing}
-					class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-zinc-50 shadow-lg shadow-black/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/40 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]"
+					class="h-12 px-5 text-base shadow-lg shadow-black/20"
 				>
 					{#if capturing}
 						<CircleNotch size={22} class="animate-spin" />
@@ -173,7 +177,7 @@
 						<Camera size={22} />
 					{/if}
 					{capturing ? 'Processing...' : 'Capture'}
-				</button>
+				</Button>
 			</div>
 		</div>
 	</div>

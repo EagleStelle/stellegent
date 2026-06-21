@@ -1,6 +1,7 @@
 import adapter from '@sveltejs/adapter-static';
 import { sveltekit } from '@sveltejs/kit/vite';
 import tailwindcss from '@tailwindcss/vite';
+import { sveltePhosphorOptimize } from 'phosphor-svelte/vite';
 import { defineConfig } from 'vite';
 
 const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
@@ -21,7 +22,8 @@ export default defineConfig({
 			},
 			// SPA: emit a static fallback shell, all routing happens client-side.
 			adapter: adapter({ fallback: 'index.html' })
-		})
+		}),
+		sveltePhosphorOptimize()
 	],
 	server: {
 		// During `vite dev`, proxy API + stream to the FastAPI backend.

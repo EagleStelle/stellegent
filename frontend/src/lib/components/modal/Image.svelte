@@ -14,9 +14,11 @@
 	const ease = 'transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]';
 </script>
 
-<button
-	type="button"
+<div
+	role="button"
+	tabindex="0"
 	onclick={() => (open = true)}
+	onkeydown={(e) => e.key === 'Enter' && (open = true)}
 	aria-label="Enlarge image"
 	class={cn('group relative block cursor-zoom-in overflow-hidden', className)}
 >
@@ -26,7 +28,7 @@
 	>
 		<MagnifyingGlassPlus size={18} />
 	</span>
-</button>
+</div>
 
 <Modal bind:open label={alt || 'Image preview'}>
 	<img {src} {alt} class="relative max-h-full max-w-full rounded-xl object-contain shadow-2xl" />

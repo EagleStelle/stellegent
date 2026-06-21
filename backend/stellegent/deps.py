@@ -5,7 +5,7 @@ from typing import Optional, Sequence
 from fastapi import Depends, HTTPException, Request, status
 
 from .core.security import decode_token
-from .db import audit
+from .db import audit, get_user_by_id
 
 
 def _token_from_request(request: Request) -> Optional[str]:
@@ -20,7 +20,10 @@ def current_user(request: Request) -> dict:
     data = decode_token(tok) if tok else None
     if not data:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
-    return data
+    user = get_user_by_id(data["uid"])
+    if not user:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    return {"uid": user["id"], "username": user["username"], "role": user["role"]}
 
 
 def require_roles(*roles: str):

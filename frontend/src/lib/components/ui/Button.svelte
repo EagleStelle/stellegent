@@ -1,45 +1,47 @@
-<script lang="ts" module>
-	import { tv, type VariantProps } from 'tailwind-variants';
-
-	export const buttonVariants = tv({
-		base: 'inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary disabled:pointer-events-none disabled:opacity-50',
-		variants: {
-			variant: {
-				default: 'bg-primary text-zinc-50 hover:bg-primary/90',
-				destructive: 'bg-red-600 text-zinc-50 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600',
-				outline: 'border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-700',
-				secondary: 'bg-secondary text-zinc-900 hover:bg-secondary/90',
-				ghost: 'hover:bg-zinc-100 dark:hover:bg-zinc-700'
-			},
-			size: {
-				default: 'h-10 px-3.5',
-				sm: 'h-9 px-3',
-				lg: 'h-11 px-5',
-				icon: 'h-10 w-10'
-			}
-		},
-		defaultVariants: { variant: 'default', size: 'default' }
-	});
-
-	export type ButtonVariant = VariantProps<typeof buttonVariants>['variant'];
-	export type ButtonSize = VariantProps<typeof buttonVariants>['size'];
-</script>
-
 <script lang="ts">
-	import type { Snippet } from 'svelte';
-	import type { HTMLButtonAttributes } from 'svelte/elements';
-	import { cn } from '$lib/utils';
+	import { Button } from "bits-ui";
+	import type { Snippet } from "svelte";
+	import type { HTMLButtonAttributes } from "svelte/elements";
+	import { cn } from "$lib/utils";
+
+	type Variant = "text" | "icon" | "icon+text";
 
 	type Props = HTMLButtonAttributes & {
-		variant?: ButtonVariant;
-		size?: ButtonSize;
-		children: Snippet;
+		variant?: Variant;
+		icon?: Snippet;
+		children?: Snippet;
 	};
 
-	let { variant = 'default', size = 'default', class: className, children, ...rest }: Props =
-		$props();
+	let {
+		variant = "text",
+		class: className,
+		icon,
+		children,
+		...rest
+	}: Props = $props();
 </script>
 
-<button class={cn(buttonVariants({ variant, size }), className)} {...rest}>
-	{@render children()}
-</button>
+<Button.Root
+	class={cn(
+		"inline-flex shrink-0 items-center justify-center rounded-lg font-medium text-white shadow-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60 bg-secondary hover:bg-secondary/90",
+		variant === "icon" ? "h-10 w-10" : "h-10 px-3.5",
+		variant === "icon+text" ? "gap-2" : "",
+		className,
+	)}
+	{...rest}
+>
+	{#if variant === "icon"}
+		{@render icon?.()}
+	{:else if variant === "icon+text"}
+		{#if icon}
+			{@render icon()}
+		{/if}
+		{#if children}
+			<span class="truncate">{@render children()}</span>
+		{/if}
+	{:else}
+		{#if children}
+			{@render children()}
+		{/if}
+	{/if}
+</Button.Root>

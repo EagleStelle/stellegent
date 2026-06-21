@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { X } from 'phosphor-svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let {
 		open = $bindable(false),
@@ -30,13 +31,16 @@
 		
 		{@render children()}
 
-		<button
+		<Button
+			variant="icon"
 			type="button"
 			onclick={() => (open = false)}
 			aria-label="Close dialog"
-			class="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full bg-secondary text-white transition-colors duration-200 hover:bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+			class="absolute right-4 top-4 z-10 grid size-10 place-items-center rounded-full !bg-secondary !text-white transition-colors duration-200 hover:!bg-secondary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
 		>
-			<X size={20} />
-		</button>
+			{#snippet icon()}
+				<X size={20} />
+			{/snippet}
+		</Button>
 	</div>
 {/if}

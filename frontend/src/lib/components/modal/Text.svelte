@@ -20,9 +20,11 @@
 	const body = $derived(text?.trim() ? text : fallback);
 </script>
 
-<button
-	type="button"
+<div
+	role="button"
+	tabindex="0"
 	onclick={() => (open = true)}
+	onkeydown={(e) => e.key === 'Enter' && (open = true)}
 	class={cn(
 		cardVariants({ interactive: true }),
 		"group flex w-full flex-col gap-2",
@@ -45,7 +47,7 @@
 	>
 		{body}
 	</p>
-</button>
+</div>
 
 <Modal bind:open label={title}>
 	<div class="relative flex h-full w-full max-w-5xl flex-col">

@@ -1,8 +1,12 @@
 """Pydantic request/response models for the v1 API."""
 from __future__ import annotations
-from typing import List, Optional
+from typing import List, Literal, Optional
 
 from pydantic import BaseModel, EmailStr, Field
+
+Role = Literal["prof", "student", "admin"]
+EditableRole = Literal["prof", "student"]
+Visibility = Literal["public", "private"]
 
 
 # ---- auth ----
@@ -19,14 +23,15 @@ class RegisterRequest(BaseModel):
 
 class TokenResponse(BaseModel):
     token: str
-    role: str
+    role: Role
     username: str
 
 
 class UserOut(BaseModel):
     uid: int
     username: str
-    role: str
+    role: Role
+    email: Optional[str] = None
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -45,11 +50,82 @@ class MessageResponse(BaseModel):
     reset_token: Optional[str] = None
 
 
+# ---- account management ----
+class ManagedUserOut(BaseModel):
+    id: int
+    username: str
+    email: Optional[str] = None
+    role: Role
+    auth_provider: str = "local"
+    email_verified: int = 0
+    disabled: int = 0
+    created_at: str
+
+
+class ManagedUserCreate(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    email: Optional[EmailStr] = None
+    password: str = Field(min_length=8, max_length=128)
+    role: EditableRole
+
+
+class ManagedUserUpdate(BaseModel):
+    username: Optional[str] = Field(default=None, min_length=3, max_length=64)
+    email: Optional[EmailStr] = None
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
+    role: Optional[EditableRole] = None
+    disabled: Optional[bool] = None
+
+
+# ---- courses ----
+class CourseOut(BaseModel):
+    id: int
+    name: str
+    faculty_id: int
+    faculty_username: str
+    description: Optional[str] = None
+    student_count: int = 0
+    lecture_count: int = 0
+    created_at: str
+    updated_at: str
+
+
+class CourseDetail(CourseOut):
+    student_ids: List[int] = []
+    lecture_ids: List[str] = []
+
+
+class CourseCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=160)
+    faculty_id: Optional[int] = None
+    description: Optional[str] = Field(default=None, max_length=500)
+    student_ids: List[int] = []
+    lecture_ids: List[str] = []
+
+
+class CourseUpdate(BaseModel):
+    name: Optional[str] = Field(default=None, min_length=1, max_length=160)
+    faculty_id: Optional[int] = None
+    description: Optional[str] = Field(default=None, max_length=500)
+    student_ids: Optional[List[int]] = None
+    lecture_ids: Optional[List[str]] = None
+
+
+class CourseOptionsOut(BaseModel):
+    students: List[ManagedUserOut] = []
+    faculty: List[ManagedUserOut] = []
+
+
 # ---- lectures ----
 class LectureSummary(BaseModel):
     id: str
     date: str
     course_name: Optional[str] = None
+    course_id: Optional[int] = None
+    course_title: Optional[str] = None
+    owner_user_id: Optional[int] = None
+    owner_username: Optional[str] = None
+    visibility: Visibility = "public"
     captured_at: str
     summary: Optional[str] = None
     tags: Optional[str] = None
@@ -72,13 +148,29 @@ class LectureDetail(BaseModel):
     id: str
     date: str
     course_name: Optional[str] = None
+    course_id: Optional[int] = None
+    course_title: Optional[str] = None
+    owner_user_id: Optional[int] = None
+    owner_username: Optional[str] = None
+    visibility: Visibility = "public"
     captured_at: str
     raw_ocr_text: Optional[str] = None
     corrected_text: Optional[str] = None
     summary: Optional[str] = None
     tags: Optional[str] = None
     manifest: Optional[dict] = None
+    student_ids: List[int] = []
     annotations: List[AnnotationOut] = []
+
+
+class LectureUpdateRequest(BaseModel):
+    course_name: Optional[str] = Field(default=None, max_length=160)
+    course_id: Optional[int] = None
+    owner_user_id: Optional[int] = None
+    visibility: Optional[Visibility] = None
+    corrected_text: Optional[str] = None
+    summary: Optional[str] = None
+    student_ids: Optional[List[int]] = None
 
 
 # ---- pipeline / capture ----
@@ -104,3 +196,5 @@ class GuidanceOut(BaseModel):
 
 class CaptureRequest(BaseModel):
     course: Optional[str] = None
+    course_id: Optional[int] = None
+    visibility: Visibility = "public"

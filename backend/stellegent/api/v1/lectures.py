@@ -8,11 +8,14 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import FileResponse
 
 from ...config import ROOT
-from ...db import (list_lectures, get_lecture, delete_lecture,
-                   add_annotation, get_annotations)
-from ...deps import current_user, require_roles, log_action
+from ...db import (can_manage_lecture, can_view_lecture, delete_lecture,
+                   get_course, get_lecture, list_lecture_student_ids,
+                   list_lectures, set_lecture_students, update_lecture,
+                   user_has_role, add_annotation, get_annotations)
+from ...deps import current_user, log_action
 from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
-                        AnnotateRequest, MessageResponse)
+                        AnnotateRequest, LectureUpdateRequest,
+                        MessageResponse)
 
 router = APIRouter(prefix="/lectures", tags=["lectures"])
 
@@ -22,29 +25,38 @@ _FILE_KEYS = {"pdf": "pdf_path", "docx": "docx_path", "txt": "txt_path",
 
 @router.get("", response_model=List[LectureSummary])
 def list_all(date: Optional[str] = None, course: Optional[str] = None,
-             q: Optional[str] = None, _u: dict = Depends(current_user)):
-    return [dict(r) for r in list_lectures(date=date, course=course, q=q)]
+             q: Optional[str] = None, user: dict = Depends(current_user)):
+    return [
+        dict(r)
+        for r in list_lectures(date=date, course=course, q=q,
+                               user_id=user["uid"], role=user["role"])
+    ]
 
 
-@router.get("/{lecture_id}", response_model=LectureDetail)
-def detail(lecture_id: str, _u: dict = Depends(current_user)):
-    row = get_lecture(lecture_id)
-    if not row:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+def _detail_payload(row) -> dict:
     out = dict(row)
     try:
         out["manifest"] = json.loads(Path(row["manifest_path"]).read_text("utf-8"))
     except Exception:
         out["manifest"] = None
-    out["annotations"] = [dict(a) for a in get_annotations(lecture_id)]
+    out["student_ids"] = list_lecture_student_ids(row["id"])
+    out["annotations"] = [dict(a) for a in get_annotations(row["id"])]
     return out
+
+
+@router.get("/{lecture_id}", response_model=LectureDetail)
+def detail(lecture_id: str, user: dict = Depends(current_user)):
+    row = get_lecture(lecture_id)
+    if not row or not can_view_lecture(row, user_id=user["uid"], role=user["role"]):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    return _detail_payload(row)
 
 
 @router.get("/{lecture_id}/file")
 def download(lecture_id: str, request: Request, type: str = "pdf",
              user: dict = Depends(current_user)):
     row = get_lecture(lecture_id)
-    if not row:
+    if not row or not can_view_lecture(row, user_id=user["uid"], role=user["role"]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
     key = _FILE_KEYS.get(type)
     if not key or not row[key]:
@@ -63,19 +75,75 @@ def download(lecture_id: str, request: Request, type: str = "pdf",
 @router.post("/{lecture_id}/annotate", response_model=AnnotationOut, status_code=201)
 def annotate(lecture_id: str, body: AnnotateRequest, request: Request,
              user: dict = Depends(current_user)):
-    if not get_lecture(lecture_id):
+    row = get_lecture(lecture_id)
+    if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
     nid = add_annotation(lecture_id, user["uid"], body.note.strip())
     log_action(request, user, "annotate", lecture_id)
     notes = [dict(a) for a in get_annotations(lecture_id)]
     return next(a for a in notes if a["id"] == nid)
 
 
+@router.patch("/{lecture_id}", response_model=LectureDetail)
+def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
+           user: dict = Depends(current_user)):
+    row = get_lecture(lecture_id)
+    if not row:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
+
+    fields = body.model_fields_set
+    updates = {}
+    if "course_name" in fields:
+        updates["course_name"] = body.course_name
+    if "summary" in fields:
+        updates["summary"] = body.summary
+    if "corrected_text" in fields:
+        updates["corrected_text"] = body.corrected_text
+    if "visibility" in fields and body.visibility is not None:
+        updates["visibility"] = body.visibility
+    if "owner_user_id" in fields:
+        if user["role"] != "admin":
+            raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
+        if body.owner_user_id is not None and not user_has_role(
+            body.owner_user_id, "prof", "admin"
+        ):
+            raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                                "lecture owner must be faculty")
+        updates["owner_user_id"] = body.owner_user_id
+    if "course_id" in fields:
+        if body.course_id is not None:
+            course = get_course(body.course_id)
+            if not course:
+                raise HTTPException(status.HTTP_404_NOT_FOUND, "course not found")
+            if user["role"] != "admin" and course["faculty_id"] != user["uid"]:
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
+        updates["course_id"] = body.course_id
+
+    try:
+        updated = update_lecture(lecture_id, **updates)
+        if "student_ids" in fields and body.student_ids is not None:
+            set_lecture_students(lecture_id, body.student_ids)
+    except ValueError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    if not updated:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    log_action(request, user, "update_lecture", lecture_id)
+    refreshed = get_lecture(lecture_id)
+    return _detail_payload(refreshed)
+
+
 @router.delete("/{lecture_id}", response_model=MessageResponse)
 def remove(lecture_id: str, request: Request,
-           user: dict = Depends(require_roles("prof", "admin"))):
-    if not get_lecture(lecture_id):
+           user: dict = Depends(current_user)):
+    row = get_lecture(lecture_id)
+    if not row:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
+    if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
     delete_lecture(lecture_id)
     log_action(request, user, "delete", lecture_id)
     return MessageResponse(ok=True)

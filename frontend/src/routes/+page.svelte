@@ -5,6 +5,7 @@
 	import type { Course, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 	import { CircleNotch, MagnifyingGlass, UploadSimple, CalendarBlank } from 'phosphor-svelte';
 
 	let q = $state('');
@@ -109,24 +110,24 @@
 			<div
 				class="grid h-10 grid-cols-2 rounded-lg border border-gray-200 bg-white p-1 text-sm font-semibold dark:border-gray-800 dark:bg-gray-900"
 			>
-				<button
+				<Button
 					type="button"
 					onclick={() => (visibility = 'public')}
-					class="rounded-md px-3 transition-colors {visibility === 'public'
-						? 'bg-secondary text-white'
-						: 'text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-gray-100'}"
+					class="h-8 {visibility === 'public'
+						? ''
+						: '!bg-transparent !text-gray-500 hover:!text-primary dark:!text-gray-400 dark:hover:!text-gray-100'}"
 				>
 					Public
-				</button>
-				<button
+				</Button>
+				<Button
 					type="button"
 					onclick={() => (visibility = 'private')}
-					class="rounded-md px-3 transition-colors {visibility === 'private'
-						? 'bg-secondary text-white'
-						: 'text-gray-500 hover:text-primary dark:text-gray-400 dark:hover:text-gray-100'}"
+					class="h-8 {visibility === 'private'
+						? ''
+						: '!bg-transparent !text-gray-500 hover:!text-primary dark:!text-gray-400 dark:hover:!text-gray-100'}"
 				>
 					Private
-				</button>
+				</Button>
 			</div>
 		</div>
 		<input
@@ -137,12 +138,12 @@
 			disabled={uploading}
 			class="sr-only"
 		/>
-		<button
+		<Button
 			type="button"
 			onclick={chooseUpload}
 			disabled={uploading}
 			aria-label="Upload board image"
-			class="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-3.5 text-sm font-medium text-white shadow-sm shadow-primary/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98] disabled:pointer-events-none disabled:opacity-60"
+			class="shadow-sm shadow-primary/20"
 		>
 			{#if uploading}
 				<CircleNotch size={18} class="animate-spin" />
@@ -151,7 +152,7 @@
 				<UploadSimple size={18} />
 				<span class="hidden sm:inline">Upload</span>
 			{/if}
-		</button>
+		</Button>
 	{/if}
 </div>
 

@@ -17,6 +17,7 @@
 		CaretDown
 	} from 'phosphor-svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
+	import Button from '$lib/components/ui/Button.svelte';
 
 	let { children } = $props();
 
@@ -130,25 +131,28 @@
 			</nav>
 
 			<div class="mt-auto grid gap-1">
-				<button
+				<Button
+					variant="icon+text"
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-					class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+					class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !w-full !justify-start"
 				>
-					{#if theme.dark}
-						<Sun size={18} weight="fill" />
-					{:else}
-						<Moon size={18} />
-					{/if}
+					{#snippet icon()}
+						{#if theme.dark}
+							<Sun size={18} weight="fill" />
+						{:else}
+							<Moon size={18} />
+						{/if}
+					{/snippet}
 					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
-				</button>
+				</Button>
 
 				<div class="relative" use:clickOutsideDesktop>
-					<button
+					<Button
 						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
 						aria-haspopup="menu"
 						aria-expanded={desktopMenuOpen}
-						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
+						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
 					>
 						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-white shadow-sm">
 							{initials}
@@ -158,21 +162,24 @@
 							size={16}
 							class="{navMotion} shrink-0 text-gray-400 {desktopMenuOpen ? 'rotate-180' : ''}"
 						/>
-					</button>
+					</Button>
 
 					{#if desktopMenuOpen}
 						<div
 							role="menu"
 							class="absolute bottom-0 left-full ml-2 w-64 rounded-lg bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 						>
-							<button
+							<Button
+								variant="icon+text"
 								onclick={logout}
 								role="menuitem"
-								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
 							>
-								<SignOut size={18} />
+								{#snippet icon()}
+									<SignOut size={18} />
+								{/snippet}
 								<span>Log out</span>
-							</button>
+							</Button>
 						</div>
 					{/if}
 				</div>
@@ -204,11 +211,11 @@
 			{/each}
 
 			<div class="relative flex min-w-0 flex-1" use:clickOutsideMobile>
-				<button
+				<Button
 					onclick={() => (mobileMenuOpen = !mobileMenuOpen)}
 					aria-haspopup="menu"
 					aria-expanded={mobileMenuOpen}
-					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium text-gray-400 hover:text-white focus-visible:outline-none"
+					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-lg px-1 py-2 text-[10px] font-medium !text-gray-400 hover:!text-white focus-visible:outline-none !bg-transparent !shadow-none !h-auto"
 				>
 					<div class="grid size-8 place-items-center">
 						<span class="grid size-6 place-items-center rounded-lg bg-secondary text-[10px] font-bold text-white shadow-sm ring-2 ring-primary">
@@ -216,33 +223,39 @@
 						</span>
 					</div>
 					<span class="max-w-full truncate">Me</span>
-				</button>
+				</Button>
 
 				{#if mobileMenuOpen}
 					<div
 						role="menu"
 						class="absolute bottom-full right-0 mb-3 w-48 rounded-lg bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 					>
-						<button
+						<Button
+							variant="icon+text"
 							onclick={() => theme.toggle()}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
 						>
-							{#if theme.dark}
-								<Sun size={18} weight="fill" />
-							{:else}
-								<Moon size={18} />
-							{/if}
+							{#snippet icon()}
+								{#if theme.dark}
+									<Sun size={18} weight="fill" />
+								{:else}
+									<Moon size={18} />
+								{/if}
+							{/snippet}
 							<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
-						</button>
-						<button
+						</Button>
+						<Button
+							variant="icon+text"
 							onclick={logout}
 							role="menuitem"
-							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium text-gray-300 hover:bg-white/10 hover:text-white"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
 						>
-							<SignOut size={18} />
+							{#snippet icon()}
+								<SignOut size={18} />
+							{/snippet}
 							<span>Log out</span>
-						</button>
+						</Button>
 					</div>
 				{/if}
 			</div>
