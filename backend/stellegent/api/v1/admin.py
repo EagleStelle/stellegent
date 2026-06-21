@@ -24,7 +24,7 @@ def create_managed_user(body: ManagedUserCreate, request: Request,
                         user: dict = Depends(require_roles("admin"))):
     try:
         uid = create_user(body.username, body.password, body.role,
-                          email=str(body.email) if body.email else None)
+                          email=str(body.email))
     except sqlite3.IntegrityError:
         raise HTTPException(status.HTTP_409_CONFLICT, "account exists")
     except ValueError as exc:

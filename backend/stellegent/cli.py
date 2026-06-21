@@ -28,7 +28,7 @@ def cmd_capture(args: argparse.Namespace) -> int:
 
 def cmd_initdb(_args: argparse.Namespace) -> int:
     init_db()
-    print("db initialized (migrations applied)")
+    print("db initialized (schema applied)")
     return 0
 
 
@@ -88,7 +88,7 @@ def main(argv=None) -> int:
     au = sub.add_parser("adduser")
     au.add_argument("username")
     au.add_argument("password")
-    au.add_argument("--email", default=None)
+    au.add_argument("--email", required=True)
     au.add_argument("--role", choices=["prof", "student", "admin"], required=True)
     au.set_defaults(fn=cmd_adduser)
 

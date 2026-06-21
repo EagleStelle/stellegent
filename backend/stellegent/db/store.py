@@ -230,8 +230,7 @@ def admin_exists(exclude_user_id: Optional[int] = None) -> bool:
         return c.execute(sql, args).fetchone() is not None
 
 
-def create_user(username: str, password: str, role: str,
-                email: Optional[str] = None) -> int:
+def create_user(username: str, password: str, role: str, email: str) -> int:
     _validate_role(role)
     if role == "admin" and admin_exists():
         raise ValueError("only one admin is allowed")
@@ -278,11 +277,23 @@ def get_user_by_id(user_id: int) -> Optional[sqlite3.Row]:
 
 def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
     with get_conn() as c:
-        return c.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        return c.execute(
+            "SELECT * FROM users WHERE lower(email) = lower(?)",
+            (email,),
+        ).fetchone()
 
 
 def verify_user(username: str, password: str) -> Optional[sqlite3.Row]:
     u = get_user(username)
+    if not u or not u["password_hash"]:
+        return None
+    if bcrypt.checkpw(password.encode("utf-8"), u["password_hash"].encode("utf-8")):
+        return u
+    return None
+
+
+def verify_user_by_email(email: str, password: str) -> Optional[sqlite3.Row]:
+    u = get_user_by_email(email)
     if not u or not u["password_hash"]:
         return None
     if bcrypt.checkpw(password.encode("utf-8"), u["password_hash"].encode("utf-8")):

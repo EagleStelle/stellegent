@@ -249,7 +249,7 @@
 							{course.name}
 						</h3>
 						<p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-							Prof. {course.faculty_username}
+							{course.faculty_username}
 						</p>
 					</div>
 
@@ -369,7 +369,7 @@
 				<div>
 					<h2 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">{activeCourse.name}</h2>
 					<p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-						Prof. {activeCourse.faculty_username}
+						{activeCourse.faculty_username}
 					</p>
 				</div>
 				<div class="flex gap-2">

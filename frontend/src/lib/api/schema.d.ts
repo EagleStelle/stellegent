@@ -438,8 +438,11 @@ export interface components {
         };
         /** LoginRequest */
         LoginRequest: {
-            /** Username */
-            username: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
             /** Password */
             password: string;
         };

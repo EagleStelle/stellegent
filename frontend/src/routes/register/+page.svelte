@@ -12,7 +12,7 @@
 	import { CircleNotch, User, EnvelopeSimple, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
-	let username = $state('');
+	let fullName = $state('');
 	let email = $state('');
 	let password = $state('');
 	let error = $state('');
@@ -28,7 +28,7 @@
 		error = '';
 		loading = true;
 		try {
-			await apiPost<TokenResponse>('/api/v1/register', { username, email, password });
+			await apiPost<TokenResponse>('/api/v1/register', { username: fullName, email, password });
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
@@ -110,11 +110,11 @@
 
 			<form onsubmit={submit} class="mt-5 flex flex-col gap-3">
 				<Input
-					id="username"
-					label="Username"
-					bind:value={username}
+					id="full-name"
+					label="Full Name"
+					bind:value={fullName}
 					icon={User}
-					autocomplete="username"
+					autocomplete="name"
 					required
 					error={!!error}
 				/>

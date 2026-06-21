@@ -251,8 +251,8 @@
 						<UserCircle size={16} />
 						<span
 							>{lec.owner_username
-								? `Prof. ${lec.owner_username}`
-								: "Prof. Unknown"}</span
+								? lec.owner_username
+								: "Unknown"}</span
 						>
 					</div>
 					<span

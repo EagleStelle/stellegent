@@ -12,7 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from ...core.security import issue_token
 from ...config import JWT_EXPIRY_MIN
-from ...db import (verify_user, create_user, get_user, get_user_by_id, get_user_by_email,
+from ...db import (verify_user_by_email, create_user, get_user_by_id, get_user_by_email,
                    create_reset_token, consume_reset_token, set_password)
 from ...deps import current_user, log_action
 from ...schemas import (LoginRequest, RegisterRequest, TokenResponse, UserOut,
@@ -32,7 +32,7 @@ def _set_cookie(resp: Response, token: str) -> None:
 
 @router.post("/login", response_model=TokenResponse)
 def login(body: LoginRequest, response: Response):
-    user = verify_user(body.username, body.password)
+    user = verify_user_by_email(str(body.email), body.password)
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")
     if user["disabled"]:
@@ -44,8 +44,6 @@ def login(body: LoginRequest, response: Response):
 
 @router.post("/register", response_model=TokenResponse, status_code=201)
 def register(body: RegisterRequest, response: Response):
-    if get_user(body.username):
-        raise HTTPException(status.HTTP_409_CONFLICT, "username taken")
     if get_user_by_email(body.email):
         raise HTTPException(status.HTTP_409_CONFLICT, "email already registered")
     try:

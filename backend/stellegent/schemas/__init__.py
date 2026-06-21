@@ -11,7 +11,7 @@ Visibility = Literal["public", "private"]
 
 # ---- auth ----
 class LoginRequest(BaseModel):
-    username: str
+    email: EmailStr
     password: str
 
 
@@ -64,7 +64,7 @@ class ManagedUserOut(BaseModel):
 
 class ManagedUserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=64)
-    email: Optional[EmailStr] = None
+    email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     role: EditableRole
 

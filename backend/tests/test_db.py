@@ -32,19 +32,23 @@ def test_user_auth(tmp_path, monkeypatch):
     monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "u.db")
     from stellegent import db
     db.init_db()
-    uid = db.create_user("prof1", "secret123", "prof")
+    uid = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
     assert uid > 0
     assert db.verify_user("prof1", "secret123")["role"] == "prof"
     assert db.verify_user("prof1", "wrong") is None
+    assert db.verify_user_by_email("PROF1@example.com", "secret123")["role"] == "prof"
+    assert db.verify_user_by_email("prof1@example.com", "wrong") is None
+    dup_id = db.create_user("prof1", "secret123", "prof", email="prof1b@example.com")
+    assert dup_id > uid
 
 
 def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
     monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "access.db")
     from stellegent import db
     db.init_db()
-    prof_id = db.create_user("prof1", "secret123", "prof")
-    student_id = db.create_user("student1", "secret123", "student")
-    other_student_id = db.create_user("student2", "secret123", "student")
+    prof_id = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
+    student_id = db.create_user("student1", "secret123", "student", email="student1@example.com")
+    other_student_id = db.create_user("student2", "secret123", "student", email="student2@example.com")
     course_id = db.create_course(name="Math", faculty_id=prof_id)
     db.set_course_students(course_id, [student_id])
 

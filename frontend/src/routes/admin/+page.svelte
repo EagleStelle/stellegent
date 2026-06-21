@@ -135,7 +135,7 @@
 		try {
 			await apiPost<ManagedUser>("/api/v1/admin/users", {
 				username: newUsername.trim(),
-				email: newEmail.trim() || null,
+				email: newEmail.trim(),
 				password: newPassword,
 				role: newRole,
 			});
@@ -260,7 +260,7 @@
 		<table class="w-full border-collapse text-sm">
 			<thead>
 				<tr class="border-b border-gray-200 dark:border-gray-800">
-					{#each [["username", "Username"], ["email", "Email"], ["role", "Role"], ["status", "Status"]] as [col, label]}
+					{#each [["username", "Full Name"], ["email", "Email"], ["role", "Role"], ["status", "Status"]] as [col, label]}
 						<th class={th} onclick={() => setSort(col as SortCol)}>
 							<span class="inline-flex items-center gap-1">
 								{label}
@@ -387,8 +387,8 @@
 		class="grid w-full max-w-md gap-3 rounded-2xl border border-gray-800 bg-gray-900 p-6"
 	>
 		<h2 class="text-lg font-bold tracking-tight text-gray-50">Add account</h2>
-		<Input id="new-username" label="Username" bind:value={newUsername} icon={UserIcon} required />
-		<Input id="new-email" label="Email" type="email" bind:value={newEmail} />
+		<Input id="new-username" label="Full Name" bind:value={newUsername} icon={UserIcon} required />
+		<Input id="new-email" label="Email" type="email" bind:value={newEmail} required />
 		<InputPassword id="new-password" label="Password" bind:value={newPassword} minlength={8} required />
 		<label class="grid gap-1.5 text-sm font-semibold text-gray-100">
 			<span>Role</span>
@@ -428,7 +428,7 @@
 			class="grid w-full max-w-md gap-3 rounded-2xl border border-gray-800 bg-gray-900 p-6"
 		>
 			<h2 class="text-lg font-bold tracking-tight text-gray-50">Edit {editing.username}</h2>
-			<Input id="draft-username" label="Username" bind:value={draftUsername} />
+			<Input id="draft-username" label="Full Name" bind:value={draftUsername} />
 			<Input id="draft-email" label="Email" type="email" bind:value={draftEmail} />
 			<InputPassword id="draft-password" label="New password" bind:value={draftPassword} />
 			<label class="grid gap-1.5 text-sm font-semibold text-gray-100">

@@ -9,10 +9,10 @@
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { CircleNotch, User, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
+	import { CircleNotch, EnvelopeSimple, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
-	let username = $state('');
+	let email = $state('');
 	let password = $state('');
 	let error = $state('');
 	let loading = $state(false);
@@ -27,7 +27,7 @@
 		error = '';
 		loading = true;
 		try {
-			await apiPost<TokenResponse>('/api/v1/login', { username, password });
+			await apiPost<TokenResponse>('/api/v1/login', { email, password });
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
@@ -109,11 +109,12 @@
 
 			<form onsubmit={submit} class="mt-5 flex flex-col gap-3">
 				<Input
-					id="username"
-					label="Username"
-					bind:value={username}
-					icon={User}
-					autocomplete="username"
+					id="email"
+					label="Email"
+					type="email"
+					bind:value={email}
+					icon={EnvelopeSimple}
+					autocomplete="email"
 					required
 					error={!!error}
 				/>

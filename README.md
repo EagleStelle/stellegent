@@ -18,7 +18,7 @@ correction/summary use Phi-3-mini via Ollama; Gemini self-corrects in one call.
 | --------- | ---------------------------------------------------------------------- |
 | Frontend  | SvelteKit (SPA / `adapter-static`) · TypeScript · Tailwind v4 · shadcn-svelte · bits-ui · lucide · TanStack Query · openapi-fetch |
 | Backend   | FastAPI · Pydantic · Uvicorn · OpenCV · RapidOCR/onnxruntime · google-genai · Ollama |
-| Data      | SQLite + a forward-only SQL migration runner                          |
+| Data      | SQLite + SQL schema migrations                                        |
 | Auth      | Local email + password, bcrypt, JWT (cookie + Bearer). Google OAuth columns reserved in schema. |
 | Deploy    | One multi-stage Docker image (Node build → Python runtime serves API + SPA) + Ollama |
 
@@ -58,7 +58,7 @@ docker compose exec ollama ollama pull phi3:mini   # only needed for PP-OCR fall
 docker compose exec app python backend/scripts/seed_admin.py
 ```
 
-Open <http://localhost:8000>. Log in as `admin / admin123` (change before
+Open <http://localhost:8000>. Log in as `admin@example.com / admin123` (change before
 deploying). The image builds the SPA and serves it from FastAPI, so it is one
 origin / one container (plus Ollama).
 
@@ -76,7 +76,7 @@ python -m venv .venv
 .\.venv\Scripts\Activate.ps1        # Windows; or: source .venv/bin/activate
 pip install -e ./backend
 cp .env.example .env                # set GEMINI_API_KEY (or OCR_BACKEND=paddle)
-python -m stellegent.cli initdb     # applies migrations
+python -m stellegent.cli initdb     # applies the schema baseline
 python backend/scripts/seed_admin.py
 python -m stellegent.cli serve --reload   # http://localhost:8000  (docs: /docs)
 ```
@@ -117,8 +117,8 @@ call fails at runtime it falls back to PP-OCR for that request.
 ## API (`/api/v1`)
 
 ```
-POST   /login           {username,password}        -> {token,role,username} (+cookie)
-POST   /register        {username,email,password}  -> creates a 'student', returns token
+POST   /login           {email,password}           -> {token,role,username} (+cookie)
+POST   /register        {username,email,password}  -> creates a 'student', username stores full name
 POST   /logout
 GET    /me
 POST   /forgot-password {email}                    -> reset token (returned in dev; email TODO)
@@ -140,12 +140,12 @@ Interactive docs at `/docs`. Auth via `Authorization: Bearer <jwt>` or the
 
 ---
 
-## Database migrations
+## Database Schema
 
-Schema lives in `backend/stellegent/db/migrations/NNN_*.sql`, applied in order
-and tracked in `schema_version`. `initdb` (and app startup) apply pending
-migrations idempotently. Add a new file with the next number to evolve the
-schema; the runner is forward-only.
+Fresh deploys start from `backend/stellegent/db/migrations/001_init.sql`.
+`initdb` and app startup apply the schema idempotently and track applied files
+in `schema_version`. Add a new numbered file only when evolving an existing
+deployment.
 
 ---
 

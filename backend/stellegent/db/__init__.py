@@ -3,6 +3,7 @@ from .store import (
     insert_lecture, list_lectures, get_lecture, delete_lecture,
     can_view_lecture, can_manage_lecture, update_lecture,
     create_user, get_user, get_user_by_id, get_user_by_email, verify_user,
+    verify_user_by_email,
     list_users, update_user, delete_user, admin_exists, user_has_role,
     set_password, create_reset_token, consume_reset_token,
     list_courses, get_course, can_manage_course, create_course, update_course,

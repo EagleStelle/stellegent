@@ -1,7 +1,8 @@
-"""Tiny forward-only SQL migration runner for SQLite.
+"""Tiny SQL schema runner for SQLite.
 
-Numbered ``migrations/NNN_*.sql`` files apply in order; applied versions are
-recorded in ``schema_version``. Idempotent: re-running applies only pending
+The current deploy starts from ``migrations/001_init.sql`` as a fresh baseline.
+Future numbered ``migrations/NNN_*.sql`` files apply in order; applied versions
+are recorded in ``schema_version``. Idempotent: re-running applies only pending
 files. No down-migrations (keep it simple for a single-file SQLite DB).
 """
 from __future__ import annotations
