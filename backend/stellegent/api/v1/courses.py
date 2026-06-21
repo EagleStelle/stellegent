@@ -42,7 +42,7 @@ def options(user: dict = Depends(require_roles("prof", "admin"))):
     users = [dict(r) for r in list_users()]
     students = [u for u in users if u["role"] == "student"]
     if user["role"] == "admin":
-        faculty = [u for u in users if u["role"] in ("prof", "admin")]
+        faculty = [u for u in users if u["role"] == "prof"]
     else:
         faculty = [u for u in users if u["id"] == user["uid"]]
     return CourseOptionsOut(

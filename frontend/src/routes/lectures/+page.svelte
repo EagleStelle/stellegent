@@ -137,7 +137,7 @@
 	function editLecture(e: MouseEvent, id: string) {
 		e.preventDefault();
 		e.stopPropagation();
-		goto(`/lectures/${id}?edit=true`);
+		goto(`/lectures/${id}/edit`);
 	}
 
 	async function deleteLecture(e: MouseEvent, id: string) {

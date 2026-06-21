@@ -1,0 +1,56 @@
+<script lang="ts">
+	import { goto } from "$app/navigation";
+	import { page } from "$app/state";
+	import { createQuery } from "@tanstack/svelte-query";
+	import { apiGet } from "$lib/api/client";
+	import type { LectureDetail } from "$lib/types";
+	import { ArrowLeft } from "phosphor-svelte";
+	import Button from "$lib/components/ui/Button.svelte";
+
+	const id = $derived(page.params.id);
+
+	const lecture = createQuery(() => ({
+		queryKey: ["lecture", id],
+		queryFn: () => apiGet<LectureDetail>(`/api/v1/lectures/${id}`),
+	}));
+
+	const body = $derived(
+		lecture.data?.summary?.trim()
+			? lecture.data.summary
+			: "No summary yet.",
+	);
+</script>
+
+{#if lecture.data}
+	<div class="relative flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] flex-col">
+		<header
+			class="shrink-0 flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
+		>
+			<Button
+				variant="icon"
+				ghost
+				onclick={() => goto(`/lectures/${id}`)}
+				title="Back to lecture"
+			>
+				{#snippet icon()}
+					<ArrowLeft size={20} />
+				{/snippet}
+			</Button>
+			<div>
+				<h1
+					class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
+				>
+					Summary
+				</h1>
+			</div>
+		</header>
+
+		<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-4 pr-2">
+			<p
+				class="whitespace-pre-wrap text-base leading-relaxed text-gray-700 dark:text-gray-300"
+			>
+				{body}
+			</p>
+		</div>
+	</div>
+{/if}

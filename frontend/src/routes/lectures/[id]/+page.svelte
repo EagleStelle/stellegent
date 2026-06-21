@@ -15,11 +15,12 @@
 		FileDoc,
 		FileTxt,
 		BookOpen,
+		ArrowRight,
 	} from "phosphor-svelte";
-	import Card from "$lib/components/ui/Card.svelte";
+	import Card, { cardVariants } from "$lib/components/ui/Card.svelte";
 	import ImageModal from "$lib/components/modal/Image.svelte";
-	import TextModal from "$lib/components/modal/Text.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
+	import { cn } from "$lib/utils";
 
 	const qc = useQueryClient();
 	const id = $derived(page.params.id);
@@ -243,18 +244,35 @@
 		</div>
 
 		<div class="grid shrink-0 gap-4 md:grid-cols-2">
-			<TextModal
-				title="Transcript"
-				text={lec.corrected_text}
-				fallback="No text yet."
-				lines={6}
-			/>
-			<TextModal
-				title="Summary"
-				text={lec.summary}
-				fallback="No summary yet."
-				lines={6}
-			/>
+			<button
+				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left")}
+				onclick={() => goto(`/lectures/${id}/transcript`)}
+			>
+				<div class="flex w-full items-center justify-between gap-2">
+					<h2 class="text-sm font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
+						Transcript
+					</h2>
+					<ArrowRight size={16} class="shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-secondary" />
+				</div>
+				<p class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300" style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;">
+					{lec.corrected_text?.trim() ? lec.corrected_text : "No text yet."}
+				</p>
+			</button>
+
+			<button
+				class={cn(cardVariants({ interactive: true }), "group flex w-full flex-col gap-2 text-left")}
+				onclick={() => goto(`/lectures/${id}/summary`)}
+			>
+				<div class="flex w-full items-center justify-between gap-2">
+					<h2 class="text-sm font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
+						Summary
+					</h2>
+					<ArrowRight size={16} class="shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-secondary" />
+				</div>
+				<p class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300" style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;">
+					{lec.summary?.trim() ? lec.summary : "No summary yet."}
+				</p>
+			</button>
 		</div>
 	</section>
 {/if}
