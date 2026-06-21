@@ -201,7 +201,7 @@
 		</div>
 	</section>
 {:else if lecture.isError}
-	<Card class="mx-auto mt-16 flex max-w-md flex-col items-center gap-4 text-center">
+	<Card>
 		<h1 class="text-lg font-semibold text-primary dark:text-gray-50">
 			Lecture not found
 		</h1>
@@ -221,7 +221,7 @@
 		class="flex flex-col gap-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-2rem)]"
 	>
 		<header
-			class="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+			class="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
 		>
 			<div class="flex flex-col gap-2">
 				<div class="flex items-center gap-3">
@@ -284,8 +284,8 @@
 				{#each downloads as d (d.type)}
 					<Button
 						variant="icon+text"
+						secondary
 						onclick={() => downloadFile(d.type)}
-						class="!bg-white !text-gray-700 hover:!text-secondary border border-gray-200 dark:border-gray-800 dark:!bg-gray-900 dark:!text-gray-200 hover:border-secondary/40"
 						title={`Download ${d.label}`}
 					>
 						{#snippet icon()}
@@ -295,11 +295,12 @@
 					</Button>
 				{/each}
 				{#if canManage}
-					<div class="mx-1 h-6 w-px rounded-full bg-gray-200 dark:bg-gray-800"></div>
+					<div
+						class="mx-1 h-6 w-px rounded-full bg-gray-200 dark:bg-gray-800"
+					></div>
 					<Button
 						variant="icon+text"
 						onclick={() => (editOpen = !editOpen)}
-						class="!bg-white !text-gray-700 hover:!text-secondary border border-gray-200 dark:border-gray-800 dark:!bg-gray-900 dark:!text-gray-200 hover:border-secondary/40"
 						title="Edit lecture"
 					>
 						{#snippet icon()}
@@ -309,8 +310,8 @@
 					</Button>
 					<Button
 						variant="icon+text"
+						danger
 						onclick={remove}
-						class="!bg-secondary/10 !text-secondary hover:!bg-secondary/20"
 						title="Delete lecture"
 					>
 						{#snippet icon()}
@@ -324,137 +325,142 @@
 
 		{#if canManage}
 			<Modal bind:open={editOpen} label="Edit Lecture">
-				<Card class="grid w-full max-w-4xl shrink-0 gap-4 overflow-y-auto max-h-[90dvh]">
-					<h2 class="text-xl font-bold text-primary dark:text-gray-50">Edit Lecture</h2>
+				<Card>
+					<h2
+						class="text-xl font-bold text-primary dark:text-gray-50"
+					>
+						Edit Lecture
+					</h2>
 					<div class="grid gap-3 md:grid-cols-3">
-					<label
-						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-					>
-						<span>Title</span>
-						<input
-							bind:value={draftTitle}
-							class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						/>
-					</label>
-					<label
-						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-					>
-						<span>Course</span>
-						<ComboBox
-							bind:value={draftCourseId}
-							placeholder="No course"
-							options={(courses.data ?? []).map((c) => ({
-								value: String(c.id),
-								label: c.name,
-							}))}
-						/>
-					</label>
-					<label
-						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-					>
-						<span>Visibility</span>
-						<ComboBox
-							bind:value={draftVisibility}
-							options={[
-								{ value: "public", label: "Public" },
-								{ value: "private", label: "Private" },
-							]}
-						/>
-					</label>
-					{#if me.data?.role === "admin"}
 						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100 md:col-span-3"
+							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 						>
-							<span>Owner</span>
-							<ComboBox
-								bind:value={draftOwnerId}
-								placeholder="Unassigned"
-								options={(options.data?.faculty ?? []).map(
-									(f) => ({
-										value: String(f.id),
-										label: f.username,
-									}),
-								)}
+							<span>Title</span>
+							<input
+								bind:value={draftTitle}
+								class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
 							/>
 						</label>
-					{/if}
-				</div>
-
-				<div class="grid gap-3 md:grid-cols-2">
-					<label
-						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-					>
-						<span>Transcript</span>
-						<textarea
-							bind:value={draftText}
-							rows="7"
-							class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						></textarea>
-					</label>
-					<label
-						class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-					>
-						<span>Summary</span>
-						<textarea
-							bind:value={draftSummary}
-							rows="7"
-							class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-						></textarea>
-					</label>
-				</div>
-
-				{#if options.data?.students?.length}
-					<div class="grid gap-2">
-						<div
-							class="flex items-center gap-2 text-sm font-semibold text-primary dark:text-gray-100"
+						<label
+							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
 						>
-							<UsersThree size={16} />
-							<span>Direct students</span>
-						</div>
-						<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-							{#each options.data.students as student (student.id)}
-								<label
-									class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-gray-800"
-								>
-									<input
-										type="checkbox"
-										checked={draftStudentIds.includes(
-											student.id,
-										)}
-										onchange={() =>
-											toggleStudent(student.id)}
-										class="size-4 rounded border-gray-300 text-secondary focus:ring-secondary"
-									/>
-									<span class="truncate"
-										>{student.username}</span
-									>
-								</label>
-							{/each}
-						</div>
+							<span>Course</span>
+							<ComboBox
+								bind:value={draftCourseId}
+								placeholder="No course"
+								options={(courses.data ?? []).map((c) => ({
+									value: String(c.id),
+									label: c.name,
+								}))}
+							/>
+						</label>
+						<label
+							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
+						>
+							<span>Visibility</span>
+							<ComboBox
+								bind:value={draftVisibility}
+								options={[
+									{ value: "public", label: "Public" },
+									{ value: "private", label: "Private" },
+								]}
+							/>
+						</label>
+						{#if me.data?.role === "admin"}
+							<label
+								class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100 md:col-span-3"
+							>
+								<span>Owner</span>
+								<ComboBox
+									bind:value={draftOwnerId}
+									placeholder="Unassigned"
+									options={(options.data?.faculty ?? []).map(
+										(f) => ({
+											value: String(f.id),
+											label: f.username,
+										}),
+									)}
+								/>
+							</label>
+						{/if}
 					</div>
-				{/if}
 
-				{#if editError}
-					<p
-						class="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400"
-					>
-						{editError}
-					</p>
-				{/if}
+					<div class="grid gap-3 md:grid-cols-2">
+						<label
+							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
+						>
+							<span>Transcript</span>
+							<textarea
+								bind:value={draftText}
+								rows="7"
+								class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
+							></textarea>
+						</label>
+						<label
+							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
+						>
+							<span>Summary</span>
+							<textarea
+								bind:value={draftSummary}
+								rows="7"
+								class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
+							></textarea>
+						</label>
+					</div>
 
-				<div class="flex justify-end">
-					<Button
-						variant="icon+text"
-						onclick={saveLecture}
-						disabled={saving}
-						class="!bg-primary hover:!bg-primary/90"
-					>
-						{#snippet icon()}
-							<FloppyDisk size={16} />
-						{/snippet}
-						{saving ? "Saving" : "Save"}
-					</Button>
-				</div>
+					{#if options.data?.students?.length}
+						<div class="grid gap-2">
+							<div
+								class="flex items-center gap-2 text-sm font-semibold text-primary dark:text-gray-100"
+							>
+								<UsersThree size={16} />
+								<span>Direct students</span>
+							</div>
+							<div
+								class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
+							>
+								{#each options.data.students as student (student.id)}
+									<label
+										class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-gray-800"
+									>
+										<input
+											type="checkbox"
+											checked={draftStudentIds.includes(
+												student.id,
+											)}
+											onchange={() =>
+												toggleStudent(student.id)}
+											class="size-4 rounded border-gray-300 text-secondary focus:ring-secondary"
+										/>
+										<span class="truncate"
+											>{student.username}</span
+										>
+									</label>
+								{/each}
+							</div>
+						</div>
+					{/if}
+
+					{#if editError}
+						<p
+							class="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400"
+						>
+							{editError}
+						</p>
+					{/if}
+
+					<div class="flex justify-end">
+						<Button
+							variant="icon+text"
+							onclick={saveLecture}
+							disabled={saving}
+						>
+							{#snippet icon()}
+								<FloppyDisk size={16} />
+							{/snippet}
+							{saving ? "Saving" : "Save"}
+						</Button>
+					</div>
 				</Card>
 			</Modal>
 		{/if}
@@ -463,7 +469,6 @@
 			<ImageModal
 				src={fileUrl("image")}
 				alt={`Board capture — ${lec.course_name ?? "lecture"}`}
-				class="h-full w-full rounded-xl bg-gray-50 object-contain ring-1 ring-gray-900/5 dark:bg-gray-800/50 dark:ring-white/10"
 			/>
 		</div>
 

@@ -20,7 +20,10 @@
 	onclick={() => (open = true)}
 	onkeydown={(e) => e.key === 'Enter' && (open = true)}
 	aria-label="Enlarge image"
-	class={cn('group relative block cursor-zoom-in overflow-hidden', className)}
+	class={cn(
+		'group relative block cursor-zoom-in overflow-hidden rounded-xl bg-gray-50 object-contain ring-1 ring-gray-900/5 dark:bg-gray-800/50 dark:ring-white/10',
+		className
+	)}
 >
 	<img {src} {alt} class="block h-auto w-full object-contain {ease} group-hover:scale-[1.015]" />
 	<span

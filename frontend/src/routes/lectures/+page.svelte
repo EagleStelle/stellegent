@@ -46,13 +46,12 @@
 	}));
 
 	const facultyOptions = $derived(options.data?.faculty ?? []);
-	const courseFilterOptions = $derived([
-		{ value: '', label: 'All courses' },
-		...(courses.data ?? []).map((c) => ({
+	const courseFilterOptions = $derived(
+		(courses.data ?? []).map((c) => ({
 			value: String(c.id),
 			label: c.name,
 		})),
-	]);
+	);
 
 	$effect(() => {
 		const courseId = page.url.searchParams.get('courseId') ?? '';

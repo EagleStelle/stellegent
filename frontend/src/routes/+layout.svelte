@@ -117,25 +117,27 @@
 			<nav class="grid gap-1" aria-label="Primary">
 				{#each links as link (link.href)}
 					{@const active = isActive(link.href)}
-					<a
+					<Button
+						variant="icon+text"
+						nav
+						{active}
 						href={link.href}
 						aria-current={active ? 'page' : undefined}
-						class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium {active
-							? 'bg-secondary text-white shadow-sm'
-							: 'text-gray-300 hover:bg-white/10 hover:text-white'}"
 					>
-						<link.icon size={18} weight={active ? 'fill' : 'regular'} />
+						{#snippet icon()}
+							<link.icon size={18} weight={active ? 'fill' : 'regular'} />
+						{/snippet}
 						<span>{link.label}</span>
-					</a>
+					</Button>
 				{/each}
 			</nav>
 
 			<div class="mt-auto grid gap-1">
 				<Button
 					variant="icon+text"
+					nav
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
 				>
 					{#snippet icon()}
 						{#if theme.dark}
@@ -147,11 +149,7 @@
 					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 				</Button>
 
-				<Button
-					variant="icon+text"
-					aria-label="Settings"
-					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
-				>
+				<Button variant="icon+text" nav aria-label="Settings">
 					{#snippet icon()}
 						<Gear size={18} />
 					{/snippet}
@@ -160,9 +158,11 @@
 
 				<Button
 					variant="icon+text"
+					ghost
+					danger
 					onclick={logout}
 					aria-label="Log out"
-					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
+					class="h-auto! w-full justify-start gap-3 px-3.5 py-2.5"
 				>
 					{#snippet icon()}
 						<SignOut size={18} />
