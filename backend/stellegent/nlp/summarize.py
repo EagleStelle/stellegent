@@ -47,7 +47,7 @@ def summarize(text: str) -> str:
         return ""
     try:
         raw = ollama_client.generate(_PROMPT.format(text=text))
-    except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
+    except requests.exceptions.RequestException as e:
         # Ollama unreachable/slow — degrade gracefully so the rest of the
         # pipeline (OCR, export, DB) still completes.
         log.warning("summarize skipped: Ollama unavailable (%s)", e)
@@ -75,8 +75,7 @@ def generate_title(summary: str, course_name: Optional[str] = None) -> str:
         try:
             topic = _clean_title(
                 ollama_client.generate(_TITLE_PROMPT.format(summary=summary)))
-        except (requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout) as e:
+        except requests.exceptions.RequestException as e:
             log.warning("title skipped: Ollama unavailable (%s)", e)
     course = (course_name or "").strip()
     if course and topic:

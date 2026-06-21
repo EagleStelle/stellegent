@@ -6,7 +6,7 @@ import sqlite3
 from contextlib import contextmanager
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import bcrypt
 
@@ -15,6 +15,8 @@ from .migrate import run_migrations
 
 _VALID_ROLES = {"prof", "student", "admin"}
 _VALID_VISIBILITY = {"public", "private"}
+_VALID_TASK_KINDS = {"upload", "capture"}
+_VALID_TASK_STATUSES = {"queued", "running", "succeeded", "failed"}
 
 
 def _now() -> str:
@@ -29,6 +31,16 @@ def _validate_role(role: str) -> None:
 def _validate_visibility(visibility: str) -> None:
     if visibility not in _VALID_VISIBILITY:
         raise ValueError("invalid visibility")
+
+
+def _validate_task_kind(kind: str) -> None:
+    if kind not in _VALID_TASK_KINDS:
+        raise ValueError("invalid task kind")
+
+
+def _validate_task_status(status: str) -> None:
+    if status not in _VALID_TASK_STATUSES:
+        raise ValueError("invalid task status")
 
 
 @contextmanager
@@ -226,6 +238,178 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
 def delete_lecture(lecture_id: str) -> None:
     with get_conn() as c:
         c.execute("DELETE FROM lectures WHERE id = ?", (lecture_id,))
+
+
+# ---------- processing tasks ----------
+
+def get_processing_task(task_id: str) -> Optional[sqlite3.Row]:
+    with get_conn() as c:
+        return c.execute("""
+            SELECT t.*, u.username AS created_by_username,
+                   CASE WHEN t.status = 'queued' THEN (
+                       SELECT COUNT(*)
+                       FROM processing_tasks q
+                       WHERE q.status = 'queued'
+                         AND (
+                             q.created_at < t.created_at
+                             OR (q.created_at = t.created_at AND q.id <= t.id)
+                         )
+                   ) ELSE NULL END AS queue_position
+            FROM processing_tasks t
+            LEFT JOIN users u ON u.id = t.created_by_user_id
+            WHERE t.id = ?
+        """, (task_id,)).fetchone()
+
+
+def create_processing_task(*, task_id: str, kind: str,
+                           created_by_user_id: Optional[int],
+                           payload: Dict[str, Any],
+                           course_name: Optional[str] = None,
+                           course_id: Optional[int] = None,
+                           filename: Optional[str] = None) -> sqlite3.Row:
+    _validate_task_kind(kind)
+    now = _now()
+    with get_conn() as c:
+        c.execute("""
+            INSERT INTO processing_tasks
+            (id,kind,status,created_by_user_id,course_name,course_id,filename,
+             payload,created_at,updated_at)
+            VALUES (?,?, 'queued', ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            task_id, kind, created_by_user_id, course_name, course_id, filename,
+            json.dumps(payload), now, now,
+        ))
+    row = get_processing_task(task_id)
+    if row is None:
+        raise RuntimeError("created task could not be loaded")
+    return row
+
+
+def list_processing_tasks(*, user_id: Optional[int], role: str,
+                          include_finished: bool = False,
+                          limit: int = 100) -> List[sqlite3.Row]:
+    _validate_role(role)
+    if role == "student":
+        return []
+    sql = """
+        SELECT t.*, u.username AS created_by_username,
+               CASE WHEN t.status = 'queued' THEN (
+                   SELECT COUNT(*)
+                   FROM processing_tasks q
+                   WHERE q.status = 'queued'
+                     AND (
+                         q.created_at < t.created_at
+                         OR (q.created_at = t.created_at AND q.id <= t.id)
+                     )
+               ) ELSE NULL END AS queue_position
+        FROM processing_tasks t
+        LEFT JOIN users u ON u.id = t.created_by_user_id
+        WHERE 1=1
+    """
+    args: List = []
+    if not include_finished:
+        sql += " AND t.status IN ('queued', 'running', 'failed')"
+    if role != "admin":
+        sql += " AND t.created_by_user_id = ?"
+        args.append(user_id)
+    sql += """
+        ORDER BY
+            CASE t.status
+                WHEN 'running' THEN 0
+                WHEN 'queued' THEN 1
+                WHEN 'failed' THEN 2
+                ELSE 3
+            END,
+            CASE WHEN t.status = 'queued' THEN t.created_at END ASC,
+            t.updated_at DESC
+        LIMIT ?
+    """
+    args.append(limit)
+    with get_conn() as c:
+        return list(c.execute(sql, args))
+
+
+def claim_next_processing_task() -> Optional[sqlite3.Row]:
+    p = Path(cfg.DB_PATH)
+    conn = sqlite3.connect(str(p), timeout=30)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA foreign_keys = ON")
+    try:
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("""
+            SELECT id
+            FROM processing_tasks
+            WHERE status = 'queued'
+            ORDER BY created_at ASC, id ASC
+            LIMIT 1
+        """).fetchone()
+        if row is None:
+            conn.commit()
+            return None
+        now = _now()
+        cur = conn.execute("""
+            UPDATE processing_tasks
+            SET status = 'running',
+                started_at = COALESCE(started_at, ?),
+                attempts = attempts + 1,
+                error = NULL,
+                updated_at = ?
+            WHERE id = ? AND status = 'queued'
+        """, (now, now, row["id"]))
+        if cur.rowcount != 1:
+            conn.rollback()
+            return None
+        task = conn.execute(
+            "SELECT * FROM processing_tasks WHERE id = ?",
+            (row["id"],),
+        ).fetchone()
+        conn.commit()
+        return task
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def complete_processing_task(task_id: str, *, lecture_id: str) -> None:
+    now = _now()
+    with get_conn() as c:
+        c.execute("""
+            UPDATE processing_tasks
+            SET status = 'succeeded',
+                lecture_id = ?,
+                completed_at = ?,
+                updated_at = ?,
+                error = NULL
+            WHERE id = ?
+        """, (lecture_id, now, now, task_id))
+
+
+def fail_processing_task(task_id: str, *, error: str) -> None:
+    now = _now()
+    with get_conn() as c:
+        c.execute("""
+            UPDATE processing_tasks
+            SET status = 'failed',
+                error = ?,
+                completed_at = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (error[:1000], now, now, task_id))
+
+
+def fail_interrupted_processing_tasks() -> None:
+    now = _now()
+    with get_conn() as c:
+        c.execute("""
+            UPDATE processing_tasks
+            SET status = 'failed',
+                error = COALESCE(error, 'Interrupted by server restart'),
+                completed_at = COALESCE(completed_at, ?),
+                updated_at = ?
+            WHERE status = 'running'
+        """, (now, now))
 
 
 # ---------- users ----------

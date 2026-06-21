@@ -38,6 +38,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/login/mfa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Login Mfa */
+        post: operations["login_mfa_api_v1_login_mfa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/register": {
         parameters: {
             query?: never;
@@ -89,6 +106,177 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Account */
+        get: operations["account_api_v1_account_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Account */
+        patch: operations["update_account_api_v1_account_patch"];
+        trace?: never;
+    };
+    "/api/v1/account/email/verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Account Verification */
+        post: operations["send_account_verification_api_v1_account_email_verification_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/verify-email": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Verify Email */
+        post: operations["verify_email_api_v1_verify_email_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change Password */
+        post: operations["change_password_api_v1_account_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/2fa/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Setup Totp */
+        post: operations["setup_totp_api_v1_account_2fa_setup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/2fa/enable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Totp */
+        post: operations["confirm_totp_api_v1_account_2fa_enable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/2fa/disable": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable Totp Route */
+        post: operations["disable_totp_route_api_v1_account_2fa_disable_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/account/google/unlink": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unlink Google */
+        post: operations["unlink_google_api_v1_account_google_unlink_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Google Start */
+        get: operations["google_start_api_v1_auth_google_start_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/google/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Google Callback */
+        get: operations["google_callback_api_v1_auth_google_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/forgot-password": {
         parameters: {
             query?: never;
@@ -100,8 +288,7 @@ export interface paths {
         put?: never;
         /**
          * Forgot Password
-         * @description Always returns ok (no account enumeration). With no SMTP configured the
-         *     reset token is returned in the response for development use.
+         * @description Always returns ok to avoid account enumeration.
          */
         post: operations["forgot_password_api_v1_forgot_password_post"];
         delete?: never;
@@ -159,7 +346,8 @@ export interface paths {
         delete: operations["remove_api_v1_lectures__lecture_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update */
+        patch: operations["update_api_v1_lectures__lecture_id__patch"];
         trace?: never;
     };
     "/api/v1/lectures/{lecture_id}/file": {
@@ -190,6 +378,44 @@ export interface paths {
         put?: never;
         /** Annotate */
         post: operations["annotate_api_v1_lectures__lecture_id__annotate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lectures/{lecture_id}/summarize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Regenerate Summary
+         * @description Regenerate the summary from the transcript via Ollama, then rewrite the
+         *     downloadable documents so PDF/DOCX/TXT stay in sync.
+         */
+        post: operations["regenerate_summary_api_v1_lectures__lecture_id__summarize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tasks */
+        get: operations["tasks_api_v1_tasks_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -247,6 +473,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/guidance/analyze": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Guidance Analyze
+         * @description Analyze a client-supplied frame and return framing guidance as JSON
+         *     (board corners in the submitted image's pixel space + messages + ready).
+         *     The browser draws the overlay on a canvas over its live video, so the video
+         *     stays smooth while the heavy board detection stays on the backend.
+         */
+        post: operations["guidance_analyze_api_v1_guidance_analyze_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/guidance": {
         parameters: {
             query?: never;
@@ -281,15 +530,69 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/": {
+    "/api/v1/admin/users": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Root */
-        get: operations["_root__get"];
+        /** Users */
+        get: operations["users_api_v1_admin_users_get"];
+        put?: never;
+        /** Create Managed User */
+        post: operations["create_managed_user_api_v1_admin_users_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Managed User */
+        delete: operations["remove_managed_user_api_v1_admin_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Managed User */
+        patch: operations["update_managed_user_api_v1_admin_users__user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/courses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** All Courses */
+        get: operations["all_courses_api_v1_courses_get"];
+        put?: never;
+        /** Create */
+        post: operations["create_api_v1_courses_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courses/options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Options */
+        get: operations["options_api_v1_courses_options_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -298,27 +601,85 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/{path}": {
+    "/api/v1/courses/{course_id}": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Spa */
-        get: operations["_spa__path__get"];
+        /** Detail */
+        get: operations["detail_api_v1_courses__course_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /** Remove */
+        delete: operations["remove_api_v1_courses__course_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /** Update */
+        patch: operations["update_api_v1_courses__course_id__patch"];
         trace?: never;
     };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AccountOut */
+        AccountOut: {
+            /** Uid */
+            uid: number;
+            /** Username */
+            username: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "prof" | "student" | "admin";
+            /** Email */
+            email?: string | null;
+            /**
+             * Auth Provider
+             * @default local
+             */
+            auth_provider: string;
+            /**
+             * Google Linked
+             * @default false
+             */
+            google_linked: boolean;
+            /**
+             * Two Factor Enabled
+             * @default false
+             */
+            two_factor_enabled: boolean;
+            /**
+             * Email Verified
+             * @default 0
+             */
+            email_verified: number;
+            /**
+             * Has Password
+             * @default true
+             */
+            has_password: boolean;
+            /**
+             * Email Locked
+             * @default false
+             */
+            email_locked: boolean;
+        };
+        /** AccountUpdateRequest */
+        AccountUpdateRequest: {
+            /** Username */
+            username: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Code */
+            code?: string | null;
+        };
         /** AnnotateRequest */
         AnnotateRequest: {
             /** Note */
@@ -339,17 +700,166 @@ export interface components {
             /** Created At */
             created_at: string;
         };
+        /** Body_guidance_analyze_api_v1_guidance_analyze_post */
+        Body_guidance_analyze_api_v1_guidance_analyze_post: {
+            /** Image */
+            image: string;
+        };
         /** Body_upload_api_v1_upload_post */
         Body_upload_api_v1_upload_post: {
             /** Image */
             image: string;
             /** Course */
             course?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /**
+             * Visibility
+             * @default public
+             */
+            visibility: string;
         };
         /** CaptureRequest */
         CaptureRequest: {
             /** Course */
             course?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
+        };
+        /** CourseCreate */
+        CourseCreate: {
+            /** Name */
+            name: string;
+            /** Faculty Id */
+            faculty_id?: number | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
+            /**
+             * Student Ids
+             * @default []
+             */
+            student_ids: number[];
+            /**
+             * Lecture Ids
+             * @default []
+             */
+            lecture_ids: string[];
+        };
+        /** CourseDetail */
+        CourseDetail: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Faculty Id */
+            faculty_id: number;
+            /** Faculty Username */
+            faculty_username: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
+            /**
+             * Student Count
+             * @default 0
+             */
+            student_count: number;
+            /**
+             * Lecture Count
+             * @default 0
+             */
+            lecture_count: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+            /**
+             * Student Ids
+             * @default []
+             */
+            student_ids: number[];
+            /**
+             * Lecture Ids
+             * @default []
+             */
+            lecture_ids: string[];
+        };
+        /** CourseOptionsOut */
+        CourseOptionsOut: {
+            /**
+             * Students
+             * @default []
+             */
+            students: components["schemas"]["ManagedUserOut"][];
+            /**
+             * Faculty
+             * @default []
+             */
+            faculty: components["schemas"]["ManagedUserOut"][];
+        };
+        /** CourseOut */
+        CourseOut: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Faculty Id */
+            faculty_id: number;
+            /** Faculty Username */
+            faculty_username: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
+            /**
+             * Student Count
+             * @default 0
+             */
+            student_count: number;
+            /**
+             * Lecture Count
+             * @default 0
+             */
+            lecture_count: number;
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** CourseUpdate */
+        CourseUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Faculty Id */
+            faculty_id?: number | null;
+            /** Description */
+            description?: string | null;
+            /** Visibility */
+            visibility?: ("public" | "private") | null;
+            /** Student Ids */
+            student_ids?: number[] | null;
+            /** Lecture Ids */
+            lecture_ids?: string[] | null;
         };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
@@ -399,8 +909,24 @@ export interface components {
             id: string;
             /** Date */
             date: string;
+            /** Title */
+            title?: string | null;
             /** Course Name */
             course_name?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /** Course Title */
+            course_title?: string | null;
+            /** Owner User Id */
+            owner_user_id?: number | null;
+            /** Owner Username */
+            owner_username?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
             /** Captured At */
             captured_at: string;
             /** Raw Ocr Text */
@@ -416,6 +942,11 @@ export interface components {
                 [key: string]: unknown;
             } | null;
             /**
+             * Student Ids
+             * @default []
+             */
+            student_ids: number[];
+            /**
              * Annotations
              * @default []
              */
@@ -427,14 +958,56 @@ export interface components {
             id: string;
             /** Date */
             date: string;
+            /** Title */
+            title?: string | null;
             /** Course Name */
             course_name?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /** Course Title */
+            course_title?: string | null;
+            /** Owner User Id */
+            owner_user_id?: number | null;
+            /** Owner Username */
+            owner_username?: string | null;
+            /**
+             * Visibility
+             * @default public
+             * @enum {string}
+             */
+            visibility: "public" | "private";
             /** Captured At */
             captured_at: string;
             /** Summary */
             summary?: string | null;
             /** Tags */
             tags?: string | null;
+        };
+        /** LectureUpdateRequest */
+        LectureUpdateRequest: {
+            /** Title */
+            title?: string | null;
+            /** Course Name */
+            course_name?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /** Owner User Id */
+            owner_user_id?: number | null;
+            /** Visibility */
+            visibility?: ("public" | "private") | null;
+            /** Corrected Text */
+            corrected_text?: string | null;
+            /** Summary */
+            summary?: string | null;
+            /** Student Ids */
+            student_ids?: number[] | null;
+        };
+        /** LoginMfaRequest */
+        LoginMfaRequest: {
+            /** Code */
+            code: string;
+            /** Mfa Token */
+            mfa_token?: string | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -445,6 +1018,70 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /** ManagedUserCreate */
+        ManagedUserCreate: {
+            /** Username */
+            username: string;
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Password */
+            password: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "prof" | "student";
+        };
+        /** ManagedUserOut */
+        ManagedUserOut: {
+            /** Id */
+            id: number;
+            /** Username */
+            username: string;
+            /** Email */
+            email?: string | null;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "prof" | "student" | "admin";
+            /**
+             * Auth Provider
+             * @default local
+             */
+            auth_provider: string;
+            /**
+             * Email Verified
+             * @default 0
+             */
+            email_verified: number;
+            /**
+             * Disabled
+             * @default 0
+             */
+            disabled: number;
+            /**
+             * Totp Enabled
+             * @default 0
+             */
+            totp_enabled: number;
+            /** Created At */
+            created_at: string;
+        };
+        /** ManagedUserUpdate */
+        ManagedUserUpdate: {
+            /** Username */
+            username?: string | null;
+            /** Email */
+            email?: string | null;
+            /** Role */
+            role?: ("prof" | "student") | null;
+            /** Disabled */
+            disabled?: boolean | null;
         };
         /** MessageResponse */
         MessageResponse: {
@@ -457,26 +1094,77 @@ export interface components {
             message?: string | null;
             /** Reset Token */
             reset_token?: string | null;
+            /** Verification Token */
+            verification_token?: string | null;
         };
-        /** PipelineResult */
-        PipelineResult: {
-            /** Lecture Id */
-            lecture_id: string;
-            /** Dir */
-            dir: string;
-            /** Engine */
-            engine: string;
-            /** Raw Text */
-            raw_text: string;
-            /** Corrected Text */
-            corrected_text: string;
-            /** Summary */
-            summary: string;
+        /** MfaChallengeResponse */
+        MfaChallengeResponse: {
             /**
-             * Tags
-             * @default []
+             * Mfa Required
+             * @default true
+             * @constant
              */
-            tags: string[];
+            mfa_required: true;
+            /** Mfa Token */
+            mfa_token?: string | null;
+            /**
+             * Message
+             * @default verification code required
+             */
+            message: string;
+        };
+        /** PasswordChangeRequest */
+        PasswordChangeRequest: {
+            /** Current Password */
+            current_password: string;
+            /** New Password */
+            new_password: string;
+            /** Code */
+            code?: string | null;
+        };
+        /** ProcessingTaskOut */
+        ProcessingTaskOut: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "upload" | "capture";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "queued" | "running" | "succeeded" | "failed";
+            /** Created By User Id */
+            created_by_user_id?: number | null;
+            /** Created By Username */
+            created_by_username?: string | null;
+            /** Course Name */
+            course_name?: string | null;
+            /** Course Id */
+            course_id?: number | null;
+            /** Filename */
+            filename?: string | null;
+            /** Lecture Id */
+            lecture_id?: string | null;
+            /** Error */
+            error?: string | null;
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts: number;
+            /** Queue Position */
+            queue_position?: number | null;
+            /** Created At */
+            created_at: string;
+            /** Started At */
+            started_at?: string | null;
+            /** Completed At */
+            completed_at?: string | null;
+            /** Updated At */
+            updated_at: string;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -501,10 +1189,47 @@ export interface components {
         TokenResponse: {
             /** Token */
             token: string;
-            /** Role */
-            role: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "prof" | "student" | "admin";
             /** Username */
             username: string;
+        };
+        /** TotpDisableRequest */
+        TotpDisableRequest: {
+            /** Code */
+            code: string;
+            /** Current Password */
+            current_password?: string | null;
+        };
+        /** TotpEnableResponse */
+        TotpEnableResponse: {
+            /**
+             * Ok
+             * @default true
+             */
+            ok: boolean;
+            /**
+             * Recovery Codes
+             * @default []
+             */
+            recovery_codes: string[];
+        };
+        /** TotpSetupResponse */
+        TotpSetupResponse: {
+            /** Secret */
+            secret: string;
+            /** Otpauth Uri */
+            otpauth_uri: string;
+            /** Qr Data Url */
+            qr_data_url?: string | null;
+        };
+        /** TotpVerifyRequest */
+        TotpVerifyRequest: {
+            /** Code */
+            code: string;
         };
         /** UserOut */
         UserOut: {
@@ -512,8 +1237,28 @@ export interface components {
             uid: number;
             /** Username */
             username: string;
-            /** Role */
-            role: string;
+            /**
+             * Role
+             * @enum {string}
+             */
+            role: "prof" | "student" | "admin";
+            /** Email */
+            email?: string | null;
+            /**
+             * Auth Provider
+             * @default local
+             */
+            auth_provider: string;
+            /**
+             * Google Linked
+             * @default false
+             */
+            google_linked: boolean;
+            /**
+             * Two Factor Enabled
+             * @default false
+             */
+            two_factor_enabled: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -527,6 +1272,11 @@ export interface components {
             input?: unknown;
             /** Context */
             ctx?: Record<string, never>;
+        };
+        /** VerifyEmailRequest */
+        VerifyEmailRequest: {
+            /** Token */
+            token: string;
         };
     };
     responses: never;
@@ -569,6 +1319,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["LoginRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"] | components["schemas"]["MfaChallengeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    login_mfa_api_v1_login_mfa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginMfaRequest"];
             };
         };
         responses: {
@@ -661,6 +1444,316 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    account_api_v1_account_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+        };
+    };
+    update_account_api_v1_account_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AccountUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_account_verification_api_v1_account_email_verification_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+        };
+    };
+    verify_email_api_v1_verify_email_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_password_api_v1_account_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    setup_totp_api_v1_account_2fa_setup_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpSetupResponse"];
+                };
+            };
+        };
+    };
+    confirm_totp_api_v1_account_2fa_enable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TotpVerifyRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TotpEnableResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disable_totp_route_api_v1_account_2fa_disable_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TotpDisableRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unlink_google_api_v1_account_google_unlink_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountOut"];
+                };
+            };
+        };
+    };
+    google_start_api_v1_auth_google_start_get: {
+        parameters: {
+            query?: {
+                mode?: string;
+                next?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    google_callback_api_v1_auth_google_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -826,6 +1919,41 @@ export interface operations {
             };
         };
     };
+    update_api_v1_lectures__lecture_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lecture_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LectureUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LectureDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     download_api_v1_lectures__lecture_id__file_get: {
         parameters: {
             query?: {
@@ -894,6 +2022,68 @@ export interface operations {
             };
         };
     };
+    regenerate_summary_api_v1_lectures__lecture_id__summarize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lecture_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LectureDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tasks_api_v1_tasks_get: {
+        parameters: {
+            query?: {
+                include_finished?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProcessingTaskOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     upload_api_v1_upload_post: {
         parameters: {
             query?: never;
@@ -908,12 +2098,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PipelineResult"];
+                    "application/json": components["schemas"]["ProcessingTaskOut"];
                 };
             };
             /** @description Validation Error */
@@ -941,12 +2131,12 @@ export interface operations {
         };
         responses: {
             /** @description Successful Response */
-            200: {
+            202: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PipelineResult"];
+                    "application/json": components["schemas"]["ProcessingTaskOut"];
                 };
             };
             /** @description Validation Error */
@@ -976,6 +2166,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    guidance_analyze_api_v1_guidance_analyze_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_guidance_analyze_api_v1_guidance_analyze_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1022,7 +2245,7 @@ export interface operations {
             };
         };
     };
-    _root__get: {
+    users_api_v1_admin_users_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1037,17 +2260,50 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["ManagedUserOut"][];
                 };
             };
         };
     };
-    _spa__path__get: {
+    create_managed_user_api_v1_admin_users_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedUserCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_managed_user_api_v1_admin_users__user_id__delete: {
         parameters: {
             query?: never;
             header?: never;
             path: {
-                path: string;
+                user_id: number;
             };
             cookie?: never;
         };
@@ -1059,7 +2315,212 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_managed_user_api_v1_admin_users__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ManagedUserUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ManagedUserOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    all_courses_api_v1_courses_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseOut"][];
+                };
+            };
+        };
+    };
+    create_api_v1_courses_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    options_api_v1_courses_options_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseOptionsOut"];
+                };
+            };
+        };
+    };
+    detail_api_v1_courses__course_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_api_v1_courses__course_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MessageResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_v1_courses__course_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                course_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CourseUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CourseDetail"];
                 };
             };
             /** @description Validation Error */

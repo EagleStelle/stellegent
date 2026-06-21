@@ -16,6 +16,9 @@ from .store import (
     delete_course, list_course_student_ids, list_course_lecture_ids,
     set_course_students, replace_course_lectures,
     list_lecture_student_ids, set_lecture_students,
+    create_processing_task, list_processing_tasks, get_processing_task,
+    claim_next_processing_task, complete_processing_task, fail_processing_task,
+    fail_interrupted_processing_tasks,
     add_annotation, get_annotations,
     audit, list_audit,
 )

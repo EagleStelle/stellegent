@@ -7,13 +7,18 @@ reject hallucinations and post-processed to drop unwanted glyphs and
 re-join broken list markers.
 """
 from __future__ import annotations
+import logging
 import re
 import unicodedata
 from typing import List, Sequence
 
+import requests
+
 from ..config import OCR_CONFIDENCE_THRESHOLD
 from ..ocr.base import OCRLine
 from . import ollama_client
+
+log = logging.getLogger(__name__)
 
 
 # ---------- character filtering ----------
@@ -239,19 +244,23 @@ def correct_text(text: str) -> str:
         return text
     if len(text.strip()) < 3 or not re.search(r"[A-Za-z]{2,}", text):
         return text
-    raw = ollama_client.chat(
-        [
-            {"role": "system", "content": _SYSTEM},
-            {"role": "user", "content": f"Input: {text}\nOutput:"},
-        ],
-        options={
-            "temperature": 0.0,
-            "top_p": 0.1,
-            "num_ctx": 4096,
-            "repeat_penalty": 1.0,
-            "stop": ["\nInput:", "\nExample", "\nNote:"],
-        },
-    )
+    try:
+        raw = ollama_client.chat(
+            [
+                {"role": "system", "content": _SYSTEM},
+                {"role": "user", "content": f"Input: {text}\nOutput:"},
+            ],
+            options={
+                "temperature": 0.0,
+                "top_p": 0.1,
+                "num_ctx": 4096,
+                "repeat_penalty": 1.0,
+                "stop": ["\nInput:", "\nExample", "\nNote:"],
+            },
+        )
+    except requests.exceptions.RequestException as e:
+        log.warning("correction skipped: Ollama unavailable (%s)", e)
+        return postprocess(text)
     cleaned = _strip_artifacts(raw, text)
     validated = _validate(cleaned, text)
     return postprocess(validated)

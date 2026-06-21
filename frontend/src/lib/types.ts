@@ -138,6 +138,28 @@ export interface PipelineResult {
 	tags: string[];
 }
 
+export type ProcessingTaskKind = 'upload' | 'capture';
+export type ProcessingTaskStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface ProcessingTask {
+	id: string;
+	kind: ProcessingTaskKind;
+	status: ProcessingTaskStatus;
+	created_by_user_id: number | null;
+	created_by_username: string | null;
+	course_name: string | null;
+	course_id: number | null;
+	filename: string | null;
+	lecture_id: string | null;
+	error: string | null;
+	attempts: number;
+	queue_position: number | null;
+	created_at: string;
+	started_at: string | null;
+	completed_at: string | null;
+	updated_at: string;
+}
+
 export interface CapturePayload {
 	course?: string | null;
 	course_id?: number | null;

@@ -1,39 +1,69 @@
-# syntax=docker/dockerfile:1
-# Single multi-stage image: stage 1 builds the SvelteKit SPA, stage 2 is the
-# Python/FastAPI runtime that serves both the API and the built static SPA.
-# Multi-arch base images (amd64 dev, arm64 Raspberry Pi 5).
+FROM python:3.11-slim-bookworm AS builder
 
-# ---------- stage 1: build the SPA ----------
-FROM node:22-bookworm-slim AS frontend
-WORKDIR /fe
-COPY frontend/package*.json frontend/.npmrc ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build          # -> /fe/build (adapter-static, SPA fallback)
+COPY --from=node:22-bookworm-slim /usr/local/bin/node /usr/local/bin/node
+COPY --from=node:22-bookworm-slim /usr/local/lib/node_modules /usr/local/lib/node_modules
 
-# ---------- stage 2: python runtime ----------
-FROM python:3.11-slim-bookworm AS runtime
-# Runtime state at /data (bind/volume mount point).
-ENV PYTHONUNBUFFERED=1 \
+ENV PATH="/opt/venv/bin:/usr/local/bin:${PATH}" \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_NO_CACHE_DIR=1 \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false
+
+RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
+    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends build-essential pkg-config \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+
+COPY backend/pyproject.toml backend/pyproject.toml
+
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install --upgrade pip setuptools wheel \
+    && /opt/venv/bin/python -c "import pathlib, tomllib; print('\n'.join(tomllib.loads(pathlib.Path('backend/pyproject.toml').read_text())['project']['dependencies']))" > /tmp/requirements.txt \
+    && /opt/venv/bin/pip install --no-compile -r /tmp/requirements.txt \
+    && rm -f /tmp/requirements.txt \
+    && find /opt/venv -type d \( -name "__pycache__" -o -name "tests" -o -name "test" \) -prune -exec rm -rf '{}' + \
+    && find /opt/venv -type f \( -name "*.pyc" -o -name "*.pyo" \) -delete
+
+COPY frontend/package.json frontend/package-lock.json frontend/.npmrc frontend/
+
+WORKDIR /build/frontend
+
+RUN npm ci
+
+COPY frontend/ ./
+
+RUN npm run build
+
+FROM python:3.11-slim-bookworm AS runner
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PATH="/opt/venv/bin:${PATH}" \
+    PYTHONPATH=/app/backend \
     STATIC_DIR=/app/frontend/build \
     STELLEGENT_DATA=/data \
     STELLEGENT_DB=/data/stellegent.db
 
-# OpenCV runtime libs (exactly one cv2 build; see pyproject note).
-RUN apt-get update && apt-get install -y --no-install-recommends \
-        libgl1 libglib2.0-0 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libgl1 libglib2.0-0 libgomp1 \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --system --gid 10001 app \
+    && useradd --system --uid 10001 --gid app --home-dir /app --shell /usr/sbin/nologin app \
+    && install -d -o app -g app /app /data
 
 WORKDIR /app
-COPY backend/ /app/backend/
-RUN pip install -e /app/backend
 
-# built SPA from stage 1
-COPY --from=frontend /fe/build /app/frontend/build
+COPY --from=builder /opt/venv /opt/venv
+COPY --from=builder --chown=app:app /build/frontend/build /app/frontend/build
+COPY --chown=app:app backend/stellegent /app/backend/stellegent
 
 VOLUME ["/data"]
+
 EXPOSE 8000
 
-# initdb is idempotent (migrations); run it then serve.
-CMD ["sh", "-c", "python -m stellegent.cli initdb && uvicorn stellegent.main:app --host 0.0.0.0 --port 8000"]
+USER app
+
+CMD ["sh", "-c", "python -m stellegent.cli initdb && exec uvicorn stellegent.main:app --host 0.0.0.0 --port 8000"]

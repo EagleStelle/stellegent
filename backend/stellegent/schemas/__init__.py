@@ -7,6 +7,8 @@ from pydantic import BaseModel, EmailStr, Field
 Role = Literal["prof", "student", "admin"]
 EditableRole = Literal["prof", "student"]
 Visibility = Literal["public", "private"]
+ProcessingTaskKind = Literal["upload", "capture"]
+ProcessingTaskStatus = Literal["queued", "running", "succeeded", "failed"]
 
 
 # ---- auth ----
@@ -247,6 +249,25 @@ class PipelineResult(BaseModel):
     corrected_text: str
     summary: str
     tags: List[str] = []
+
+
+class ProcessingTaskOut(BaseModel):
+    id: str
+    kind: ProcessingTaskKind
+    status: ProcessingTaskStatus
+    created_by_user_id: Optional[int] = None
+    created_by_username: Optional[str] = None
+    course_name: Optional[str] = None
+    course_id: Optional[int] = None
+    filename: Optional[str] = None
+    lecture_id: Optional[str] = None
+    error: Optional[str] = None
+    attempts: int = 0
+    queue_position: Optional[int] = None
+    created_at: str
+    started_at: Optional[str] = None
+    completed_at: Optional[str] = None
+    updated_at: str
 
 
 class GuidanceOut(BaseModel):

@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from .config import settings, ROOT
 from .db import init_db
 from .api.v1 import api_router
+from .processing_queue import processing_queue
 
 # Built SPA location (override with STATIC_DIR in the container).
 STATIC_DIR = Path(os.environ.get("STATIC_DIR", ROOT / "frontend" / "build"))
@@ -57,7 +58,7 @@ def create_app() -> FastAPI:
     )
 
     @app.on_event("startup")
-    def _startup() -> None:
+    async def _startup() -> None:
         if settings.require_secure_config:
             if (
                 len(settings.jwt_secret) < 32
@@ -70,6 +71,11 @@ def create_app() -> FastAPI:
             if not settings.resend_api_key:
                 raise RuntimeError("Set RESEND_API_KEY for production email delivery")
         init_db()
+        processing_queue.start()
+
+    @app.on_event("shutdown")
+    async def _shutdown() -> None:
+        await processing_queue.stop()
 
     @app.get("/api/health")
     def health() -> dict:

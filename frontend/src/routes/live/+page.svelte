@@ -3,7 +3,7 @@
 	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet, apiPost } from '$lib/api/client';
-	import type { CapturePayload, Course, PipelineResult, Visibility } from '$lib/types';
+	import type { CapturePayload, Course, ProcessingTask, Visibility } from '$lib/types';
 	import ComboBox, { type ComboBoxOption } from '$lib/components/ui/ComboBox.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import { ArrowsIn, ArrowsOut, Camera, CircleNotch, ArrowsClockwise } from 'phosphor-svelte';
@@ -221,7 +221,7 @@
 		clearGuidance();
 	}
 
-	async function captureClient(): Promise<PipelineResult> {
+	async function captureClient(): Promise<ProcessingTask> {
 		const blob = await grabClientFrame();
 		const form = new FormData();
 		form.append('image', blob, 'capture.jpg');
@@ -241,23 +241,23 @@
 			}
 			throw new Error(detail);
 		}
-		return res.json() as Promise<PipelineResult>;
+		return res.json() as Promise<ProcessingTask>;
 	}
 
-	async function captureServer(): Promise<PipelineResult> {
+	async function captureServer(): Promise<ProcessingTask> {
 		const payload: CapturePayload = {
 			visibility: visibility as Visibility,
 			course_id: selectedCourseId ? Number(selectedCourseId) : null
 		};
-		return apiPost<PipelineResult>('/api/v1/capture', payload);
+		return apiPost<ProcessingTask>('/api/v1/capture', payload);
 	}
 
 	async function capture() {
 		capturing = true;
-		status = 'Processing...';
+		status = 'Queuing...';
 		try {
-			const res = source === 'client' ? await captureClient() : await captureServer();
-			goto(`/lectures/${res.lecture_id}`);
+			await (source === 'client' ? captureClient() : captureServer());
+			goto('/lectures');
 		} catch (err) {
 			status = err instanceof Error ? err.message : 'Capture failed';
 			capturing = false;
@@ -376,7 +376,7 @@
 				{:else}
 					<Camera size={22} />
 				{/if}
-				{capturing ? 'Processing...' : 'Capture'}
+				{capturing ? 'Queuing...' : 'Capture'}
 			</Button>
 		</div>
 	</div>

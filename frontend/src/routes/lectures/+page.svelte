@@ -3,12 +3,12 @@
 	import { page } from '$app/state';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { apiGet, apiDelete } from '$lib/api/client';
-	import type { Course, CourseOptions, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
+	import type { Course, CourseOptions, LectureSummary, ProcessingTask, User, Visibility } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ComboBox from '$lib/components/ui/ComboBox.svelte';
-	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash, BookOpen, UserCircle } from 'phosphor-svelte';
+	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash, BookOpen, UserCircle, WarningCircle } from 'phosphor-svelte';
 	import { untrack } from 'svelte';
 
 	let q = $state('');
@@ -24,6 +24,7 @@
 		queryFn: () => apiGet<LectureSummary[]>('/api/v1/lectures')
 	}));
 	const qc = useQueryClient();
+	let hadProcessingTasks = $state(false);
 
 	const me = createQuery(() => ({
 		queryKey: ['me'],
@@ -38,6 +39,11 @@
 	const courses = createQuery(() => ({
 		queryKey: ['courses'],
 		queryFn: () => apiGet<Course[]>('/api/v1/courses')
+	}));
+	const processingTasks = createQuery(() => ({
+		queryKey: ['processing-tasks'],
+		queryFn: () => apiGet<ProcessingTask[]>('/api/v1/tasks'),
+		refetchInterval: 2500
 	}));
 	const options = createQuery(() => ({
 		queryKey: ['course-options'],
@@ -85,6 +91,19 @@
 			return hay.includes(q.toLowerCase());
 		})
 	);
+	const taskCards = $derived(processingTasks.data ?? []);
+	const hasActiveProcessing = $derived(taskCards.some((task) => task.status === 'queued' || task.status === 'running'));
+
+	$effect(() => {
+		if (hasActiveProcessing) {
+			hadProcessingTasks = true;
+			return;
+		}
+		if (!hadProcessingTasks) return;
+		hadProcessingTasks = false;
+		void qc.invalidateQueries({ queryKey: ['lectures'] });
+		void qc.invalidateQueries({ queryKey: ['courses'] });
+	});
 
 	function chooseUpload() {
 		if (!uploading) uploadInput?.click();
@@ -116,12 +135,25 @@
 				const body = (await res.json().catch(() => null)) as { detail?: string } | null;
 				throw new Error(body?.detail ?? res.statusText);
 			}
-			const data: PipelineResult = await res.json();
-			goto(`/lectures/${data.lecture_id}`);
+			await res.json();
+			await qc.invalidateQueries({ queryKey: ['processing-tasks'] });
+			uploading = false;
 		} catch (err) {
 			uploadError = err instanceof Error ? err.message : 'Upload failed';
 			uploading = false;
 		}
+	}
+
+	function taskTitle(task: ProcessingTask) {
+		if (task.kind === 'capture') return task.course_name ?? 'Camera capture';
+		return task.course_name ?? task.filename ?? 'Lecture upload';
+	}
+
+	function taskStatus(task: ProcessingTask) {
+		if (task.status === 'queued') return task.queue_position ? `Queued #${task.queue_position}` : 'Queued';
+		if (task.status === 'running') return 'Processing';
+		if (task.status === 'failed') return 'Failed';
+		return 'Complete';
 	}
 
 	function editLecture(e: MouseEvent, id: string) {
@@ -187,7 +219,7 @@
 					<Plus size={18} />
 				{/if}
 			{/snippet}
-			{uploading ? 'Processing' : 'Add lecture'}
+			{uploading ? 'Queuing' : 'Add lecture'}
 		</Button>
 	{/if}
 </div>
@@ -200,8 +232,59 @@
 
 {#if lectures.isLoading}
 	<p class="text-zinc-500 dark:text-zinc-400">Loading</p>
-{:else if filtered.length > 0}
+{:else if taskCards.length > 0 || filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+		{#each taskCards as task (task.id)}
+			<Card class="flex h-full flex-col gap-3 border-secondary/30 bg-secondary/5 dark:border-secondary/40 dark:bg-secondary/10">
+				<div class="flex items-start justify-between gap-4">
+					<div class="flex min-w-0 flex-col gap-1.5">
+						<div class="flex items-center gap-2">
+							{#if task.status === 'failed'}
+								<WarningCircle size={18} weight="bold" class="shrink-0 text-red-600 dark:text-red-400" />
+							{:else}
+								<CircleNotch size={18} class="shrink-0 animate-spin text-secondary" />
+							{/if}
+							<span class="text-xs font-semibold text-secondary">
+								{taskStatus(task)}
+							</span>
+						</div>
+						<h3 class="truncate text-base font-semibold text-primary dark:text-gray-50">
+							{taskTitle(task)}
+						</h3>
+						<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+							<span class="flex min-w-0 items-center gap-1.5">
+								<UserCircle size={14} weight="bold" class="shrink-0" />
+								<span class="truncate">{task.created_by_username ?? 'Unknown'}</span>
+							</span>
+							{#if task.course_name}
+								<span class="flex min-w-0 items-center gap-1.5">
+									<BookOpen size={14} weight="bold" class="shrink-0" />
+									<span class="truncate">{task.course_name}</span>
+								</span>
+							{/if}
+						</div>
+						<div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+							<CalendarBlank size={14} weight="bold" />
+							<span class="truncate">{new Date(task.created_at).toLocaleString()}</span>
+						</div>
+					</div>
+				</div>
+
+				{#if task.status === 'queued'}
+					<p class="text-sm leading-6 text-gray-600 dark:text-gray-400">
+						Waiting for the processing worker.
+					</p>
+				{:else if task.status === 'running'}
+					<p class="text-sm leading-6 text-gray-600 dark:text-gray-400">
+						Running in the background.
+					</p>
+				{:else if task.status === 'failed'}
+					<p class="line-clamp-3 text-sm leading-6 text-red-600 dark:text-red-400">
+						{task.error ?? 'Processing failed'}
+					</p>
+				{/if}
+			</Card>
+		{/each}
 		{#each filtered as lec (lec.id)}
 			<Card href={`/lectures/${lec.id}`} class="group flex h-full flex-col gap-3">
 				<div class="flex items-start justify-between gap-4">

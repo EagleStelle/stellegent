@@ -28,6 +28,60 @@ def test_db_roundtrip(tmp_path, monkeypatch):
     assert db.get_lecture("abc") is None
 
 
+def test_processing_task_queue_roundtrip(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "queue.db")
+    from stellegent import db
+
+    db.init_db()
+    prof_id = db.create_user(
+        "prof1", "secret123", "prof", email="prof1@example.com"
+    )
+    student_id = db.create_user(
+        "student1", "secret123", "student", email="student1@example.com"
+    )
+
+    first = db.create_processing_task(
+        task_id="task1",
+        kind="upload",
+        created_by_user_id=prof_id,
+        filename="one.jpg",
+        payload={"image_path": "/tmp/one.jpg"},
+    )
+    second = db.create_processing_task(
+        task_id="task2",
+        kind="capture",
+        created_by_user_id=prof_id,
+        filename="two.jpg",
+        payload={"image_path": "/tmp/two.jpg"},
+    )
+    assert first["status"] == "queued"
+    assert second["queue_position"] == 2
+
+    queued = db.list_processing_tasks(user_id=prof_id, role="prof")
+    assert [row["id"] for row in queued] == ["task1", "task2"]
+
+    claimed = db.claim_next_processing_task()
+    assert claimed["id"] == "task1"
+    assert db.get_processing_task("task1")["status"] == "running"
+
+    db.insert_lecture(
+        lecture_id="lecture1", date="2026-05-03", course_name="Math",
+        captured_at="2026-05-03T10:00:00+00:00",
+        image_path="/tmp/i.png", docx_path="/tmp/i.docx", pdf_path="/tmp/i.pdf",
+        txt_path="/tmp/i.txt", manifest_path="/tmp/m.json",
+        raw_ocr_text="hello", corrected_text="Hello", summary="- hello",
+        tags=[], owner_user_id=prof_id,
+    )
+    db.complete_processing_task("task1", lecture_id="lecture1")
+    assert db.get_processing_task("task1")["status"] == "succeeded"
+
+    db.fail_processing_task("task2", error="decode failed")
+    active = db.list_processing_tasks(user_id=prof_id, role="prof")
+    assert [row["id"] for row in active] == ["task2"]
+    assert active[0]["status"] == "failed"
+    assert db.list_processing_tasks(user_id=student_id, role="student") == []
+
+
 def test_user_auth(tmp_path, monkeypatch):
     monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "u.db")
     from stellegent import db
