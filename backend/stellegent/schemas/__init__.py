@@ -72,16 +72,21 @@ class MessageResponse(BaseModel):
 class AccountOut(UserOut):
     email_verified: int = 0
     has_password: bool = True
+    email_locked: bool = False
 
 
 class AccountUpdateRequest(BaseModel):
     username: str = Field(min_length=3, max_length=64)
     email: EmailStr
+    # Authenticator code, required when 2FA is enabled.
+    code: Optional[str] = Field(default=None, max_length=32)
 
 
 class PasswordChangeRequest(BaseModel):
     current_password: str
     new_password: str = Field(min_length=8, max_length=128)
+    # Authenticator code, required when 2FA is enabled.
+    code: Optional[str] = Field(default=None, max_length=32)
 
 
 class TotpSetupResponse(BaseModel):

@@ -38,13 +38,17 @@ def issue_mfa_token(user_id: int, username: str, role: str) -> str:
     }, 10)
 
 
-def issue_oauth_state(*, mode: str, next_path: str, nonce: str) -> str:
+def issue_oauth_state(*, mode: str, next_path: str, nonce: str,
+                      redirect_uri: str) -> str:
     return _issue({
         "purpose": "google_oauth_state",
         "sub": "google",
         "mode": mode,
         "next": next_path,
         "nonce": nonce,
+        # Pin the exact redirect_uri sent at authorize time so the token
+        # exchange uses a byte-identical value (Google requires exact match).
+        "redirect_uri": redirect_uri,
     }, 10)
 
 

@@ -7,6 +7,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
+	import MfaModal from '$lib/components/ui/MfaModal.svelte';
 	import {
 		CheckCircle,
 		CircleNotch,
@@ -68,6 +69,11 @@
 	let googleLoading = $state(false);
 	let googleError = $state('');
 
+	// Authenticator step-up: when 2FA is on, sensitive changes route through the
+	// MFA modal, which calls back into the pending action with the entered code.
+	let mfaOpen = $state(false);
+	let pendingMfa = $state<((code: string) => Promise<void>) | null>(null);
+
 	$effect(() => {
 		if (account.data && account.data.uid !== hydratedUid) {
 			hydratedUid = account.data.uid;
@@ -107,20 +113,30 @@
 		await qc.invalidateQueries({ queryKey: ['me'] });
 	}
 
+	async function submitProfile(code?: string) {
+		const updated = await apiPatch<Account>('/api/v1/account', {
+			username: fullName.trim(),
+			email: email.trim(),
+			code
+		});
+		fullName = updated.username;
+		email = updated.email ?? '';
+		profileMessage = updated.email_verified ? 'Account updated' : 'Account updated. Verification email sent.';
+		await refreshAccount();
+	}
+
 	async function saveProfile(e: SubmitEvent) {
 		e.preventDefault();
-		profileLoading = true;
 		profileMessage = '';
 		profileError = '';
+		if (account.data?.two_factor_enabled) {
+			pendingMfa = submitProfile;
+			mfaOpen = true;
+			return;
+		}
+		profileLoading = true;
 		try {
-			const updated = await apiPatch<Account>('/api/v1/account', {
-				username: fullName.trim(),
-				email: email.trim()
-			});
-			fullName = updated.username;
-			email = updated.email ?? '';
-			profileMessage = updated.email_verified ? 'Account updated' : 'Account updated. Verification email sent.';
-			await refreshAccount();
+			await submitProfile();
 		} catch (err) {
 			profileError = err instanceof Error ? err.message : 'Update failed';
 		} finally {
@@ -144,25 +160,42 @@
 		}
 	}
 
+	async function submitPassword(code?: string) {
+		await apiPost('/api/v1/account/password', {
+			current_password: currentPassword,
+			new_password: newPassword,
+			code
+		});
+		currentPassword = '';
+		newPassword = '';
+		passwordMessage = account.data?.has_password ? 'Password changed' : 'Password added';
+		await refreshAccount();
+	}
+
 	async function changePassword(e: SubmitEvent) {
 		e.preventDefault();
-		passwordLoading = true;
 		passwordMessage = '';
 		passwordError = '';
+		if (account.data?.two_factor_enabled) {
+			pendingMfa = submitPassword;
+			mfaOpen = true;
+			return;
+		}
+		passwordLoading = true;
 		try {
-			await apiPost('/api/v1/account/password', {
-				current_password: currentPassword,
-				new_password: newPassword
-			});
-			currentPassword = '';
-			newPassword = '';
-			passwordMessage = account.data?.has_password ? 'Password changed' : 'Password added';
-			await refreshAccount();
+			await submitPassword();
 		} catch (err) {
 			passwordError = err instanceof Error ? err.message : 'Password update failed';
 		} finally {
 			passwordLoading = false;
 		}
+	}
+
+	async function handleMfaConfirm(code: string) {
+		if (!pendingMfa) return;
+		// Throws on failure so the modal surfaces the error and stays open.
+		await pendingMfa(code);
+		pendingMfa = null;
 	}
 
 	async function startTotpSetup() {
@@ -277,7 +310,20 @@
 					bind:value={email}
 					icon={EnvelopeSimple}
 					required
+					disabled={account.data.email_locked}
 				/>
+
+				{#if profileError}
+					<p class={errorNotice} role="alert">{profileError}</p>
+				{:else if profileMessage}
+					<p class={okNotice}>{profileMessage}</p>
+				{/if}
+
+				{#if verificationError}
+					<p class={errorNotice} role="alert">{verificationError}</p>
+				{:else if verificationMessage}
+					<p class={okNotice}>{verificationMessage}{#if verificationToken} <code class="break-all">{verificationToken}</code>{/if}</p>
+				{/if}
 
 				<div class="mt-1 flex flex-wrap items-center gap-3">
 					{#if profileChanged}
@@ -367,8 +413,6 @@
 
 				{#if account.data.google_linked}
 					<Button
-						ghost
-						danger
 						type="button"
 						onclick={unlinkGoogle}
 						disabled={googleLoading}
@@ -501,5 +545,7 @@
 				{/if}
 			</div>
 		</div>
+
+		<MfaModal bind:open={mfaOpen} onconfirm={handleMfaConfirm} />
 	{/if}
 </section>

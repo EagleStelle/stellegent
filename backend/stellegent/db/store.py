@@ -424,19 +424,23 @@ def verify_user_password(user_id: int, password: str) -> bool:
 
 
 def link_google_account(user_id: int, *, google_sub: str,
+                        email: Optional[str] = None,
                         email_verified: bool) -> Optional[sqlite3.Row]:
     current = get_user_by_id(user_id)
     if not current:
         return None
     provider = _merge_auth_provider(current["auth_provider"], "google")
+    # Google owns the email once linked; adopt the verified Google address.
+    new_email = email or current["email"]
     with get_conn() as c:
         c.execute("""
             UPDATE users
-            SET google_sub = ?, auth_provider = ?, email_verified = ?,
+            SET google_sub = ?, auth_provider = ?, email = ?, email_verified = ?,
                 updated_at = ?
             WHERE id = ?
         """, (
-            google_sub, provider, 1 if email_verified else current["email_verified"],
+            google_sub, provider, new_email,
+            1 if email_verified else current["email_verified"],
             _now(), user_id,
         ))
     return get_user_by_id(user_id)
@@ -472,6 +476,8 @@ def account_security_summary(user_id: int) -> Optional[dict]:
         "google_linked": bool(user["google_sub"]),
         "two_factor_enabled": bool(user["totp_enabled"]),
         "has_password": _has_password(user),
+        # Email is owned by Google while linked and cannot be edited.
+        "email_locked": bool(user["google_sub"]),
     }
 
 

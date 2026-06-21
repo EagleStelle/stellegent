@@ -31,6 +31,7 @@ export interface Account extends User {
 	google_linked: boolean;
 	two_factor_enabled: boolean;
 	has_password: boolean;
+	email_locked: boolean;
 }
 
 export interface TotpSetup {

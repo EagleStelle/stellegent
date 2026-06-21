@@ -117,6 +117,21 @@ def _verify_mfa_code(row, code: str) -> bool:
     return False
 
 
+def _require_mfa(user_id: int, code: str | None) -> None:
+    """Enforce an authenticator code for sensitive account changes.
+
+    No-op when 2FA is not enabled. Raises 400 when the code is missing or wrong
+    so the client can prompt for (or re-prompt) the authenticator code.
+    """
+    row = get_user_by_id(user_id)
+    if not row or not row["totp_enabled"]:
+        return
+    if not code:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "verification code required")
+    if not _verify_mfa_code(row, code):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid verification code")
+
+
 def _safe_next(path: str | None, default: str) -> str:
     if not path or not path.startswith("/") or path.startswith("//"):
         return default
@@ -155,10 +170,35 @@ def _public_base(request: Request) -> str:
     return str(request.base_url).rstrip("/")
 
 
+def _oauth_base(request: Request) -> str:
+    """Browser-facing origin for the Google redirect URI.
+
+    Computed only at the authorize step; the resulting redirect URI is pinned
+    into the signed OAuth state and reused verbatim at the token exchange, so
+    authorize and exchange always match (Google requires byte-identical URIs).
+
+    Prefer explicit config, then the request's own origin when it is an allowed
+    CORS origin (correct for both the dev Vite proxy and same-origin prod), then
+    the first configured CORS origin (covers browsers that strip the referer,
+    where the dev proxy would otherwise expose the backend Host), and finally
+    the raw request headers.
+    """
+    if settings.public_base_url:
+        return settings.public_base_url.rstrip("/")
+    origin = _request_origin(request)
+    if origin:
+        return origin
+    for origin in settings.cors_origins.split(","):
+        origin = origin.strip().rstrip("/")
+        if origin:
+            return origin
+    return _public_base(request)
+
+
 def _google_redirect_uri(request: Request) -> str:
     if settings.google_oauth_redirect_uri:
         return settings.google_oauth_redirect_uri
-    return f"{_public_base(request)}/api/v1/auth/google/callback"
+    return f"{_oauth_base(request)}/api/v1/auth/google/callback"
 
 
 def _app_url(request: Request, path: str) -> str:
@@ -198,8 +238,12 @@ def _verify_google_id_token(id_token: str, nonce: str) -> dict:
             signing_key.key,
             algorithms=["RS256"],
             audience=settings.google_oauth_client_id,
+            # Tolerate small clock drift between this host and Google so a
+            # locally fast/slow clock doesn't reject a valid iat/exp.
+            leeway=30,
         )
     except jwt.PyJWTError as exc:
+        log.warning("google id token verification failed: %r", exc)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid google token") from exc
     if claims.get("iss") not in ("https://accounts.google.com", "accounts.google.com"):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid google issuer")
@@ -211,19 +255,24 @@ def _verify_google_id_token(id_token: str, nonce: str) -> dict:
     return claims
 
 
-def _exchange_google_code(request: Request, code: str, nonce: str) -> dict:
+def _exchange_google_code(request: Request, code: str, nonce: str,
+                          redirect_uri: str | None = None) -> dict:
     token_resp = requests.post(
         _GOOGLE_TOKEN_URL,
         data={
             "code": code,
             "client_id": settings.google_oauth_client_id,
             "client_secret": settings.google_oauth_client_secret,
-            "redirect_uri": _google_redirect_uri(request),
+            "redirect_uri": redirect_uri or _google_redirect_uri(request),
             "grant_type": "authorization_code",
         },
         timeout=10,
     )
     if token_resp.status_code >= 400:
+        # Surface Google's actual error (e.g. redirect_uri_mismatch,
+        # invalid_client) so misconfiguration is diagnosable from the logs.
+        log.warning("google token exchange failed (%s): %s",
+                    token_resp.status_code, token_resp.text)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "google token exchange failed")
     id_token = token_resp.json().get("id_token")
     if not id_token:
@@ -242,7 +291,8 @@ def _google_user(claims: dict):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "google email is not verified")
     existing = get_user_by_email(email)
     if existing:
-        link_google_account(existing["id"], google_sub=sub, email_verified=True)
+        link_google_account(existing["id"], google_sub=sub, email=email,
+                            email_verified=True)
         return get_user_by_id(existing["id"])
     name = str(claims.get("name") or email.split("@", 1)[0])[:64]
     uid = create_google_user(
@@ -331,9 +381,18 @@ def account(user: dict = Depends(current_user)):
 @router.patch("/account", response_model=AccountOut)
 def update_account(body: AccountUpdateRequest, request: Request,
                    user: dict = Depends(current_user)):
+    summary = account_security_summary(user["uid"])
+    if not summary:
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    new_email = str(body.email).strip()
+    if summary["email_locked"] and new_email.lower() != (summary["email"] or "").lower():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST,
+                            "email is managed by your Google account")
+    if summary["two_factor_enabled"]:
+        _require_mfa(user["uid"], body.code)
     try:
         row = update_account_profile(
-            user["uid"], username=body.username.strip(), email=str(body.email),
+            user["uid"], username=body.username.strip(), email=new_email,
         )
     except sqlite3.IntegrityError:
         raise HTTPException(status.HTTP_409_CONFLICT, "email already registered")
@@ -388,6 +447,8 @@ def change_password(body: PasswordChangeRequest, request: Request,
         user["uid"], body.current_password,
     ):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "current password is incorrect")
+    if summary["two_factor_enabled"]:
+        _require_mfa(user["uid"], body.code)
     set_password(user["uid"], body.new_password)
     log_action(request, user, "change_password", str(user["uid"]))
     return MessageResponse(ok=True, message="password updated")
@@ -469,12 +530,14 @@ def google_start(request: Request, mode: str = Query("login"),
 
     default_next = "/settings" if mode == "link" else "/courses"
     nonce = secrets.token_urlsafe(24)
+    redirect_uri = _google_redirect_uri(request)
     state = issue_oauth_state(
         mode=mode, next_path=_safe_next(next_path, default_next), nonce=nonce,
+        redirect_uri=redirect_uri,
     )
     params = {
         "client_id": settings.google_oauth_client_id,
-        "redirect_uri": _google_redirect_uri(request),
+        "redirect_uri": redirect_uri,
         "response_type": "code",
         "scope": "openid email profile",
         "state": state,
@@ -511,7 +574,10 @@ def google_callback(request: Request, code: str | None = None,
         return redirect("invalid_state")
 
     try:
-        claims = _exchange_google_code(request, code, state_payload["nonce"])
+        claims = _exchange_google_code(
+            request, code, state_payload["nonce"],
+            state_payload.get("redirect_uri"),
+        )
     except HTTPException as exc:
         log.warning("google oauth failed: %s", exc.detail)
         return redirect("failed")
@@ -525,7 +591,13 @@ def google_callback(request: Request, code: str | None = None,
         existing = get_user_by_google_sub(sub)
         if existing and existing["id"] != current["uid"]:
             return redirect("conflict")
-        link_google_account(current["uid"], google_sub=sub, email_verified=verified)
+        try:
+            link_google_account(
+                current["uid"], google_sub=sub, email=str(claims["email"]),
+                email_verified=verified,
+            )
+        except sqlite3.IntegrityError:
+            return redirect("conflict")
         return redirect("linked")
 
     try:
