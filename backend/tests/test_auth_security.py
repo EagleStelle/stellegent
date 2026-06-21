@@ -168,7 +168,7 @@ def test_password_reset_email_send_is_rate_limited_without_enumeration(tmp_path,
                 json={"email": "grace@example.com"},
             )
             assert response.status_code == 200
-            assert response.json()["message"] == "if the email exists, a reset link was sent"
+            assert response.json()["message"] == "Reset link sent."
 
         limited = client.post(
             "/api/v1/forgot-password",
@@ -181,8 +181,8 @@ def test_password_reset_email_send_is_rate_limited_without_enumeration(tmp_path,
 
     assert limited.status_code == 200
     assert unknown.status_code == 200
-    assert limited.json()["message"] == "if the email exists, a reset link was sent"
-    assert unknown.json()["message"] == "if the email exists, a reset link was sent"
+    assert limited.json()["message"] == "Reset link sent."
+    assert unknown.json()["message"] == "Reset link sent."
     assert len(sent) == 3
     ratelimit.reset()
 

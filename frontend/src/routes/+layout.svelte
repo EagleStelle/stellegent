@@ -33,32 +33,59 @@
 
 	const signedInRedirectRoutes = ['/', '/register'];
 	const publicRoutes = [...signedInRedirectRoutes, '/forgot', '/reset', '/verify-email', '/mfa'];
+	let loggingOut = $state(false);
+	let signedOutLocally = $state(false);
 
 	async function logout() {
 		desktopMenuOpen = false;
 		mobileMenuOpen = false;
-		await apiPost('/api/v1/logout');
-		await queryClient.invalidateQueries({ queryKey: ['me'] });
-		goto('/');
+		loggingOut = true;
+		await queryClient.cancelQueries({ queryKey: ['me'] });
+		queryClient.setQueryData(['me'], null);
+		try {
+			await apiPost('/api/v1/logout');
+			signedOutLocally = true;
+		} finally {
+			await queryClient.cancelQueries({ queryKey: ['me'] });
+			queryClient.setQueryData(['me'], null);
+			await goto('/');
+			await queryClient.invalidateQueries({ queryKey: ['me'] });
+			loggingOut = false;
+		}
 	}
 
 	const isAuthRoute = $derived(publicRoutes.includes(page.url.pathname));
+	const isSignedIn = $derived(
+		!loggingOut && !signedOutLocally && me.isSuccess && !!me.data
+	);
+	const currentUser = $derived(isSignedIn ? me.data : null);
 
 	$effect(() => {
 		const pathname = page.url.pathname;
 
-		if (me.data && signedInRedirectRoutes.includes(pathname)) {
-			void goto('/courses', { replaceState: true });
+		if (
+			signedOutLocally &&
+			!loggingOut &&
+			me.isSuccess &&
+			!!me.data &&
+			!publicRoutes.includes(pathname)
+		) {
+			signedOutLocally = false;
 			return;
 		}
 
 		if (me.isError && !publicRoutes.includes(pathname)) {
 			void goto('/', { replaceState: true });
+			return;
+		}
+
+		if (isSignedIn && signedInRedirectRoutes.includes(pathname)) {
+			void goto('/courses', { replaceState: true });
 		}
 	});
 
-	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
-	const isAdmin = $derived(me.data?.role === 'admin');
+	const canTeach = $derived(currentUser?.role === 'prof' || currentUser?.role === 'admin');
+	const isAdmin = $derived(currentUser?.role === 'admin');
 
 	const links = $derived(
 		[
@@ -76,7 +103,7 @@
 	let desktopMenuOpen = $state(false);
 	let mobileMenuOpen = $state(false);
 
-	const initials = $derived((me.data?.username ?? '?').slice(0, 1).toUpperCase());
+	const initials = $derived((currentUser?.username ?? '?').slice(0, 1).toUpperCase());
 	const navMotion =
 		'transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.98]';
 
@@ -127,7 +154,7 @@
 			<span>Stellegent</span>
 		</a>
 
-		{#if me.data}
+		{#if isSignedIn}
 			<nav class="grid gap-1" aria-label="Primary">
 				{#each links as link (link.href)}
 					{@const active = isActive(link.href)}
@@ -194,7 +221,7 @@
 		{/if}
 	</aside>
 
-	{#if me.data}
+	{#if isSignedIn}
 		<nav
 			class="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-1 bg-primary px-2 pt-2 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)] md:hidden border-t border-white/5"
 			style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));"
@@ -291,7 +318,7 @@
 		class="min-h-dvh bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-64"
 	>
 		{@render children()}
-		{#if me.data}
+		{#if isSignedIn}
 			<div class="h-20 md:hidden" aria-hidden="true"></div>
 		{/if}
 	</main>

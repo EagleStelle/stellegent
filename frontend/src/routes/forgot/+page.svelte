@@ -20,7 +20,7 @@
 		devToken = '';
 		try {
 			const res = await apiPost<MessageResponse>('/api/v1/forgot-password', { email });
-			message = res.message ?? 'If the email exists, a reset link was sent.';
+			message = res.message ?? 'Reset link sent.';
 			devToken = res.reset_token ?? '';
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Could not send reset email';

@@ -50,6 +50,9 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
     student_id = db.create_user("student1", "secret123", "student", email="student1@example.com")
     other_student_id = db.create_user("student2", "secret123", "student", email="student2@example.com")
     course_id = db.create_course(name="Math", faculty_id=prof_id)
+    private_course_id = db.create_course(
+        name="Hidden Math", faculty_id=prof_id, visibility="private"
+    )
     db.set_course_students(course_id, [student_id])
 
     db.insert_lecture(
@@ -78,16 +81,38 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
         tags=[], owner_user_id=prof_id, visibility="private",
     )
     db.set_lecture_students("private-direct", [other_student_id])
+    db.insert_lecture(
+        lecture_id="public-private-course", date="2026-05-03",
+        course_name="Hidden Math",
+        captured_at="2026-05-03T13:00:00+00:00",
+        image_path="/tmp/i.png", docx_path="/tmp/i.docx", pdf_path="/tmp/i.pdf",
+        txt_path="/tmp/i.txt", manifest_path="/tmp/m.json",
+        raw_ocr_text="public", corrected_text="Public", summary="- public",
+        tags=[], owner_user_id=prof_id, visibility="public",
+        course_id=private_course_id,
+    )
 
     student_rows = db.list_lectures(user_id=student_id, role="student")
-    assert {r["id"] for r in student_rows} == {"public", "private-course"}
+    assert {r["id"] for r in student_rows} == {
+        "public", "private-course", "public-private-course"
+    }
 
     other_rows = db.list_lectures(user_id=other_student_id, role="student")
-    assert {r["id"] for r in other_rows} == {"public", "private-direct"}
+    assert {r["id"] for r in other_rows} == {
+        "public", "private-direct", "public-private-course"
+    }
 
     private_row = db.get_lecture("private-course")
     assert db.can_manage_lecture(private_row, user_id=prof_id, role="prof")
     assert not db.can_manage_lecture(private_row, user_id=student_id, role="student")
+
+    public_private_course_row = db.get_lecture("public-private-course")
+    assert db.can_view_lecture(
+        public_private_course_row, user_id=student_id, role="student"
+    )
+    assert db.can_view_lecture(
+        public_private_course_row, user_id=other_student_id, role="student"
+    )
 
 
 def test_student_courses_are_readable_without_management_roster(tmp_path, monkeypatch):

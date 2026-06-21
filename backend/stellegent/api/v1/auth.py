@@ -689,12 +689,12 @@ def forgot_password(body: ForgotPasswordRequest, request: Request):
     """Always returns ok to avoid account enumeration."""
     user = get_user_by_email(body.email)
     if not user:
-        return MessageResponse(ok=True, message="if the email exists, a reset link was sent")
+        return MessageResponse(ok=True, message="Reset link sent.")
     if email_configured() and not _email_send_allowed(
         request, kind="password_reset", to=user["email"], user_id=user["id"],
     ):
         log.info("password reset email rate limited for user %s", user["id"])
-        return MessageResponse(ok=True, message="if the email exists, a reset link was sent")
+        return MessageResponse(ok=True, message="Reset link sent.")
     token = create_reset_token(user["id"])
     reset_url = _app_url(request, f"/reset?{urlencode({'token': token})}")
     if not email_configured():
@@ -703,7 +703,7 @@ def forgot_password(body: ForgotPasswordRequest, request: Request):
         send_password_reset_email(to=user["email"], reset_url=reset_url)
     except Exception as exc:
         log.warning("password reset email failed for user %s: %s", user["id"], exc)
-    return MessageResponse(ok=True, message="if the email exists, a reset link was sent")
+    return MessageResponse(ok=True, message="Reset link sent.")
 
 
 @router.post("/reset-password", response_model=MessageResponse)

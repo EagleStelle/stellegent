@@ -123,7 +123,7 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
         elif role == "student":
             sql += """
                 AND (
-                    (l.visibility = 'public' AND (c.id IS NULL OR c.visibility = 'public'))
+                    l.visibility = 'public'
                     OR EXISTS (
                         SELECT 1 FROM lecture_students ls
                         WHERE ls.lecture_id = l.id
@@ -176,7 +176,7 @@ def can_view_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
         if row["visibility"] == "public" and row["course_visibility"] == "public":
             return True
             
-    if row["visibility"] == "public" and (row["course_id"] is None or row.get("course_visibility", "public") == "public"):
+    if row["visibility"] == "public":
         return True
     with get_conn() as c:
         if c.execute(
