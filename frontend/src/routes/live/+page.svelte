@@ -120,7 +120,7 @@
 			<button
 				onclick={capture}
 				disabled={capturing}
-				class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-zinc-50 shadow-lg shadow-black/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-accent/40 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]"
+				class="inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-5 text-base font-medium text-zinc-50 shadow-lg shadow-black/20 transition-all duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/40 disabled:pointer-events-none disabled:opacity-60 active:scale-[0.98]"
 			>
 				{#if capturing}
 					<CircleNotch size={22} class="animate-spin" />

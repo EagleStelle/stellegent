@@ -103,13 +103,13 @@
 
 {#if !isAuthRoute}
 	<aside
-		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-brand-nav px-4 py-6 text-white md:flex border-r border-white/5 shadow-2xl"
+		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-primary px-4 py-6 text-white md:flex border-r border-white/5 shadow-2xl"
 	>
 		<a
 			href="/"
 			class="{navMotion} mb-6 flex items-center gap-3 rounded-xl px-3 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
-			<span class="grid size-10 place-items-center rounded-xl bg-brand-accent text-white shadow-sm">
+			<span class="grid size-10 place-items-center rounded-xl bg-secondary text-white shadow-sm">
 				<GraduationCap size={24} weight="fill" />
 			</span>
 			<span>Stellegent</span>
@@ -123,7 +123,7 @@
 						href={link.href}
 						aria-current={active ? 'page' : undefined}
 						class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium {active
-							? 'bg-brand-accent text-white shadow-sm'
+							? 'bg-secondary text-white shadow-sm'
 							: 'text-slate-300 hover:bg-white/10 hover:text-white'}"
 					>
 						<link.icon size={20} weight={active ? 'fill' : 'regular'} />
@@ -137,7 +137,7 @@
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
 					title={theme.dark ? 'Light mode' : 'Dark mode'}
-					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+					class="{navMotion} flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 				>
 					{#if theme.dark}
 						<Sun size={20} weight="fill" />
@@ -152,9 +152,9 @@
 						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
 						aria-haspopup="menu"
 						aria-expanded={desktopMenuOpen}
-						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-accent"
+						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-slate-300 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary"
 					>
-						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-brand-accent text-xs font-bold text-white shadow-sm">
+						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-white shadow-sm">
 							{initials}
 						</span>
 						<span class="min-w-0 flex-1 truncate">{me.data.username}</span>
@@ -167,7 +167,7 @@
 					{#if desktopMenuOpen}
 						<div
 							role="menu"
-							class="absolute bottom-0 left-full ml-2 w-64 rounded-xl bg-brand-nav p-1.5 text-white shadow-xl ring-1 ring-white/10"
+							class="absolute bottom-0 left-full ml-2 w-64 rounded-xl bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 						>
 							<button
 								onclick={logout}
@@ -186,7 +186,7 @@
 
 	{#if me.data}
 		<nav
-			class="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-1 bg-brand-nav px-2 pt-2 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)] md:hidden border-t border-white/5"
+			class="fixed inset-x-0 bottom-0 z-30 flex items-stretch gap-1 bg-primary px-2 pt-2 text-white shadow-[0_-4px_20px_rgba(0,0,0,0.2)] md:hidden border-t border-white/5"
 			style="padding-bottom: max(0.75rem, env(safe-area-inset-bottom));"
 			aria-label="Primary"
 		>
@@ -197,10 +197,10 @@
 					onclick={() => (mobileMenuOpen = false)}
 					aria-current={active ? 'page' : undefined}
 					class="{navMotion} flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium {active
-						? 'text-brand-accent'
+						? 'text-secondary'
 						: 'text-slate-400 hover:text-white'}"
 				>
-					<div class="grid size-8 place-items-center rounded-full {active ? 'bg-brand-accent/15' : 'bg-transparent'}">
+					<div class="grid size-8 place-items-center rounded-full {active ? 'bg-secondary/15' : 'bg-transparent'}">
 						<link.icon size={22} weight={active ? 'fill' : 'regular'} />
 					</div>
 					<span class="max-w-full truncate">{link.label}</span>
@@ -215,7 +215,7 @@
 					class="{navMotion} flex w-full min-w-0 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 text-[10px] font-medium text-slate-400 hover:text-white focus-visible:outline-none"
 				>
 					<div class="grid size-8 place-items-center">
-						<span class="grid size-6 place-items-center rounded-full bg-brand-accent text-[10px] font-bold text-white shadow-sm ring-2 ring-brand-nav">
+						<span class="grid size-6 place-items-center rounded-full bg-secondary text-[10px] font-bold text-white shadow-sm ring-2 ring-primary">
 							{initials}
 						</span>
 					</div>
@@ -225,7 +225,7 @@
 				{#if mobileMenuOpen}
 					<div
 						role="menu"
-						class="absolute bottom-full right-0 mb-3 w-48 rounded-xl bg-brand-nav p-1.5 text-white shadow-xl ring-1 ring-white/10"
+						class="absolute bottom-full right-0 mb-3 w-48 rounded-xl bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
 					>
 						<button
 							onclick={() => theme.toggle()}
@@ -255,10 +255,8 @@
 {/if}
 
 {#if isAuthRoute}
-	<main class="min-h-[100dvh] bg-slate-50 px-6 py-8 text-black dark:bg-black dark:text-white">
-		<div class="mx-auto max-w-5xl">
-			{@render children()}
-		</div>
+	<main class="min-h-[100dvh] bg-white text-black dark:bg-zinc-900 dark:text-white">
+		{@render children()}
 	</main>
 {:else}
 	<main

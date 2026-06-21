@@ -69,7 +69,7 @@
 			<p class="mt-2 text-sm text-zinc-500 dark:text-zinc-400">The lecture may have been removed.</p>
 			<a
 				href="/"
-				class="mt-5 inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-zinc-100 dark:bg-zinc-700 px-3 text-sm font-medium text-zinc-900 dark:text-zinc-50 outline-none transition-all hover:bg-zinc-200 dark:hover:bg-zinc-600 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30"
+				class="mt-5 inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-zinc-100 dark:bg-zinc-700 px-3 text-sm font-medium text-zinc-900 dark:text-zinc-50 outline-none transition-all hover:bg-zinc-200 dark:hover:bg-zinc-600 focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30"
 			>
 				Back to lectures
 			</a>
@@ -117,7 +117,7 @@
 			{#each ['pdf', 'docx', 'txt', 'manifest'] as type}
 				<a
 					href={fileUrl(type)}
-					class="inline-flex h-7 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-2xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-medium outline-none transition-all hover:bg-zinc-100 hover:text-zinc-900 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-50 dark:hover:bg-zinc-700/30"
+					class="inline-flex h-7 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-2xl border border-zinc-200 bg-zinc-50 px-3 text-sm font-medium outline-none transition-all hover:bg-zinc-100 hover:text-zinc-900 focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 dark:border-zinc-700 dark:bg-transparent dark:text-zinc-50 dark:hover:bg-zinc-700/30"
 				>
 					<DownloadSimple size={16} />
 					{type === 'manifest' ? 'JSON' : type.toUpperCase()}
@@ -184,12 +184,12 @@
 					<textarea
 						bind:value={note}
 						placeholder="Add a note"
-						class="flex field-sizing-content min-h-20 w-full resize-none rounded-2xl border border-transparent bg-zinc-200/50 dark:bg-zinc-700/50 px-2.5 py-2 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
+						class="flex field-sizing-content min-h-20 w-full resize-none rounded-2xl border border-transparent bg-zinc-200/50 dark:bg-zinc-700/50 px-2.5 py-2 text-base outline-none transition-[color,box-shadow] duration-200 placeholder:text-zinc-500 dark:placeholder:text-zinc-400 focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
 					></textarea>
 					<button
 						type="submit"
 						disabled={!note.trim()}
-						class="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-primary px-3 text-sm font-medium text-zinc-50 outline-none transition-all hover:bg-primary/80 focus-visible:border-accent focus-visible:ring-3 focus-visible:ring-accent/30 disabled:pointer-events-none disabled:opacity-50"
+						class="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-2xl border border-transparent bg-primary px-3 text-sm font-medium text-zinc-50 outline-none transition-all hover:bg-primary/80 focus-visible:border-secondary focus-visible:ring-3 focus-visible:ring-secondary/30 disabled:pointer-events-none disabled:opacity-50"
 					>
 						Add note
 					</button>
