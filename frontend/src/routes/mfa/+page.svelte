@@ -37,13 +37,8 @@
 		</a>
 
 		<div class="mb-5 flex items-center gap-3">
-			<div class="grid size-10 place-items-center rounded-lg bg-secondary/10 text-secondary">
-				<ShieldCheck size={22} weight="fill" />
-			</div>
-			<div>
-				<h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">Two-factor code</h1>
-				<p class="text-sm font-medium text-gray-500 dark:text-gray-400">Use your authenticator or recovery code.</p>
-			</div>
+			<ShieldCheck size={24} weight="fill" class="text-secondary shrink-0" />
+			<h1 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">Two-factor code</h1>
 		</div>
 
 		<form onsubmit={submit} class="grid gap-3">
@@ -68,12 +63,7 @@
 			{/if}
 
 			<Button type="submit" disabled={loading} class="w-full text-sm font-semibold shadow-md shadow-primary/20">
-				{#if loading}
-					<CircleNotch size={18} class="animate-spin" />
-					<span>Verifying...</span>
-				{:else}
-					<span>Verify</span>
-				{/if}
+				{loading ? 'Verifying...' : 'Verify'}
 			</Button>
 		</form>
 

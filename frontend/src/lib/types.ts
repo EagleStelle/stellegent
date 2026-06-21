@@ -54,6 +54,7 @@ export interface MessageResponse {
 export interface LectureSummary {
 	id: string;
 	date: string;
+	title: string | null;
 	course_name: string | null;
 	course_id: number | null;
 	course_title: string | null;

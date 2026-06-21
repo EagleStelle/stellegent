@@ -15,7 +15,7 @@ import numpy as np
 from .config import DATA_DIR, OCR_CONFIDENCE_THRESHOLD
 from .preprocess import preprocess
 from .ocr import run_ocr
-from .nlp import correct_low_confidence, summarize
+from .nlp import correct_low_confidence, summarize, generate_title
 from .nlp.correct import postprocess
 from .export import export_all
 from .db import init_db, insert_lecture
@@ -38,6 +38,7 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
         corrected = postprocess(raw_text)
 
     summary = summarize(corrected)
+    title = generate_title(summary, course_name=course_name)
 
     result = export_all(rectified, result_ocr.lines, corrected, summary,
                         base_dir=DATA_DIR, course_name=course_name,
@@ -48,6 +49,7 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
         lecture_id=result.lecture_id,
         date=result.captured_at[:10],
         course_name=course_name,
+        title=title,
         captured_at=result.captured_at,
         image_path=result.image_path,
         docx_path=result.docx_path,
@@ -69,6 +71,7 @@ def process_image(image: np.ndarray, course_name: Optional[str] = None,
         "raw_text": raw_text,
         "corrected_text": corrected,
         "summary": summary,
+        "title": title,
         "tags": manifest.get("tags", []),
     }
 

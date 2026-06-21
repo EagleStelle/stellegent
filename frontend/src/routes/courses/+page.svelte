@@ -15,6 +15,7 @@
 		PencilSimple,
 		Plus,
 		Trash,
+		UserCircle,
 		UsersThree,
 	} from "phosphor-svelte";
 
@@ -122,8 +123,9 @@
 						<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
 							{course.name}
 						</h3>
-						<p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-							{course.faculty_username}
+						<p class="mt-1 flex items-center gap-1.5 truncate text-xs text-gray-500 dark:text-gray-400">
+							<UserCircle size={14} weight="bold" class="shrink-0" />
+							<span class="truncate">{course.faculty_username}</span>
 						</p>
 					</div>
 

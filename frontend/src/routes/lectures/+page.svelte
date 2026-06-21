@@ -8,7 +8,7 @@
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ComboBox from '$lib/components/ui/ComboBox.svelte';
-	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash } from 'phosphor-svelte';
+	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash, BookOpen, UserCircle } from 'phosphor-svelte';
 	import { untrack } from 'svelte';
 
 	let q = $state('');
@@ -126,14 +126,6 @@
 		}
 	}
 
-	function getTags(tags: string | null | undefined) {
-		return (tags ?? '')
-			.split(',')
-			.map((t) => t.trim())
-			.filter(Boolean)
-			.slice(0, 3);
-	}
-
 	function editLecture(e: MouseEvent, id: string) {
 		e.preventDefault();
 		e.stopPropagation();
@@ -213,13 +205,24 @@
 {:else if filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as lec (lec.id)}
-			{@const tags = getTags(lec.tags)}
 			<Card href={`/lectures/${lec.id}`} class="group flex h-full flex-col gap-3">
 				<div class="flex items-start justify-between gap-4">
-					<div class="flex min-w-0 flex-col gap-1">
+					<div class="flex min-w-0 flex-col gap-1.5">
 						<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
-							{lec.course_name ?? 'Untitled'}
+							{lec.title ?? lec.course_name ?? 'Untitled'}
 						</h3>
+						<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+							<span class="flex min-w-0 items-center gap-1.5">
+								<UserCircle size={14} weight="bold" class="shrink-0" />
+								<span class="truncate">{lec.owner_username ?? 'Unknown'}</span>
+							</span>
+							{#if lec.course_name}
+								<span class="flex min-w-0 items-center gap-1.5">
+									<BookOpen size={14} weight="bold" class="shrink-0" />
+									<span class="truncate">{lec.course_name}</span>
+								</span>
+							{/if}
+						</div>
 						<div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
 							<CalendarBlank size={14} weight="bold" />
 							<span class="truncate">{new Date(lec.captured_at).toLocaleString()}</span>
@@ -261,16 +264,6 @@
 					<p class="line-clamp-3 text-sm leading-6 text-gray-600 dark:text-gray-400">
 						{lec.summary}
 					</p>
-				{/if}
-
-				{#if tags.length}
-					<div class="mt-auto flex flex-wrap gap-1.5 pt-1">
-						{#each tags as tag (tag)}
-							<span class="rounded-full bg-secondary/10 px-2.5 py-0.5 text-[11px] font-medium text-secondary">
-								{tag}
-							</span>
-						{/each}
-					</div>
 				{/if}
 			</Card>
 		{/each}

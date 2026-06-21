@@ -76,6 +76,13 @@
 		}
 	});
 
+	const profileChanged = $derived(
+		account.data &&
+			(fullName.trim() !== account.data.username || email.trim() !== (account.data.email ?? ''))
+	);
+	const passwordChanged = $derived(currentPassword.length > 0 || newPassword.length > 0);
+	const disableTotpChanged = $derived(disableCode.length > 0 || disablePassword.length > 0);
+
 	const googleStatus = $derived(page.url.searchParams.get('google'));
 	const googleNotice = $derived.by(() => {
 		if (googleStatus === 'linked') return 'Google account connected';
@@ -90,10 +97,6 @@
 		['conflict', 'failed', 'login_required', 'invalid_state', 'cancelled'].includes(googleStatus ?? '')
 	);
 
-	const panel =
-		'rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-800 dark:bg-gray-900';
-	const panelTitle = 'text-base font-bold tracking-tight text-primary dark:text-gray-50';
-	const panelSub = 'text-sm font-medium text-gray-500 dark:text-gray-400';
 	const okNotice =
 		'rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300';
 	const errorNotice =
@@ -242,29 +245,28 @@
 	}
 </script>
 
-<section class="mx-auto grid w-full max-w-5xl gap-4">
-	<div>
-		<h1 class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50">Settings</h1>
-		<p class="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">
-			Account identity, password, sign-in providers, and two-factor protection.
-		</p>
-	</div>
-
+<section class="grid w-full gap-12">
 	{#if account.isLoading}
-		<div class="{panel} grid min-h-40 place-items-center">
+		<div class="grid min-h-40 place-items-center">
 			<CircleNotch size={24} class="animate-spin text-secondary" />
 		</div>
 	{:else if account.data}
-		<div class="grid gap-4 lg:grid-cols-[1fr_0.95fr]">
-			<form onsubmit={saveProfile} class="{panel} grid gap-3">
-				<div class="flex items-start gap-3">
-					<div class="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary/10 text-secondary">
-						<User size={21} weight="bold" />
-					</div>
-					<div>
-						<h2 class={panelTitle}>Profile</h2>
-						<p class={panelSub}>Name and email shown across the app.</p>
-					</div>
+		<div class="grid items-start gap-12 lg:grid-cols-2">
+			<form onsubmit={saveProfile} class="grid gap-4">
+				<div class="flex items-center gap-3 border-b border-gray-200 pb-4 dark:border-gray-800">
+					<User size={24} weight="bold" class="text-secondary shrink-0" />
+					<h2 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">Profile</h2>
+					{#if account.data.email_verified}
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+							<CheckCircle size={14} weight="fill" />
+							Verified
+						</span>
+					{:else}
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300">
+							<WarningCircle size={14} weight="fill" />
+							Unverified
+						</span>
+					{/if}
 				</div>
 
 				<Input id="settings-name" label="Full name" bind:value={fullName} icon={User} required />
@@ -277,81 +279,31 @@
 					required
 				/>
 
-				<div class="flex flex-wrap items-center gap-2">
-					{#if account.data.email_verified}
-						<span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
-							<CheckCircle size={14} weight="fill" />
-							Email verified
-						</span>
-					{:else}
-						<span class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300">
-							<WarningCircle size={14} weight="fill" />
-							Email unverified
-						</span>
+				<div class="mt-1 flex flex-wrap items-center gap-3">
+					{#if profileChanged}
+						<Button type="submit" disabled={profileLoading} class="w-max">
+							Save profile
+						</Button>
+					{/if}
+
+					{#if !account.data.email_verified}
 						<Button
-							variant="icon+text"
 							ghost
 							type="button"
 							onclick={sendVerificationEmail}
 							disabled={verificationLoading}
-							class="h-8"
+							class="w-max"
 						>
-							{#snippet icon()}
-								{#if verificationLoading}
-									<CircleNotch size={16} class="animate-spin" />
-								{:else}
-									<EnvelopeSimple size={16} />
-								{/if}
-							{/snippet}
 							Send verification
 						</Button>
 					{/if}
 				</div>
-
-				{#if profileError}
-					<p class={errorNotice} role="alert">{profileError}</p>
-				{:else if profileMessage}
-					<p class={okNotice}>{profileMessage}</p>
-				{/if}
-
-				{#if verificationError}
-					<p class={errorNotice} role="alert">{verificationError}</p>
-				{:else if verificationMessage}
-					<p class={okNotice}>{verificationMessage}</p>
-				{/if}
-
-				{#if verificationToken}
-					<a
-						href={`/verify-email?token=${encodeURIComponent(verificationToken)}`}
-						class="rounded-lg bg-gray-100 px-3 py-2 text-sm font-bold text-primary transition-colors hover:text-secondary dark:bg-gray-950 dark:text-gray-50"
-					>
-						Open dev verification link
-					</a>
-				{/if}
-
-				<Button variant="icon+text" type="submit" disabled={profileLoading} class="mt-1 w-max">
-					{#snippet icon()}
-						{#if profileLoading}
-							<CircleNotch size={18} class="animate-spin" />
-						{:else}
-							<FloppyDisk size={18} />
-						{/if}
-					{/snippet}
-					Save profile
-				</Button>
 			</form>
 
-			<form onsubmit={changePassword} class="{panel} grid gap-3">
-				<div class="flex items-start gap-3">
-					<div class="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary/10 text-secondary">
-						<Password size={21} weight="bold" />
-					</div>
-					<div>
-						<h2 class={panelTitle}>Password</h2>
-						<p class={panelSub}>
-							{account.data.has_password ? 'Change your local password.' : 'Add a local password to this account.'}
-						</p>
-					</div>
+			<form onsubmit={changePassword} class="grid gap-4">
+				<div class="flex items-center gap-3 border-b border-gray-200 pb-4 dark:border-gray-800">
+					<Password size={24} weight="bold" class="text-secondary shrink-0" />
+					<h2 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">Password</h2>
 				</div>
 
 				{#if account.data.has_password}
@@ -380,40 +332,29 @@
 					<p class={okNotice}>{passwordMessage}</p>
 				{/if}
 
-				<Button variant="icon+text" type="submit" disabled={passwordLoading} class="mt-1 w-max">
-					{#snippet icon()}
-						{#if passwordLoading}
-							<CircleNotch size={18} class="animate-spin" />
-						{:else}
-							<Key size={18} />
-						{/if}
-					{/snippet}
-					{account.data.has_password ? 'Change password' : 'Add password'}
-				</Button>
+				{#if passwordChanged}
+					<Button type="submit" disabled={passwordLoading} class="mt-1 w-max">
+						{account.data.has_password ? 'Change password' : 'Add password'}
+					</Button>
+				{/if}
 			</form>
 		</div>
 
-		<div class="grid gap-4 lg:grid-cols-[0.95fr_1fr]">
-			<div class="{panel} grid gap-3">
-				<div class="flex items-start gap-3">
-					<div class="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary/10 text-secondary">
-						<GoogleLogoIcon size={22} weight="bold" />
-					</div>
-					<div>
-						<h2 class={panelTitle}>Google</h2>
-						<p class={panelSub}>
-							{account.data.google_linked ? 'Google sign-in is connected.' : 'Connect Google sign-in to this account.'}
-						</p>
-					</div>
-				</div>
-
-				<div class="flex items-center gap-2 text-sm font-semibold">
+		<div class="grid items-start gap-12 lg:grid-cols-2">
+			<div class="grid gap-4">
+				<div class="flex items-center gap-3 border-b border-gray-200 pb-4 dark:border-gray-800">
+					<GoogleLogoIcon size={24} weight="bold" class="text-secondary shrink-0" />
+					<h2 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">Google</h2>
 					{#if account.data.google_linked}
-						<CheckCircle size={17} weight="fill" class="text-emerald-500" />
-						<span class="text-emerald-700 dark:text-emerald-300">Connected</span>
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+							<CheckCircle size={14} weight="fill" />
+							Connected
+						</span>
 					{:else}
-						<WarningCircle size={17} weight="fill" class="text-amber-500" />
-						<span class="text-gray-500 dark:text-gray-400">Not connected</span>
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300">
+							<WarningCircle size={14} weight="fill" />
+							Not connected
+						</span>
 					{/if}
 				</div>
 
@@ -426,7 +367,6 @@
 
 				{#if account.data.google_linked}
 					<Button
-						variant="icon+text"
 						ghost
 						danger
 						type="button"
@@ -434,13 +374,6 @@
 						disabled={googleLoading}
 						class="w-max"
 					>
-						{#snippet icon()}
-							{#if googleLoading}
-								<CircleNotch size={18} class="animate-spin" />
-							{:else}
-								<LinkBreak size={18} />
-							{/if}
-						{/snippet}
 						Disconnect Google
 					</Button>
 				{:else}
@@ -448,32 +381,25 @@
 						href="/api/v1/auth/google/start?mode=link&next=/settings"
 						class="inline-flex h-10 w-max items-center justify-center gap-2 rounded-lg bg-secondary px-3.5 text-sm font-medium text-white shadow-sm transition-all duration-200 hover:bg-secondary/90 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/30 active:scale-[0.98]"
 					>
-						<GoogleLogoIcon size={18} weight="bold" />
 						<span>Connect Google</span>
 					</a>
 				{/if}
 			</div>
 
-			<div class="{panel} grid gap-3">
-				<div class="flex items-start gap-3">
-					<div class="grid size-10 shrink-0 place-items-center rounded-lg bg-secondary/10 text-secondary">
-						<ShieldCheck size={22} weight="fill" />
-					</div>
-					<div>
-						<h2 class={panelTitle}>Authenticator</h2>
-						<p class={panelSub}>
-							{account.data.two_factor_enabled ? 'Two-factor authentication is enabled.' : 'Protect sign-ins with a six-digit code.'}
-						</p>
-					</div>
-				</div>
-
-				<div class="flex items-center gap-2 text-sm font-semibold">
+			<div class="grid gap-4">
+				<div class="flex items-center gap-3 border-b border-gray-200 pb-4 dark:border-gray-800">
+					<ShieldCheck size={24} weight="fill" class="text-secondary shrink-0" />
+					<h2 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">Authenticator</h2>
 					{#if account.data.two_factor_enabled}
-						<CheckCircle size={17} weight="fill" class="text-emerald-500" />
-						<span class="text-emerald-700 dark:text-emerald-300">Enabled</span>
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-emerald-500/10 px-2.5 py-1 text-xs font-bold text-emerald-700 dark:text-emerald-300">
+							<CheckCircle size={14} weight="fill" />
+							Enabled
+						</span>
 					{:else}
-						<WarningCircle size={17} weight="fill" class="text-amber-500" />
-						<span class="text-gray-500 dark:text-gray-400">Disabled</span>
+						<span class="inline-flex items-center gap-1.5 rounded-lg bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-700 dark:text-amber-300">
+							<WarningCircle size={14} weight="fill" />
+							Disabled
+						</span>
 					{/if}
 				</div>
 
@@ -487,10 +413,7 @@
 					<div class="grid gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3">
 						<div class="flex items-center justify-between gap-3">
 							<h3 class="text-sm font-bold text-emerald-800 dark:text-emerald-200">Recovery codes</h3>
-							<Button variant="icon+text" ghost type="button" onclick={copyRecoveryCodes} class="h-8">
-								{#snippet icon()}
-									<CopySimple size={16} />
-								{/snippet}
+							<Button ghost type="button" onclick={copyRecoveryCodes} class="h-8">
 								{copiedCodes ? 'Copied' : 'Copy'}
 							</Button>
 						</div>
@@ -535,26 +458,12 @@
 								inputmode="numeric"
 								required
 							/>
-							<Button variant="icon+text" type="submit" disabled={confirmLoading} class="w-max">
-								{#snippet icon()}
-									{#if confirmLoading}
-										<CircleNotch size={18} class="animate-spin" />
-									{:else}
-										<ShieldCheck size={18} />
-									{/if}
-								{/snippet}
+							<Button type="submit" disabled={confirmLoading} class="w-max">
 								Enable 2FA
 							</Button>
 						</form>
 					{:else}
-						<Button variant="icon+text" type="button" onclick={startTotpSetup} disabled={setupLoading} class="w-max">
-							{#snippet icon()}
-								{#if setupLoading}
-									<CircleNotch size={18} class="animate-spin" />
-								{:else}
-									<QrCode size={18} />
-								{/if}
-							{/snippet}
+						<Button type="button" onclick={startTotpSetup} disabled={setupLoading} class="w-max">
 							Set up authenticator
 						</Button>
 					{/if}
@@ -579,23 +488,15 @@
 							inputmode="numeric"
 							required
 						/>
-						<Button
-							variant="icon+text"
-							ghost
-							danger
-							type="submit"
-							disabled={disableLoading}
-							class="w-max"
-						>
-							{#snippet icon()}
-								{#if disableLoading}
-									<CircleNotch size={18} class="animate-spin" />
-								{:else}
-									<LinkBreak size={18} />
-								{/if}
-							{/snippet}
-							Disable 2FA
-						</Button>
+						{#if disableTotpChanged}
+							<Button
+								type="submit"
+								disabled={disableLoading}
+								class="w-max"
+							>
+								Disable 2FA
+							</Button>
+						{/if}
 					</form>
 				{/if}
 			</div>

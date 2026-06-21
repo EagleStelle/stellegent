@@ -139,7 +139,7 @@
 					<h1
 						class="text-2xl font-bold tracking-tight text-balance text-primary dark:text-gray-50"
 					>
-						{lec.course_title ?? lec.course_name ?? "Lecture"}
+						{lec.title ?? lec.course_name ?? "Lecture"}
 					</h1>
 					<span
 						class="flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary"
@@ -170,12 +170,12 @@
 						class="hidden text-gray-300 sm:inline dark:text-gray-600"
 						>•</span
 					>
-					{#if lec.course_title}
+					{#if lec.course_name}
 						<div
 							class="flex shrink-0 items-center gap-1.5 whitespace-nowrap"
 						>
 							<BookOpen size={16} />
-							{lec.course_title}
+							{lec.course_name}
 						</div>
 						<span
 							class="hidden text-gray-300 sm:inline dark:text-gray-600"

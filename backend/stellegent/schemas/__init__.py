@@ -178,6 +178,7 @@ class CourseOptionsOut(BaseModel):
 class LectureSummary(BaseModel):
     id: str
     date: str
+    title: Optional[str] = None
     course_name: Optional[str] = None
     course_id: Optional[int] = None
     course_title: Optional[str] = None
@@ -205,6 +206,7 @@ class AnnotateRequest(BaseModel):
 class LectureDetail(BaseModel):
     id: str
     date: str
+    title: Optional[str] = None
     course_name: Optional[str] = None
     course_id: Optional[int] = None
     course_title: Optional[str] = None

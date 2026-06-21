@@ -55,7 +55,8 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                    captured_at: str, image_path: str, docx_path: str,
                    pdf_path: str, txt_path: str, manifest_path: str,
                    raw_ocr_text: str, corrected_text: str, summary: str,
-                   tags: Iterable[str], owner_user_id: Optional[int] = None,
+                   tags: Iterable[str], title: Optional[str] = None,
+                   owner_user_id: Optional[int] = None,
                    visibility: str = "public",
                    course_id: Optional[int] = None) -> None:
     _validate_visibility(visibility)
@@ -67,11 +68,11 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                 course_name = course["name"]
         c.execute("""
             INSERT OR REPLACE INTO lectures
-            (id,date,course_name,captured_at,image_path,docx_path,pdf_path,
+            (id,date,course_name,title,captured_at,image_path,docx_path,pdf_path,
              txt_path,manifest_path,raw_ocr_text,corrected_text,summary,tags,
              owner_user_id,visibility,course_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        """, (lecture_id, date, course_name, captured_at, image_path,
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (lecture_id, date, course_name, title, captured_at, image_path,
               docx_path, pdf_path, txt_path, manifest_path,
               raw_ocr_text, corrected_text, summary, json.dumps(list(tags)),
               owner_user_id, visibility, course_id))
