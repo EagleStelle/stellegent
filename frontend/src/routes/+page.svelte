@@ -4,6 +4,7 @@
 	import { apiGet } from '$lib/api/client';
 	import type { LectureSummary, PipelineResult, User } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
+	import LectureCard from '$lib/components/LectureCard.svelte';
 	import { CircleNotch, MagnifyingGlass, UploadSimple } from 'phosphor-svelte';
 
 	let q = $state('');
@@ -114,16 +115,7 @@
 {:else if filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as lec (lec.id)}
-			<a
-				href={`/lecture/${lec.id}`}
-				class="rounded-lg border border-zinc-200 bg-white p-4 transition-colors hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800 dark:hover:bg-zinc-700"
-			>
-				<div class="mb-1 text-sm font-medium">{lec.course_name ?? 'Untitled'}</div>
-				<div class="mb-2 text-xs text-zinc-500 dark:text-zinc-400">
-					{new Date(lec.captured_at).toLocaleString()}
-				</div>
-				<p class="line-clamp-3 text-sm leading-6 text-zinc-500 dark:text-zinc-400">{lec.summary ?? ''}</p>
-			</a>
+			<LectureCard lecture={lec} />
 		{/each}
 	</div>
 {/if}
