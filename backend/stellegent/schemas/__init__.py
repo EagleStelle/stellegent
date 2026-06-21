@@ -139,6 +139,7 @@ class CourseOut(BaseModel):
     faculty_id: int
     faculty_username: str
     description: Optional[str] = None
+    visibility: Visibility = "public"
     student_count: int = 0
     lecture_count: int = 0
     created_at: str
@@ -154,6 +155,7 @@ class CourseCreate(BaseModel):
     name: str = Field(min_length=1, max_length=160)
     faculty_id: Optional[int] = None
     description: Optional[str] = Field(default=None, max_length=500)
+    visibility: Visibility = "public"
     student_ids: List[int] = []
     lecture_ids: List[str] = []
 
@@ -162,6 +164,7 @@ class CourseUpdate(BaseModel):
     name: Optional[str] = Field(default=None, min_length=1, max_length=160)
     faculty_id: Optional[int] = None
     description: Optional[str] = Field(default=None, max_length=500)
+    visibility: Optional[Visibility] = None
     student_ids: Optional[List[int]] = None
     lecture_ids: Optional[List[str]] = None
 

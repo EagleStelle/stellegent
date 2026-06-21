@@ -7,6 +7,7 @@
 		CourseOptions,
 		LectureSummary,
 		User,
+		Visibility,
 	} from "$lib/types";
 	import Input from "$lib/components/ui/Input.svelte";
 	import Textarea from "$lib/components/ui/Textarea.svelte";
@@ -40,6 +41,7 @@
 	let newFacultyId = $state("");
 	let newStudentIds = $state<number[]>([]);
 	let newLectureIds = $state<string[]>([]);
+	let newVisibility = $state<Visibility>("public");
 	let creating = $state(false);
 	let createError = $state("");
 
@@ -71,6 +73,7 @@
 				description: newDescription.trim(),
 				faculty_id:
 					isAdmin && newFacultyId ? Number(newFacultyId) : undefined,
+				visibility: newVisibility,
 				student_ids: newStudentIds,
 				lecture_ids: newLectureIds.filter((lid) =>
 					assignableLectureIds.has(lid),
@@ -137,6 +140,16 @@
 					/>
 				</label>
 			{/if}
+			<label class="grid gap-1.5">
+				<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Visibility</span>
+				<ComboBox
+					bind:value={newVisibility}
+					options={[
+						{ value: "public", label: "Public" },
+						{ value: "private", label: "Private" },
+					]}
+				/>
+			</label>
 			<Textarea
 				id="new-course-description"
 				label="Description"

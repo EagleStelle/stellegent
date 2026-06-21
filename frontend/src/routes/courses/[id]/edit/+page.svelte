@@ -8,6 +8,7 @@
 		CourseOptions,
 		LectureSummary,
 		User,
+		Visibility,
 	} from "$lib/types";
 	import Input from "$lib/components/ui/Input.svelte";
 	import Textarea from "$lib/components/ui/Textarea.svelte";
@@ -44,6 +45,7 @@
 	let draftName = $state("");
 	let draftDescription = $state("");
 	let draftFacultyId = $state("");
+	let draftVisibility = $state<Visibility>("public");
 	let draftStudentIds = $state<number[]>([]);
 	let draftLectureIds = $state<string[]>([]);
 	let saving = $state(false);
@@ -68,6 +70,7 @@
 		draftName = course.data.name;
 		draftDescription = course.data.description ?? "";
 		draftFacultyId = String(course.data.faculty_id);
+		draftVisibility = course.data.visibility;
 		draftStudentIds = [...course.data.student_ids];
 		draftLectureIds = [...course.data.lecture_ids];
 	});
@@ -88,6 +91,7 @@
 					isAdmin && draftFacultyId
 						? Number(draftFacultyId)
 						: undefined,
+				visibility: draftVisibility,
 				student_ids: draftStudentIds,
 				lecture_ids: draftLectureIds.filter((lid) =>
 					assignableLectureIds.has(lid),
@@ -182,6 +186,16 @@
 						/>
 					</label>
 				{/if}
+				<label class="grid gap-1.5">
+					<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Visibility</span>
+					<ComboBox
+						bind:value={draftVisibility}
+						options={[
+							{ value: "public", label: "Public" },
+							{ value: "private", label: "Private" },
+						]}
+					/>
+				</label>
 				<Textarea
 					id="course-description"
 					label="Description"

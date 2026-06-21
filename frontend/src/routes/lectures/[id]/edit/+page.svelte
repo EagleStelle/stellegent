@@ -10,7 +10,7 @@
 		User,
 		Visibility,
 	} from "$lib/types";
-	import { UsersThree, ArrowLeft, Trash } from "phosphor-svelte";
+	import { Plus, ArrowLeft, Trash } from "phosphor-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
 	import ComboBox from "$lib/components/ui/ComboBox.svelte";
@@ -46,8 +46,63 @@
 	let draftTitle = $state("");
 	let draftVisibility = $state<Visibility>("public");
 	let draftCourseId = $state("");
-	let draftOwnerId = $state("");
 	let draftStudentIds = $state<number[]>([]);
+	
+	let pendingStudentId = $state("");
+
+	const selectedStudentSet = $derived.by(
+		(): Set<number> => new Set(draftStudentIds ?? []),
+	);
+
+	const availableStudents = $derived.by(
+		(): User[] =>
+			(options.data?.students ?? []).filter(
+				(student) => !selectedStudentSet.has(student.id),
+			),
+	);
+
+	const selectedStudents = $derived.by(
+		(): User[] =>
+			(draftStudentIds ?? [])
+				.map((studentId: number) =>
+					(options.data?.students ?? []).find(
+						(student) => student.id === studentId,
+					),
+				)
+			.filter((student): student is User => Boolean(student)),
+	);
+
+	const pendingStudent = $derived.by(
+		(): User | undefined =>
+			availableStudents.find(
+				(student) =>
+					String(student.id) === pendingStudentId,
+			),
+	);
+	const canAddStudent = $derived(Boolean(pendingStudent));
+
+	function studentLabel(student: User) {
+		return `${student.username} - ${student.email ?? "No email"}`;
+	}
+
+	const studentChoices = $derived(
+		availableStudents.map((student) => ({
+			value: String(student.id),
+			label: studentLabel(student),
+		})),
+	);
+
+	function addStudent() {
+		if (!pendingStudent) return;
+		draftStudentIds = [...(draftStudentIds ?? []), pendingStudent.id];
+		pendingStudentId = "";
+	}
+
+	function removeStudent(studentId: number) {
+		draftStudentIds = (draftStudentIds ?? []).filter(
+			(id: number) => id !== studentId,
+		);
+	}
 
 	// Seed the drafts once from the loaded lecture. Must not re-run on every
 	// background refetch, or it would clobber the user's in-progress edits.
@@ -60,27 +115,8 @@
 		draftCourseId = lecture.data.course_id
 			? String(lecture.data.course_id)
 			: "";
-		draftOwnerId = lecture.data.owner_user_id
-			? String(lecture.data.owner_user_id)
-			: "";
 		draftStudentIds = [...lecture.data.student_ids];
 	});
-
-	// A lecture on a course is always owned by that course's faculty. When a
-	// course is picked, the owner is locked to it; only course-less lectures
-	// allow the admin to choose an owner directly.
-	const selectedCourse = $derived(
-		(courses.data ?? []).find((c) => String(c.id) === draftCourseId),
-	);
-	$effect(() => {
-		if (selectedCourse) draftOwnerId = String(selectedCourse.faculty_id);
-	});
-
-	function toggleStudent(studentId: number) {
-		draftStudentIds = draftStudentIds.includes(studentId)
-			? draftStudentIds.filter((sid) => sid !== studentId)
-			: [...draftStudentIds, studentId];
-	}
 
 	async function removeLecture() {
 		if (!confirm("Delete this lecture?")) return;
@@ -104,9 +140,6 @@
 			visibility: draftVisibility,
 			student_ids: draftStudentIds,
 		};
-		if (me.data?.role === "admin") {
-			body.owner_user_id = draftOwnerId ? Number(draftOwnerId) : null;
-		}
 		try {
 			await apiPatch<LectureDetail>(`/api/v1/lectures/${id}`, body);
 			await qc.invalidateQueries({ queryKey: ["lecture", id] });
@@ -197,54 +230,66 @@
 						]}
 					/>
 				</label>
-				{#if me.data?.role === "admin"}
-					<label class="grid gap-1.5 md:col-span-2">
-						<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Owner</span>
-						<ComboBox
-							bind:value={draftOwnerId}
-							placeholder="Unassigned"
-							disabled={Boolean(selectedCourse)}
-							options={(options.data?.faculty ?? []).map((f) => ({
-								value: String(f.id),
-								label: f.username,
-							}))}
-						/>
-						{#if selectedCourse}
-							<span class="text-xs text-gray-500 dark:text-gray-400">
-								Owner follows the course faculty ({selectedCourse.faculty_username}).
-							</span>
-						{/if}
-					</label>
-				{/if}
 			</div>
 
-			{#if options.data?.students?.length}
-				<div class="grid content-start gap-3">
-					<div
-						class="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400"
-					>
-						<UsersThree size={16} />
-						<span>Direct students</span>
+			{#if draftVisibility === "private" && options.data?.students?.length}
+				<section class="grid content-start gap-3">
+					<div class="flex items-center justify-between gap-3">
+						<h2 class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">
+							Students
+						</h2>
+						<span class="text-xs font-medium text-gray-500 dark:text-gray-400">
+							{selectedStudents.length}
+						</span>
 					</div>
-					<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-						{#each options.data.students as student (student.id)}
-							<label
-								class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm font-medium dark:border-gray-800 dark:bg-gray-950"
+
+					<div class="flex items-center gap-2">
+						<ComboBox
+							bind:value={pendingStudentId}
+							placeholder="Search students…"
+							options={studentChoices}
+							class="flex-1"
+						/>
+						<Button
+							variant="icon"
+							type="button"
+							onclick={addStudent}
+							disabled={!canAddStudent}
+							title="Add student"
+						>
+							{#snippet icon()}
+								<Plus size={19} weight="bold" />
+							{/snippet}
+						</Button>
+					</div>
+
+					<div class="grid max-h-[32rem] gap-2 overflow-auto pr-1">
+						{#each selectedStudents as student (student.id)}
+							<div
+								class="flex min-w-0 items-center justify-between gap-3 rounded-lg border border-gray-200 bg-white px-3 py-2.5 dark:border-gray-800 dark:bg-gray-950"
 							>
-								<input
-									type="checkbox"
-									checked={draftStudentIds.includes(
-										student.id,
-									)}
-									onchange={() => toggleStudent(student.id)}
-									class="size-4 rounded border-gray-300 text-secondary focus:ring-secondary"
-								/>
-								<span class="truncate">{student.username}</span
+								<div class="min-w-0">
+									<p
+										class="truncate text-sm font-semibold text-primary dark:text-gray-50"
+									>
+										{student.username}
+									</p>
+									<p class="truncate text-xs text-gray-500 dark:text-gray-400">
+										{student.email ?? "No email on file"}
+									</p>
+								</div>
+								<Button
+									ghost
+									danger
+									type="button"
+									onclick={() => removeStudent(student.id)}
 								>
-							</label>
+									Delete
+								</Button>
+							</div>
 						{/each}
 					</div>
-				</div>
+				</section>
 			{/if}
 
 			{#if editError}

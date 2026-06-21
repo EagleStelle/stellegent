@@ -82,7 +82,7 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
                   user_id: Optional[int] = None,
                   role: Optional[str] = None) -> List[sqlite3.Row]:
     sql = """
-        SELECT l.*, owner.username AS owner_username, c.name AS course_title
+        SELECT l.*, owner.username AS owner_username, c.name AS course_title, c.visibility AS course_visibility
         FROM lectures l
         LEFT JOIN users owner ON owner.id = l.owner_user_id
         LEFT JOIN courses c ON c.id = l.course_id
@@ -121,7 +121,7 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
         elif role == "student":
             sql += """
                 AND (
-                    l.visibility = 'public'
+                    (l.visibility = 'public' AND (c.id IS NULL OR c.visibility = 'public'))
                     OR EXISTS (
                         SELECT 1 FROM lecture_students ls
                         WHERE ls.lecture_id = l.id
@@ -144,7 +144,7 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
 def get_lecture(lecture_id: str) -> Optional[sqlite3.Row]:
     with get_conn() as c:
         return c.execute("""
-            SELECT l.*, owner.username AS owner_username, c.name AS course_title
+            SELECT l.*, owner.username AS owner_username, c.name AS course_title, c.visibility AS course_visibility
             FROM lectures l
             LEFT JOIN users owner ON owner.id = l.owner_user_id
             LEFT JOIN courses c ON c.id = l.course_id
@@ -157,16 +157,24 @@ def can_view_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
     if role == "admin":
         return True
     if role == "prof":
-        if row["owner_user_id"] == user_id or row["visibility"] == "public":
+        if row["owner_user_id"] == user_id:
             return True
         course_id = row["course_id"]
         if course_id is None:
+            if row["visibility"] == "public":
+                return True
             return False
         with get_conn() as c:
-            return c.execute(
+            is_faculty = c.execute(
                 "SELECT 1 FROM courses WHERE id = ? AND faculty_id = ?",
                 (course_id, user_id)).fetchone() is not None
-    if row["visibility"] == "public":
+            if is_faculty:
+                return True
+            
+        if row["visibility"] == "public" and row["course_visibility"] == "public":
+            return True
+            
+    if row["visibility"] == "public" and (row["course_id"] is None or row.get("course_visibility", "public") == "public"):
         return True
     with get_conn() as c:
         if c.execute(
@@ -671,23 +679,28 @@ def can_manage_course(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
 
 
 def create_course(*, name: str, faculty_id: int,
-                  description: Optional[str] = None) -> int:
+                  description: Optional[str] = None,
+                  visibility: str = "public") -> int:
     if not user_has_role(faculty_id, "prof", "admin"):
         raise ValueError("course owner must be faculty")
+    _validate_visibility(visibility)
     now = _now()
     with get_conn() as c:
         cur = c.execute("""
-            INSERT INTO courses (name, faculty_id, description, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-        """, (name, faculty_id, description, now, now))
+            INSERT INTO courses (name, faculty_id, description, visibility, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?)
+        """, (name, faculty_id, description, visibility, now, now))
         return int(cur.lastrowid)
 
 
 def update_course(course_id: int, *, name: Optional[str] = None,
                   faculty_id: Optional[int] = None,
-                  description: Optional[str] = None) -> Optional[sqlite3.Row]:
+                  description: Optional[str] = None,
+                  visibility: Optional[str] = None) -> Optional[sqlite3.Row]:
     if faculty_id is not None and not user_has_role(faculty_id, "prof", "admin"):
         raise ValueError("course owner must be faculty")
+    if visibility is not None:
+        _validate_visibility(visibility)
     parts: List[str] = []
     args: List = []
     if name is not None:
@@ -699,6 +712,9 @@ def update_course(course_id: int, *, name: Optional[str] = None,
     if description is not None:
         parts.append("description = ?")
         args.append(description)
+    if visibility is not None:
+        parts.append("visibility = ?")
+        args.append(visibility)
     if parts:
         parts.append("updated_at = ?")
         args.append(_now())

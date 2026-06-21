@@ -99,6 +99,7 @@ export interface Course {
 	faculty_id: number;
 	faculty_username: string;
 	description: string | null;
+	visibility: Visibility;
 	student_count: number;
 	lecture_count: number;
 	created_at: string;

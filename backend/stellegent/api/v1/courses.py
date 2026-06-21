@@ -59,7 +59,7 @@ def create(body: CourseCreate, request: Request,
         faculty_id = user["uid"]
     try:
         course_id = create_course(name=body.name.strip(), faculty_id=faculty_id,
-                                  description=body.description)
+                                  description=body.description, visibility=body.visibility)
         if body.student_ids:
             set_course_students(course_id, body.student_ids)
         if body.lecture_ids:
@@ -100,6 +100,8 @@ def update(course_id: int, body: CourseUpdate, request: Request,
         kwargs["name"] = body.name.strip()
     if "description" in fields and body.description is not None:
         kwargs["description"] = body.description
+    if "visibility" in fields and body.visibility is not None:
+        kwargs["visibility"] = body.visibility
     if "faculty_id" in fields:
         if user["role"] != "admin":
             raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
