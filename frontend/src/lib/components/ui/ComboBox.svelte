@@ -33,7 +33,7 @@
 	// Initialize inputValue based on value
 	$effect(() => {
 		if (value !== undefined) {
-			const matchedOpt = options.find((opt) => opt.value === value);
+			const matchedOpt = options.find((opt: ComboBoxOption) => opt.value === value);
 			if (matchedOpt) {
 				if (inputValue !== matchedOpt.label) {
 					inputValue = matchedOpt.label;
@@ -49,7 +49,7 @@
 	// Update value based on inputValue
 	$effect(() => {
 		if (inputValue !== undefined) {
-			const matchedOpt = options.find((opt) => opt.label === inputValue);
+			const matchedOpt = options.find((opt: ComboBoxOption) => opt.label === inputValue);
 			if (matchedOpt) {
 				if (value !== matchedOpt.value) {
 					value = matchedOpt.value;
@@ -74,10 +74,15 @@
 		open = next;
 	}
 
+	function onInput(event: Event) {
+		const next = (event.currentTarget as HTMLInputElement).value;
+		if (inputValue !== next) inputValue = next;
+	}
+
 
 </script>
 
-<Combobox.Root type="single" bind:value bind:inputValue bind:open {disabled} {onOpenChange}>
+<Combobox.Root type="single" bind:value inputValue={inputValue} bind:open {disabled} {onOpenChange}>
 	<div
 		class={twMerge(
 			"relative flex h-10 w-full items-center rounded-lg border border-gray-200 bg-white text-sm font-medium text-primary outline-none transition-all duration-200 focus-within:border-secondary/60 focus-within:ring-3 focus-within:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50",
@@ -93,6 +98,7 @@
 		<Combobox.Input
 			{placeholder}
 			onclick={() => (open = true)}
+			oninput={onInput}
 			class={twMerge(
 				"h-full w-full rounded-lg bg-transparent leading-none outline-none placeholder:text-gray-500",
 				Icon ? "pl-9" : "pl-3",

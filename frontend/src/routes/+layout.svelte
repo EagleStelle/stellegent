@@ -14,7 +14,7 @@
 		Sun,
 		Moon,
 		SignOut,
-		CaretDown
+		Gear
 	} from 'phosphor-svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
@@ -135,7 +135,7 @@
 					variant="icon+text"
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
-					class="{navMotion} flex items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !w-full !justify-start"
+					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
 				>
 					{#snippet icon()}
 						{#if theme.dark}
@@ -147,42 +147,28 @@
 					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 				</Button>
 
-				<div class="relative" use:clickOutsideDesktop>
-					<Button
-						onclick={() => (desktopMenuOpen = !desktopMenuOpen)}
-						aria-haspopup="menu"
-						aria-expanded={desktopMenuOpen}
-						class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-left text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
-					>
-						<span class="grid size-8 shrink-0 place-items-center rounded-lg bg-secondary text-xs font-bold text-white shadow-sm">
-							{initials}
-						</span>
-						<span class="min-w-0 flex-1 truncate">{me.data.username}</span>
-						<CaretDown
-							size={16}
-							class="{navMotion} shrink-0 text-gray-400 {desktopMenuOpen ? 'rotate-180' : ''}"
-						/>
-					</Button>
+				<Button
+					variant="icon+text"
+					aria-label="Settings"
+					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
+				>
+					{#snippet icon()}
+						<Gear size={18} />
+					{/snippet}
+					<span>Settings</span>
+				</Button>
 
-					{#if desktopMenuOpen}
-						<div
-							role="menu"
-							class="absolute bottom-0 left-full ml-2 w-64 rounded-lg bg-primary p-1.5 text-white shadow-xl ring-1 ring-white/10"
-						>
-							<Button
-								variant="icon+text"
-								onclick={logout}
-								role="menuitem"
-								class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
-							>
-								{#snippet icon()}
-									<SignOut size={18} />
-								{/snippet}
-								<span>Log out</span>
-							</Button>
-						</div>
-					{/if}
-				</div>
+				<Button
+					variant="icon+text"
+					onclick={logout}
+					aria-label="Log out"
+					class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-secondary !bg-transparent !shadow-none !h-auto !justify-start"
+				>
+					{#snippet icon()}
+						<SignOut size={18} />
+					{/snippet}
+					<span>Log out</span>
+				</Button>
 			</div>
 		{/if}
 	</aside>
@@ -244,6 +230,16 @@
 								{/if}
 							{/snippet}
 							<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
+						</Button>
+						<Button
+							variant="icon+text"
+							role="menuitem"
+							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
+						>
+							{#snippet icon()}
+								<Gear size={18} />
+							{/snippet}
+							<span>Settings</span>
 						</Button>
 						<Button
 							variant="icon+text"

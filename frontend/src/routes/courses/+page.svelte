@@ -13,6 +13,7 @@
 		CircleNotch,
 		FloppyDisk,
 		MagnifyingGlass,
+		PencilSimple,
 		Plus,
 		Trash,
 		UsersThree,
@@ -138,6 +139,15 @@
 		}
 	}
 
+	function openCourseLectures(courseId: number) {
+		goto(`/lectures?courseId=${courseId}`);
+	}
+
+	function editCourse(event: MouseEvent, courseId: number) {
+		event.stopPropagation();
+		openCourse(courseId);
+	}
+
 	function toggleStudent(studentId: number) {
 		draftStudentIds = draftStudentIds.includes(studentId)
 			? draftStudentIds.filter((id) => id !== studentId)
@@ -173,18 +183,30 @@
 		}
 	}
 
-	async function removeCourse() {
-		if (!activeCourse || !confirm("Delete this course?")) return;
+	async function deleteCourseById(courseId: number) {
+		if (!confirm("Delete this course?")) return;
 		editError = "";
 		try {
-			await apiDelete(`/api/v1/courses/${activeCourse.id}`);
-			editOpen = false;
-			activeCourse = null;
+			await apiDelete(`/api/v1/courses/${courseId}`);
+			if (activeCourse?.id === courseId) {
+				editOpen = false;
+				activeCourse = null;
+			}
 			await qc.invalidateQueries({ queryKey: ["courses"] });
 			await qc.invalidateQueries({ queryKey: ["lectures"] });
 		} catch (err) {
 			editError = err instanceof Error ? err.message : "Delete failed";
 		}
+	}
+
+	async function deleteCourse(event: MouseEvent, courseId: number) {
+		event.stopPropagation();
+		await deleteCourseById(courseId);
+	}
+
+	async function removeCourse() {
+		if (!activeCourse) return;
+		await deleteCourseById(activeCourse.id);
 	}
 </script>
 
@@ -214,8 +236,14 @@
 {:else if filtered.length > 0}
 	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
 		{#each filtered as course (course.id)}
-			<Card padding="default" type="button" onclick={() => openCourse(course.id)} class="group flex h-full w-full flex-col gap-3 outline-none">
-				<div class="flex items-start justify-between gap-3">
+			<Card
+				padding="default"
+				as="div"
+				onclick={() => openCourseLectures(course.id)}
+				aria-label={`View lectures for ${course.name}`}
+				class="group flex h-full w-full flex-col gap-3 outline-none"
+			>
+				<div class="flex items-start justify-between gap-4">
 					<div class="min-w-0">
 						<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
 							{course.name}
@@ -224,9 +252,34 @@
 							Prof. {course.faculty_username}
 						</p>
 					</div>
-					<span class="shrink-0 rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-						{course.lecture_count}
-					</span>
+
+					<div class="flex shrink-0 items-center gap-1 -mr-2 -mt-1">
+						<Button
+							variant="icon"
+							ghost
+							type="button"
+							onclick={(event) => editCourse(event, course.id)}
+							aria-label={`Edit ${course.name}`}
+							title="Edit"
+						>
+							{#snippet icon()}
+								<PencilSimple size={16} />
+							{/snippet}
+						</Button>
+						<Button
+							variant="icon"
+							ghost
+							danger
+							type="button"
+							onclick={(event) => deleteCourse(event, course.id)}
+							aria-label={`Delete ${course.name}`}
+							title="Delete"
+						>
+							{#snippet icon()}
+								<Trash size={16} />
+							{/snippet}
+						</Button>
+					</div>
 				</div>
 
 				{#if course.description}
@@ -235,15 +288,18 @@
 					</p>
 				{/if}
 
-				<div class="mt-auto flex items-center gap-3 pt-1 text-xs text-gray-500 dark:text-gray-400">
-					<span class="flex items-center gap-1.5">
-						<BookOpen size={14} weight="bold" />
-						{course.lecture_count} lectures
-					</span>
-					<span class="flex items-center gap-1.5">
-						<UsersThree size={14} weight="bold" />
-						{course.student_count} students
-					</span>
+				<div class="mt-auto flex items-center justify-between gap-3 pt-1">
+					<div class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-gray-400">
+						<span class="flex items-center gap-1.5">
+							<BookOpen size={14} weight="bold" />
+							{course.lecture_count} lectures
+						</span>
+						<span class="flex items-center gap-1.5">
+							<UsersThree size={14} weight="bold" />
+							{course.student_count} students
+						</span>
+					</div>
+
 				</div>
 			</Card>
 		{/each}

@@ -62,7 +62,7 @@
 		enabled: canTeach,
 	}));
 
-	let editOpen = $state(false);
+	let editOpen = $state(page.url.searchParams.get("edit") === "true");
 	let saving = $state(false);
 	let editError = $state("");
 	let draftTitle = $state("");

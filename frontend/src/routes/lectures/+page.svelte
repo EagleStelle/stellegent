@@ -1,26 +1,28 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { createQuery } from '@tanstack/svelte-query';
-	import { apiGet } from '$lib/api/client';
+	import { page } from '$app/state';
+	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
+	import { apiGet, apiDelete } from '$lib/api/client';
 	import type { Course, CourseOptions, LectureSummary, PipelineResult, User, Visibility } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ComboBox from '$lib/components/ui/ComboBox.svelte';
-	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank } from 'phosphor-svelte';
+	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash } from 'phosphor-svelte';
 
 	let q = $state('');
 	let facultyFilter = $state('');
 	let uploadInput: HTMLInputElement | null = $state(null);
 	let uploading = $state(false);
 	let uploadError = $state('');
-	let selectedCourseId = $state('');
+	let selectedCourseId = $state(page.url.searchParams.get('courseId') ?? '');
 	let visibility = $state<Visibility>('public');
 
 	const lectures = createQuery(() => ({
 		queryKey: ['lectures'],
 		queryFn: () => apiGet<LectureSummary[]>('/api/v1/lectures')
 	}));
+	const qc = useQueryClient();
 
 	const me = createQuery(() => ({
 		queryKey: ['me'],
@@ -44,10 +46,36 @@
 	}));
 
 	const facultyOptions = $derived(options.data?.faculty ?? []);
+	const courseFilterOptions = $derived([
+		{ value: '', label: 'All courses' },
+		...(courses.data ?? []).map((c) => ({
+			value: String(c.id),
+			label: c.name,
+		})),
+	]);
+
+	$effect(() => {
+		const courseId = page.url.searchParams.get('courseId') ?? '';
+		if (selectedCourseId !== courseId) selectedCourseId = courseId;
+	});
+
+	$effect(() => {
+		const courseId = page.url.searchParams.get('courseId') ?? '';
+		if (selectedCourseId === courseId) return;
+		const hasCourseOption =
+			selectedCourseId === '' ||
+			(courses.data ?? []).some((course) => String(course.id) === selectedCourseId);
+		if (!hasCourseOption) return;
+		goto(selectedCourseId ? `/lectures?courseId=${encodeURIComponent(selectedCourseId)}` : '/lectures', {
+			keepFocus: true,
+			noScroll: true,
+		});
+	});
 
 	const filtered = $derived(
 		(lectures.data ?? []).filter((l) => {
 			if (facultyFilter && String(l.owner_user_id) !== facultyFilter) return false;
+			if (selectedCourseId && String(l.course_id) !== selectedCourseId) return false;
 			if (!q.trim()) return true;
 			const hay = `${l.course_name ?? ''} ${l.summary ?? ''} ${l.tags ?? ''}`.toLowerCase();
 			return hay.includes(q.toLowerCase());
@@ -99,6 +127,24 @@
 			.filter(Boolean)
 			.slice(0, 3);
 	}
+
+	function editLecture(e: MouseEvent, id: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		goto(`/lectures/${id}?edit=true`);
+	}
+
+	async function deleteLecture(e: MouseEvent, id: string) {
+		e.preventDefault();
+		e.stopPropagation();
+		if (!confirm('Delete this lecture?')) return;
+		try {
+			await apiDelete(`/api/v1/lectures/${id}`);
+			await qc.invalidateQueries({ queryKey: ['lectures'] });
+		} catch (err) {
+			console.error('Delete failed:', err);
+		}
+	}
 </script>
 
 <div class="mb-4 flex flex-col gap-2 lg:flex-row lg:items-center">
@@ -120,10 +166,7 @@
 				bind:value={selectedCourseId}
 				placeholder="All courses"
 				class="w-48 shrink-0"
-				options={(courses.data ?? []).map((c) => ({
-					value: String(c.id),
-					label: c.name,
-				}))}
+				options={courseFilterOptions}
 			/>
 		</div>
 		<input
@@ -166,14 +209,46 @@
 		{#each filtered as lec (lec.id)}
 			{@const tags = getTags(lec.tags)}
 			<Card href={`/lectures/${lec.id}`} class="group flex h-full flex-col gap-3">
-				<div class="flex flex-col gap-1">
-					<h3 class="text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
-						{lec.course_name ?? 'Untitled'}
-					</h3>
-					<div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
-						<CalendarBlank size={14} weight="bold" />
-						<span>{new Date(lec.captured_at).toLocaleString()}</span>
+				<div class="flex items-start justify-between gap-4">
+					<div class="flex min-w-0 flex-col gap-1">
+						<h3 class="truncate text-base font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
+							{lec.course_name ?? 'Untitled'}
+						</h3>
+						<div class="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400">
+							<CalendarBlank size={14} weight="bold" />
+							<span class="truncate">{new Date(lec.captured_at).toLocaleString()}</span>
+						</div>
 					</div>
+
+					{#if me.data?.role === 'admin' || (me.data?.role === 'prof' && lec.owner_user_id === me.data?.uid)}
+						<div class="flex shrink-0 items-center gap-1 -mr-2 -mt-1">
+							<Button
+								variant="icon"
+								ghost
+								type="button"
+								onclick={(e) => editLecture(e, lec.id)}
+								aria-label={`Edit ${lec.course_name ?? 'lecture'}`}
+								title="Edit"
+							>
+								{#snippet icon()}
+									<PencilSimple size={16} />
+								{/snippet}
+							</Button>
+							<Button
+								variant="icon"
+								ghost
+								danger
+								type="button"
+								onclick={(e) => deleteLecture(e, lec.id)}
+								aria-label={`Delete ${lec.course_name ?? 'lecture'}`}
+								title="Delete"
+							>
+								{#snippet icon()}
+									<Trash size={16} />
+								{/snippet}
+							</Button>
+						</div>
+					{/if}
 				</div>
 
 				{#if lec.summary}
