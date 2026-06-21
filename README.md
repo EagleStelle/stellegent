@@ -121,6 +121,8 @@ or your deployment environment.
 | `GEMINI_MODEL` | Gemini model name used by the OCR backend. |
 | `OLLAMA_HOST` | Ollama endpoint for local correction and summarization. |
 | `OLLAMA_MODEL` | Local Ollama model used by the fallback path. |
+| `OLLAMA_NUM_CTX` | Ollama context window. Lower values reduce VRAM/KV-cache use. |
+| `OLLAMA_KEEP_ALIVE` | How long Ollama keeps the model loaded after a request. |
 | `CORS_ORIGINS` | Comma-separated browser origins allowed during development. |
 | `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` | Enables Google sign-in and account linking. |
 | `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Enables production email delivery for verification and password reset flows. |

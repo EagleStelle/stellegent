@@ -83,6 +83,10 @@ class Settings(BaseSettings):
     ollama_request_timeout_sec: int = Field(
         600, validation_alias="OLLAMA_REQUEST_TIMEOUT"
     )
+    # Context size drives KV-cache memory. Smaller values keep 4 GB GPUs from
+    # spilling as much work back to CPU.
+    ollama_num_ctx: int = Field(4096, validation_alias="OLLAMA_NUM_CTX")
+    ollama_keep_alive: str = Field("5m", validation_alias="OLLAMA_KEEP_ALIVE")
 
     # CORS origin for the SvelteKit dev server (prod serves SPA same-origin)
     cors_origins: str = Field("http://localhost:5173", validation_alias="CORS_ORIGINS")
@@ -116,6 +120,8 @@ OLLAMA_MODEL = settings.ollama_model
 OLLAMA_AUTO_PULL = settings.ollama_auto_pull
 OLLAMA_PULL_TIMEOUT = settings.ollama_pull_timeout_sec
 OLLAMA_REQUEST_TIMEOUT = settings.ollama_request_timeout_sec
+OLLAMA_NUM_CTX = settings.ollama_num_ctx
+OLLAMA_KEEP_ALIVE = settings.ollama_keep_alive
 JWT_SECRET = settings.jwt_secret
 JWT_EXPIRY_MIN = settings.jwt_expiry_min
 APP_NAME = settings.app_name

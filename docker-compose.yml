@@ -37,6 +37,9 @@ services:
       OLLAMA_AUTO_PULL: "true"
       OLLAMA_PULL_TIMEOUT: 1800
       OLLAMA_REQUEST_TIMEOUT: 1800
+      # 4 GB VRAM: smaller context reduces CPU spillover.
+      # OLLAMA_NUM_CTX: 1024
+      # OLLAMA_KEEP_ALIVE: 30m
     volumes:
       - ./data:/app/data
     depends_on:

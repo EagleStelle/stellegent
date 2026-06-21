@@ -24,6 +24,8 @@ def reset_ollama_client(monkeypatch):
     monkeypatch.setattr(ollama_client, "OLLAMA_HOST", "http://ollama:11434")
     monkeypatch.setattr(ollama_client, "OLLAMA_MODEL", "phi3:mini")
     monkeypatch.setattr(ollama_client, "OLLAMA_PULL_TIMEOUT", 99)
+    monkeypatch.setattr(ollama_client, "OLLAMA_NUM_CTX", 1024)
+    monkeypatch.setattr(ollama_client, "OLLAMA_KEEP_ALIVE", "30m")
 
 
 def test_chat_pulls_missing_model_before_request(monkeypatch):
@@ -52,6 +54,8 @@ def test_chat_pulls_missing_model_before_request(monkeypatch):
         "http://ollama:11434/api/chat",
     ]
     assert calls[1][2] == {"model": "phi3:mini", "stream": False}
+    assert calls[2][2]["keep_alive"] == "30m"
+    assert calls[2][2]["options"]["num_ctx"] == 1024
 
 
 def test_generate_skips_pull_when_model_is_installed(monkeypatch):
@@ -111,3 +115,21 @@ def test_generate_retries_when_cached_model_was_removed(monkeypatch):
         ("post", "http://ollama:11434/api/pull"),
         ("post", "http://ollama:11434/api/generate"),
     ]
+
+
+def test_custom_options_keep_configured_context(monkeypatch):
+    reset_ollama_client(monkeypatch)
+    ollama_client._ensured_models.add(("http://ollama:11434", "phi3:mini"))
+    payloads = []
+
+    def fake_post(url, json, timeout):
+        payloads.append(json)
+        return FakeResponse(payload={"response": "summary"})
+
+    monkeypatch.setattr(ollama_client.requests, "post", fake_post)
+
+    result = ollama_client.generate("summarize", options={"temperature": 0.7})
+
+    assert result == "summary"
+    assert payloads[0]["keep_alive"] == "30m"
+    assert payloads[0]["options"] == {"num_ctx": 1024, "temperature": 0.7}

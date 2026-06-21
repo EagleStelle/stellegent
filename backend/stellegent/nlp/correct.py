@@ -253,7 +253,6 @@ def correct_text(text: str) -> str:
             options={
                 "temperature": 0.0,
                 "top_p": 0.1,
-                "num_ctx": 4096,
                 "repeat_penalty": 1.0,
                 "stop": ["\nInput:", "\nExample", "\nNote:"],
             },

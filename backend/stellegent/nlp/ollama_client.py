@@ -10,7 +10,9 @@ import requests
 from ..config import (
     OLLAMA_AUTO_PULL,
     OLLAMA_HOST,
+    OLLAMA_KEEP_ALIVE,
     OLLAMA_MODEL,
+    OLLAMA_NUM_CTX,
     OLLAMA_PULL_TIMEOUT,
     OLLAMA_REQUEST_TIMEOUT,
 )
@@ -93,16 +95,29 @@ def _post_with_model(endpoint: str, payload: dict, model: str,
     return r
 
 
+def _options(defaults: dict, options: Optional[dict]) -> dict:
+    merged = {"num_ctx": OLLAMA_NUM_CTX, **defaults}
+    if options:
+        merged.update(options)
+    return merged
+
+
+def _with_keep_alive(payload: dict) -> dict:
+    if OLLAMA_KEEP_ALIVE:
+        payload["keep_alive"] = OLLAMA_KEEP_ALIVE
+    return payload
+
+
 def generate(prompt: str, model: Optional[str] = None,
              host: Optional[str] = None, timeout: int = OLLAMA_REQUEST_TIMEOUT,
              options: Optional[dict] = None) -> str:
     target_model = model or OLLAMA_MODEL
-    payload = {
+    payload = _with_keep_alive({
         "model": target_model,
         "prompt": prompt,
         "stream": False,
-        "options": options or {"temperature": 0.2, "num_ctx": 4096},
-    }
+        "options": _options({"temperature": 0.2}, options),
+    })
     r = _post_with_model("/api/generate", payload, target_model, host, timeout)
     return r.json().get("response", "").strip()
 
@@ -111,11 +126,11 @@ def chat(messages: List[dict], model: Optional[str] = None,
          host: Optional[str] = None, timeout: int = OLLAMA_REQUEST_TIMEOUT,
          options: Optional[dict] = None) -> str:
     target_model = model or OLLAMA_MODEL
-    payload = {
+    payload = _with_keep_alive({
         "model": target_model,
         "messages": messages,
         "stream": False,
-        "options": options or {"temperature": 0.0, "num_ctx": 4096},
-    }
+        "options": _options({"temperature": 0.0}, options),
+    })
     r = _post_with_model("/api/chat", payload, target_model, host, timeout)
     return r.json().get("message", {}).get("content", "").strip()
