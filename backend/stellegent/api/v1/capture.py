@@ -94,6 +94,33 @@ def stream(_u: dict = Depends(require_roles("prof", "admin"))):
                              media_type="multipart/x-mixed-replace; boundary=frame")
 
 
+@router.post("/guidance/analyze")
+async def guidance_analyze(image: UploadFile = File(...),
+                           _u: dict = Depends(require_roles("prof", "admin"))):
+    """Analyze a client-supplied frame and return framing guidance as JSON
+    (board corners in the submitted image's pixel space + messages + ready).
+    The browser draws the overlay on a canvas over its live video, so the video
+    stays smooth while the heavy board detection stays on the backend."""
+    raw = await image.read()
+    if len(raw) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, "file too large")
+    arr = np.frombuffer(raw, dtype=np.uint8)
+    img = cv2.imdecode(arr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "decode failed")
+    from ...capture.guidance import analyze_frame
+    g = analyze_frame(img)
+    h, w = img.shape[:2]
+    corners = g.corners.astype(float).tolist() if g.corners is not None else None
+    return {
+        "width": w,
+        "height": h,
+        "corners": corners,
+        "messages": list(g.messages),
+        "ready": bool(g.ready),
+    }
+
+
 @router.get("/guidance", response_model=GuidanceOut)
 def guidance(_u: dict = Depends(require_roles("prof", "admin"))):
     from ...capture.hub import get_hub, guidance_to_dict

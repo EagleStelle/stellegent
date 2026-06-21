@@ -62,12 +62,12 @@ def analyze_frame(frame: np.ndarray) -> GuidanceResult:
     res = GuidanceResult(corners=None)
     res.sharpness = laplacian_sharpness(frame)
     if res.sharpness < SHARPNESS_MIN:
-        res.messages.append("Hold steady — image blurry")
+        res.messages.append("Hold steady (image blurry)")
 
     corners = detect_board_corners(frame)
     res.corners = corners
     if corners is None:
-        res.messages.append("Board not detected — center whiteboard in view")
+        res.messages.append("Board not detected")
         return res
 
     h, w = frame.shape[:2]
@@ -79,19 +79,29 @@ def analyze_frame(frame: np.ndarray) -> GuidanceResult:
     res.distance_m = dist
     lo, hi = CAPTURE_DISTANCE_RANGE_M
     if dist < lo:
-        res.messages.append("Step back")
+        res.messages.append("Step farther")
     elif dist > hi:
         res.messages.append("Step closer")
 
     skew = perspective_skew_deg(corners)
     res.skew_deg = skew
     if skew > 15.0:
-        res.messages.append("Tilt device — reduce skew")
+        # Wider/taller edge is the nearer one. Pick the dominant keystone axis
+        # and tell the user which way to tilt to level the board.
+        top_w = np.linalg.norm(corners[1] - corners[0])
+        bot_w = np.linalg.norm(corners[2] - corners[3])
+        left_h = np.linalg.norm(corners[3] - corners[0])
+        right_h = np.linalg.norm(corners[2] - corners[1])
+        dw = abs(top_w - bot_w) / max(top_w, bot_w, 1e-6)
+        dh = abs(left_h - right_h) / max(left_h, right_h, 1e-6)
+        if dw >= dh:
+            direction = "up" if top_w > bot_w else "down"
+        else:
+            direction = "right" if left_h > right_h else "left"
+        res.messages.append(f"Tilt {direction}")
 
     cov = coverage_ratio(corners, frame.shape)
     res.coverage = cov
-    if cov < 0.90:
-        res.messages.append("Zoom out / fill frame")
 
     res.ready = (
         not res.messages
@@ -101,7 +111,7 @@ def analyze_frame(frame: np.ndarray) -> GuidanceResult:
         and cov >= 0.90
     )
     if res.ready:
-        res.messages.append("Ready — capture now")
+        res.messages.append("Ready")
     return res
 
 

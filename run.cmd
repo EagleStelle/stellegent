@@ -9,9 +9,10 @@ REM This script never builds or serves the production SPA.
 cd /d "%~dp0"
 set "ROOT=%cd%"
 
-echo [run] Stellegent dev mode
+echo [run] Stellegent dev mode (LAN-exposed on 0.0.0.0)
 echo [run] Open app:    http://127.0.0.1:8000
 echo [run] Backend API: http://127.0.0.1:8001
+echo [run] LAN access:  http://^<this-PC-LAN-IP^>:8000  (run "ipconfig" to find it)
 echo.
 
 if not exist ".env" (
@@ -86,10 +87,10 @@ echo [run] Starting Vite on the production-like app port in this window.
 echo [run] Dev users: admin/admin123, prof/prof123, student/student123
 echo.
 
-start "Stellegent API dev" /D "%ROOT%\backend" cmd /k ""%PY%" -m stellegent.cli serve --host 127.0.0.1 --port 8001 --reload"
+start "Stellegent API dev" /D "%ROOT%\backend" cmd /k ""%PY%" -m stellegent.cli serve --host 0.0.0.0 --port 8001 --reload"
 
 pushd frontend
-call npm run dev -- --host 127.0.0.1 --port 8000 --strictPort
+call npm run dev -- --host 0.0.0.0 --port 8000 --strictPort
 set "FRONTEND_EXIT=%ERRORLEVEL%"
 popd
 

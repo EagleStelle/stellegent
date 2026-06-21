@@ -18,6 +18,7 @@
 		class: className = "",
 		disabled = false,
 		icon: Icon,
+		portalTo,
 	} = $props<{
 		value?: string;
 		options: ComboBoxOption[];
@@ -25,6 +26,9 @@
 		class?: string;
 		disabled?: boolean;
 		icon?: Component<any>;
+		// Portal target for the dropdown. Defaults to <body>. Pass the fullscreen
+		// element so the dropdown stays inside it (and clickable) in fullscreen.
+		portalTo?: HTMLElement | null;
 	}>();
 
 	let open = $state(false);
@@ -96,10 +100,10 @@
 		</Combobox.Trigger>
 	</div>
 
-	<Combobox.Portal>
+	<Combobox.Portal to={portalTo ?? undefined}>
 		<Combobox.Content
 			sideOffset={6}
-			class="z-50 max-h-96 w-(--bits-floating-anchor-width) overflow-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-lg outline-none dark:border-gray-800 dark:bg-gray-900"
+			class="z-50 max-h-96 w-(--bits-floating-anchor-width) overflow-y-auto overflow-x-hidden rounded-lg border border-gray-200 bg-white p-1 shadow-lg outline-none dark:border-gray-800 dark:bg-gray-900"
 		>
 			<Combobox.Viewport>
 				{#each filtered as option (option.value)}
