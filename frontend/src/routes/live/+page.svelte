@@ -41,7 +41,7 @@
 				course_id: selectedCourseId ? Number(selectedCourseId) : null
 			};
 			const res = await apiPost<PipelineResult>('/api/v1/capture', payload);
-			goto(`/lecture/${res.lecture_id}`);
+			goto(`/lectures/${res.lecture_id}`);
 		} catch (err) {
 			status = err instanceof Error ? err.message : 'Capture failed';
 			capturing = false;

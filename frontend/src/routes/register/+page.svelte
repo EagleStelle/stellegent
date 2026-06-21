@@ -30,7 +30,7 @@
 		try {
 			await apiPost<TokenResponse>('/api/v1/register', { username, email, password });
 			await qc.invalidateQueries({ queryKey: ['me'] });
-			goto('/');
+			goto('/lectures');
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Registration failed';
 		} finally {
@@ -166,7 +166,7 @@
 			</form>
 
 			<a
-				href="/login"
+				href="/"
 				class="group mt-8 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-zinc-500 transition-colors hover:text-secondary dark:text-zinc-400"
 			>
 				Sign in instead

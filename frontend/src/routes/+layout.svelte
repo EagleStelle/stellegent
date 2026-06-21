@@ -7,7 +7,7 @@
 	import type { User } from '$lib/types';
 	import { theme } from '$lib/theme.svelte';
 	import {
-		House,
+		Chalkboard,
 		Broadcast,
 		BookOpen,
 		UsersThree,
@@ -36,11 +36,11 @@
 		mobileMenuOpen = false;
 		await apiPost('/api/v1/logout');
 		await queryClient.invalidateQueries({ queryKey: ['me'] });
-		goto('/login');
+		goto('/');
 	}
 
 	const isAuthRoute = $derived(
-		['/login', '/register', '/forgot', '/reset'].includes(page.url.pathname)
+		['/', '/register', '/forgot', '/reset'].includes(page.url.pathname)
 	);
 
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
@@ -48,15 +48,15 @@
 
 	const links = $derived(
 		[
-			{ href: '/', label: 'Home', icon: House, show: true },
-			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach },
 			{ href: '/courses', label: 'Courses', icon: BookOpen, show: canTeach },
+			{ href: '/lectures', label: 'Lectures', icon: Chalkboard, show: true },
+			{ href: '/live', label: 'Live', icon: Broadcast, show: canTeach },
 			{ href: '/admin', label: 'Admin', icon: UsersThree, show: isAdmin }
 		].filter((l) => l.show)
 	);
 
 	function isActive(href: string) {
-		return href === '/' ? page.url.pathname === '/' : page.url.pathname.startsWith(href);
+		return page.url.pathname.startsWith(href);
 	}
 
 	let desktopMenuOpen = $state(false);
@@ -106,7 +106,7 @@
 		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-primary p-4 text-white md:flex border-r border-white/5 shadow-2xl"
 	>
 		<a
-			href="/"
+			href="/lectures"
 			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3.5 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
 		>
 			<Logo size={40} />

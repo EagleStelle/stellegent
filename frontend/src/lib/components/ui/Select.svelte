@@ -27,16 +27,16 @@
 
 <Select.Root type="single" bind:value {disabled}>
 	<Select.Trigger
-		class={twMerge("flex h-10 w-full items-center justify-between rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-primary outline-none transition-all duration-200 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 disabled:pointer-events-none disabled:opacity-60 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-50", className)}
+		class={twMerge("flex h-10 w-full items-center justify-between gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-primary outline-none transition-all duration-200 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 disabled:pointer-events-none disabled:opacity-60 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-50", className)}
 	>
-		<span class="truncate">
+		<span class="truncate leading-none translate-y-[1px]">
 			{#if value !== "" && value !== null && value !== undefined}
 				{options.find((opt: SelectOption) => opt.value === String(value))?.label ?? placeholder}
 			{:else}
 				<span class="text-gray-500">{placeholder}</span>
 			{/if}
 		</span>
-		<CaretDown size={16} class="shrink-0 text-gray-500" />
+		<CaretDown size={16} class="shrink-0 text-gray-500 mt-[1px]" />
 	</Select.Trigger>
 	<Select.Portal>
 		<Select.Content

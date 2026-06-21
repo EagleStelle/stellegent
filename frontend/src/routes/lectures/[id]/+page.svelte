@@ -127,7 +127,7 @@
 			credentials: "include",
 		});
 		qc.invalidateQueries({ queryKey: ["lectures"] });
-		goto("/");
+		goto("/lectures");
 	}
 
 	function toggleStudent(studentId: number) {
@@ -209,7 +209,7 @@
 			It may have been removed.
 		</p>
 		<a
-			href="/"
+			href="/lectures"
 			class="{pill} border-transparent bg-primary text-white hover:bg-primary/90 focus-visible:ring-secondary/30"
 		>
 			Back to lectures

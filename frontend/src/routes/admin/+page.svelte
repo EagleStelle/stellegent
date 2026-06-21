@@ -34,8 +34,8 @@
 	}));
 
 	$effect(() => {
-		if (me.isError || users.isError) goto("/login");
-		if (me.data && me.data.role !== "admin") goto("/");
+		if (me.isError || users.isError) goto("/");
+		if (me.data && me.data.role !== "admin") goto("/lectures");
 	});
 
 	type RoleFilter = "all" | "prof" | "student";
@@ -69,6 +69,7 @@
 	const visible = $derived.by(() => {
 		const q = search.trim().toLowerCase();
 		const rows = (users.data ?? []).filter((u) => {
+			if (u.role === "admin") return false;
 			if (roleFilter !== "all" && u.role !== roleFilter) return false;
 			if (!q) return true;
 			return (
@@ -210,14 +211,12 @@
 
 	const selectClass =
 		"h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-primary outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50";
-	const iconBtn =
-		"grid size-9 place-items-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-secondary/40 hover:text-secondary disabled:pointer-events-none disabled:opacity-50 dark:border-gray-800 dark:text-gray-400";
 	const th =
-		"cursor-pointer select-none py-2.5 pr-3 text-left text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400";
+		"cursor-pointer select-none py-2.5 pr-3 text-left text-[11px] font-semibold uppercase tracking-wide text-black dark:text-white";
 </script>
 
 <section class="grid gap-4">
-	<div class="flex flex-wrap items-center gap-2">
+	<div class="flex items-center gap-2">
 		<div class="relative min-w-0 flex-1">
 			<MagnifyingGlass
 				size={18}
@@ -226,14 +225,13 @@
 			<input
 				type="search"
 				bind:value={search}
-				placeholder="Search username or email"
 				class="h-10 w-full rounded-lg border border-gray-200 bg-white pl-11 pr-3.5 text-sm text-primary outline-none placeholder:text-gray-400 focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50"
 			/>
 		</div>
 
 		<Select
 			bind:value={roleFilter}
-			class={selectClass}
+			class="{selectClass} w-40 shrink-0"
 			options={[
 				{ value: "all", label: "All roles" },
 				{ value: "prof", label: "Faculty" },
@@ -244,7 +242,6 @@
 		<Button
 			variant="icon+text"
 			onclick={openAdd}
-			class="!bg-primary hover:!bg-primary/90 shadow-none"
 		>
 			{#snippet icon()}
 				<Plus size={18} />
@@ -277,7 +274,7 @@
 							</span>
 						</th>
 					{/each}
-					<th class="py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+					<th class="py-2.5 text-right text-[11px] font-semibold uppercase tracking-wide text-black dark:text-white">
 						Actions
 					</th>
 				</tr>
@@ -285,8 +282,6 @@
 			<tbody>
 				{#if users.isLoading}
 					<tr><td colspan="5" class="py-6 text-center text-gray-500 dark:text-gray-400">Loading</td></tr>
-				{:else if visible.length === 0}
-					<tr><td colspan="5" class="py-6 text-center text-gray-500 dark:text-gray-400">No accounts</td></tr>
 				{:else}
 					{#each visible as user (user.id)}
 						<tr
@@ -330,10 +325,10 @@
 									{#if user.role !== "admin"}
 										<Button
 											variant="icon"
+											ghost
 											type="button"
 											onclick={() => toggleDisabled(user)}
 											disabled={busyId === user.id}
-											class="{iconBtn} !bg-transparent !shadow-none !h-9 !w-9"
 											title={user.disabled ? "Enable account" : "Disable account"}
 											aria-label={user.disabled ? "Enable account" : "Disable account"}
 										>
@@ -350,9 +345,9 @@
 									{/if}
 									<Button
 										variant="icon"
+										ghost
 										type="button"
 										onclick={() => openEdit(user)}
-										class="{iconBtn} !bg-transparent !shadow-none !h-9 !w-9"
 										title="Edit account"
 										aria-label="Edit account"
 									>
@@ -363,10 +358,11 @@
 									{#if user.role !== "admin"}
 										<Button
 											variant="icon"
+											ghost
+											danger
 											type="button"
 											onclick={() => removeUser(user)}
 											disabled={busyId === user.id}
-											class="!bg-transparent !shadow-none !h-9 !w-9 grid place-items-center rounded-lg border border-gray-200 text-gray-500 transition-colors hover:border-red-400/50 hover:!text-red-600 disabled:pointer-events-none disabled:opacity-50 dark:border-gray-800 dark:text-gray-400"
 											title="Delete account"
 											aria-label="Delete account"
 										>
@@ -412,7 +408,6 @@
 			variant="icon+text"
 			type="submit"
 			disabled={creating}
-			class="mt-1 shadow-none !text-zinc-900 !font-semibold"
 		>
 			{#snippet icon()}
 				{#if creating}
@@ -459,7 +454,7 @@
 				variant="icon+text"
 				type="submit"
 				disabled={saving}
-				class="mt-1 shadow-none !text-zinc-900 !font-semibold"
+				class="mt-1"
 			>
 				{#snippet icon()}
 					{#if saving}
