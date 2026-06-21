@@ -74,6 +74,12 @@ if errorlevel 1 (
 )
 popd
 
+REM Free the dev ports. Leftover backend/vite from a previous run keeps
+REM listening, and vite dev uses --strictPort, so a stale process on :8000
+REM crashes the frontend with "Port 8000 is already in use".
+call :freeport 8000
+call :freeport 8001
+
 echo.
 echo [run] Starting FastAPI with reload in a new window.
 echo [run] Starting Vite on the production-like app port in this window.
@@ -88,6 +94,14 @@ set "FRONTEND_EXIT=%ERRORLEVEL%"
 popd
 
 exit /b %FRONTEND_EXIT%
+
+REM Kill any process listening on the given port (dev launcher owns :8000/:8001).
+:freeport
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":%~1 " ^| findstr LISTENING') do (
+  echo [run] freeing port %~1 (killing PID %%p)
+  taskkill /F /PID %%p >nul 2>&1
+)
+goto :eof
 
 :fail
 echo.

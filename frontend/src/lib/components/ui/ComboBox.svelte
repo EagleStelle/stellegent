@@ -30,45 +30,30 @@
 	let open = $state(false);
 	let inputValue = $state("");
 
-	// Initialize inputValue based on value
-	$effect(() => {
-		if (value !== undefined) {
-			const matchedOpt = options.find((opt: ComboBoxOption) => opt.value === value);
-			if (matchedOpt) {
-				if (inputValue !== matchedOpt.label) {
-					inputValue = matchedOpt.label;
-				}
-			} else {
-				if (inputValue !== value) {
-					inputValue = value;
-				}
-			}
-		}
+	// Label that corresponds to the committed value (or "" when nothing selected).
+	const selectedLabel = $derived.by(() => {
+		const matched = options.find((opt: ComboBoxOption) => opt.value === value);
+		return matched ? matched.label : "";
 	});
 
-	// Update value based on inputValue
+	// Drive the displayed text from `open` and the selected value, NOT from
+	// typing. This effect only re-runs when `open` or `selectedLabel` change, so
+	// it never clobbers what the user types mid-search.
+	//  - just opened  -> clear the box: fresh search, all options visible
+	//    (bits-ui still highlights/scrolls to the current value)
+	//  - closed / value changed -> show the selected value's label
 	$effect(() => {
-		if (inputValue !== undefined) {
-			const matchedOpt = options.find((opt: ComboBoxOption) => opt.label === inputValue);
-			if (matchedOpt) {
-				if (value !== matchedOpt.value) {
-					value = matchedOpt.value;
-				}
-			} else {
-				if (value !== inputValue) {
-					value = inputValue;
-				}
-			}
-		}
+		// Note: do NOT read inputValue here, or typing would re-trigger this
+		// effect and wipe the search text. Only `open`/`selectedLabel` are deps.
+		inputValue = open ? "" : selectedLabel;
 	});
 
-	const filtered = $derived(
-		inputValue
-			? options.filter((opt: ComboBoxOption) =>
-					opt.label.toLowerCase().includes(inputValue.toLowerCase()),
-				)
-			: options,
-	);
+	// Filter by the current search text. Empty search shows every option.
+	const filtered = $derived.by(() => {
+		const q = inputValue.trim().toLowerCase();
+		if (!q) return options;
+		return options.filter((opt: ComboBoxOption) => opt.label.toLowerCase().includes(q));
+	});
 
 	function onOpenChange(next: boolean) {
 		open = next;
@@ -77,9 +62,10 @@
 	function onInput(event: Event) {
 		const next = (event.currentTarget as HTMLInputElement).value;
 		if (inputValue !== next) inputValue = next;
+		// Typing the field empty clears the selection (selecting an item does
+		// not call this, so picking an option is unaffected).
+		if (next === "" && value !== "") value = "";
 	}
-
-
 </script>
 
 <Combobox.Root type="single" bind:value inputValue={inputValue} bind:open {disabled} {onOpenChange}>

@@ -2,18 +2,11 @@
 	import { goto } from "$app/navigation";
 	import { page } from "$app/state";
 	import { createQuery, useQueryClient } from "@tanstack/svelte-query";
-	import { apiGet, apiPatch } from "$lib/api/client";
-	import type {
-		Course,
-		CourseOptions,
-		LectureDetail,
-		User,
-		Visibility,
-	} from "$lib/types";
+	import { apiDelete, apiGet } from "$lib/api/client";
+	import type { LectureDetail, User } from "$lib/types";
 	import {
 		Trash,
 		PencilSimple,
-		FloppyDisk,
 		CalendarBlank,
 		UserCircle,
 		GlobeHemisphereWest,
@@ -22,14 +15,11 @@
 		FileDoc,
 		FileTxt,
 		BookOpen,
-		UsersThree,
 	} from "phosphor-svelte";
 	import Card from "$lib/components/ui/Card.svelte";
 	import ImageModal from "$lib/components/modal/Image.svelte";
 	import TextModal from "$lib/components/modal/Text.svelte";
-	import Modal from "$lib/components/ui/Modal.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
-	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 
 	const qc = useQueryClient();
 	const id = $derived(page.params.id);
@@ -48,46 +38,6 @@
 			(me.data?.role === "prof" &&
 				lecture.data?.owner_user_id === me.data.uid),
 	);
-	const canTeach = $derived(
-		me.data?.role === "prof" || me.data?.role === "admin",
-	);
-	const courses = createQuery(() => ({
-		queryKey: ["courses"],
-		queryFn: () => apiGet<Course[]>("/api/v1/courses"),
-		enabled: canTeach,
-	}));
-	const options = createQuery(() => ({
-		queryKey: ["course-options"],
-		queryFn: () => apiGet<CourseOptions>("/api/v1/courses/options"),
-		enabled: canTeach,
-	}));
-
-	let editOpen = $state(page.url.searchParams.get("edit") === "true");
-	let saving = $state(false);
-	let editError = $state("");
-	let draftTitle = $state("");
-	let draftSummary = $state("");
-	let draftText = $state("");
-	let draftVisibility = $state<Visibility>("public");
-	let draftCourseId = $state("");
-	let draftOwnerId = $state("");
-	let draftStudentIds = $state<number[]>([]);
-
-	$effect(() => {
-		if (!lecture.data) return;
-		draftTitle = lecture.data.course_name ?? "";
-		draftSummary = lecture.data.summary ?? "";
-		draftText = lecture.data.corrected_text ?? "";
-		draftVisibility = lecture.data.visibility;
-		draftCourseId = lecture.data.course_id
-			? String(lecture.data.course_id)
-			: "";
-		draftOwnerId = lecture.data.owner_user_id
-			? String(lecture.data.owner_user_id)
-			: "";
-		draftStudentIds = [...lecture.data.student_ids];
-	});
-
 	const downloads = [
 		{ type: "pdf", label: "PDF", Icon: FilePdf },
 		{ type: "docx", label: "DOCX", Icon: FileDoc },
@@ -97,11 +47,6 @@
 	const fileUrl = (type: string) =>
 		`/api/v1/lectures/${id}/file?type=${type}`;
 
-	/**
-	 * Fetch the file as a blob and save it. Using a plain <a href> lets the
-	 * SvelteKit client router intercept the same-origin link, which breaks the
-	 * download (notably for .txt). A blob + credentials avoids that entirely.
-	 */
 	async function downloadFile(type: string) {
 		const res = await fetch(fileUrl(type), { credentials: "include" });
 		if (!res.ok) return;
@@ -122,44 +67,9 @@
 
 	async function remove() {
 		if (!confirm("Delete this lecture?")) return;
-		await fetch(`/api/v1/lectures/${id}`, {
-			method: "DELETE",
-			credentials: "include",
-		});
-		qc.invalidateQueries({ queryKey: ["lectures"] });
+		await apiDelete(`/api/v1/lectures/${id}`);
+		await qc.invalidateQueries({ queryKey: ["lectures"] });
 		goto("/lectures");
-	}
-
-	function toggleStudent(studentId: number) {
-		draftStudentIds = draftStudentIds.includes(studentId)
-			? draftStudentIds.filter((sid) => sid !== studentId)
-			: [...draftStudentIds, studentId];
-	}
-
-	async function saveLecture() {
-		saving = true;
-		editError = "";
-		const body: Record<string, unknown> = {
-			course_name: draftTitle.trim() || null,
-			course_id: draftCourseId ? Number(draftCourseId) : null,
-			visibility: draftVisibility,
-			summary: draftSummary,
-			corrected_text: draftText,
-			student_ids: draftStudentIds,
-		};
-		if (me.data?.role === "admin") {
-			body.owner_user_id = draftOwnerId ? Number(draftOwnerId) : null;
-		}
-		try {
-			await apiPatch<LectureDetail>(`/api/v1/lectures/${id}`, body);
-			await qc.invalidateQueries({ queryKey: ["lecture", id] });
-			await qc.invalidateQueries({ queryKey: ["lectures"] });
-			editOpen = false;
-		} catch (err) {
-			editError = err instanceof Error ? err.message : "Save failed";
-		} finally {
-			saving = false;
-		}
 	}
 
 	function formatDate(value: string) {
@@ -300,7 +210,7 @@
 					></div>
 					<Button
 						variant="icon+text"
-						onclick={() => (editOpen = !editOpen)}
+						onclick={() => goto(`/lectures/${id}/edit`)}
 						title="Edit lecture"
 					>
 						{#snippet icon()}
@@ -323,147 +233,7 @@
 			</div>
 		</header>
 
-		{#if canManage}
-			<Modal bind:open={editOpen} label="Edit Lecture">
-				<Card>
-					<h2
-						class="text-xl font-bold text-primary dark:text-gray-50"
-					>
-						Edit Lecture
-					</h2>
-					<div class="grid gap-3 md:grid-cols-3">
-						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-						>
-							<span>Title</span>
-							<input
-								bind:value={draftTitle}
-								class="h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-							/>
-						</label>
-						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-						>
-							<span>Course</span>
-							<ComboBox
-								bind:value={draftCourseId}
-								placeholder="No course"
-								options={(courses.data ?? []).map((c) => ({
-									value: String(c.id),
-									label: c.name,
-								}))}
-							/>
-						</label>
-						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-						>
-							<span>Visibility</span>
-							<ComboBox
-								bind:value={draftVisibility}
-								options={[
-									{ value: "public", label: "Public" },
-									{ value: "private", label: "Private" },
-								]}
-							/>
-						</label>
-						{#if me.data?.role === "admin"}
-							<label
-								class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100 md:col-span-3"
-							>
-								<span>Owner</span>
-								<ComboBox
-									bind:value={draftOwnerId}
-									placeholder="Unassigned"
-									options={(options.data?.faculty ?? []).map(
-										(f) => ({
-											value: String(f.id),
-											label: f.username,
-										}),
-									)}
-								/>
-							</label>
-						{/if}
-					</div>
 
-					<div class="grid gap-3 md:grid-cols-2">
-						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-						>
-							<span>Transcript</span>
-							<textarea
-								bind:value={draftText}
-								rows="7"
-								class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-							></textarea>
-						</label>
-						<label
-							class="grid gap-1.5 text-sm font-semibold text-primary dark:text-gray-100"
-						>
-							<span>Summary</span>
-							<textarea
-								bind:value={draftSummary}
-								rows="7"
-								class="min-h-36 rounded-lg border border-gray-200 bg-white p-3 text-sm leading-6 outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-950"
-							></textarea>
-						</label>
-					</div>
-
-					{#if options.data?.students?.length}
-						<div class="grid gap-2">
-							<div
-								class="flex items-center gap-2 text-sm font-semibold text-primary dark:text-gray-100"
-							>
-								<UsersThree size={16} />
-								<span>Direct students</span>
-							</div>
-							<div
-								class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3"
-							>
-								{#each options.data.students as student (student.id)}
-									<label
-										class="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium dark:border-gray-800"
-									>
-										<input
-											type="checkbox"
-											checked={draftStudentIds.includes(
-												student.id,
-											)}
-											onchange={() =>
-												toggleStudent(student.id)}
-											class="size-4 rounded border-gray-300 text-secondary focus:ring-secondary"
-										/>
-										<span class="truncate"
-											>{student.username}</span
-										>
-									</label>
-								{/each}
-							</div>
-						</div>
-					{/if}
-
-					{#if editError}
-						<p
-							class="rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400"
-						>
-							{editError}
-						</p>
-					{/if}
-
-					<div class="flex justify-end">
-						<Button
-							variant="icon+text"
-							onclick={saveLecture}
-							disabled={saving}
-						>
-							{#snippet icon()}
-								<FloppyDisk size={16} />
-							{/snippet}
-							{saving ? "Saving" : "Save"}
-						</Button>
-					</div>
-				</Card>
-			</Modal>
-		{/if}
 
 		<div class="flex min-h-0 flex-1 flex-col overflow-hidden">
 			<ImageModal

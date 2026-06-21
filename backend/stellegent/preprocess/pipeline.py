@@ -38,7 +38,11 @@ def _largest_quad(mask: np.ndarray, img_area: float) -> Optional[np.ndarray]:
         return None
     contours = sorted(contours, key=cv2.contourArea, reverse=True)[:5]
     for c in contours:
-        if cv2.contourArea(c) < 0.15 * img_area:
+        area = cv2.contourArea(c)
+        if area < 0.15 * img_area:
+            continue
+        x, y, w, h = cv2.boundingRect(c)
+        if area > 0.98 * img_area and x <= 1 and y <= 1:
             continue
         peri = cv2.arcLength(c, True)
         for eps in (0.01, 0.02, 0.03, 0.05, 0.08):

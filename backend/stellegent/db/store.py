@@ -220,6 +220,20 @@ def _hash_pw(password: str) -> str:
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
+def _merge_auth_provider(current: Optional[str], provider: str) -> str:
+    parts = {p for p in (current or "").split("+") if p}
+    parts.add(provider)
+    if "local" in parts and "google" in parts:
+        return "local+google"
+    if "google" in parts:
+        return "google"
+    return "local"
+
+
+def _has_password(row: sqlite3.Row) -> bool:
+    return bool(row["password_hash"])
+
+
 def admin_exists(exclude_user_id: Optional[int] = None) -> bool:
     sql = "SELECT 1 FROM users WHERE role = 'admin'"
     args: List = []
@@ -242,10 +256,26 @@ def create_user(username: str, password: str, role: str, email: str) -> int:
         return int(cur.lastrowid)
 
 
+def create_google_user(*, username: str, email: str, google_sub: str,
+                       email_verified: bool, role: str = "student") -> int:
+    _validate_role(role)
+    with get_conn() as c:
+        cur = c.execute("""
+            INSERT INTO users
+            (username,password_hash,role,email,auth_provider,google_sub,
+             email_verified,created_at,updated_at)
+            VALUES (?, '', ?, ?, 'google', ?, ?, ?, ?)
+        """, (
+            username, role, email, google_sub, 1 if email_verified else 0,
+            _now(), _now(),
+        ))
+        return int(cur.lastrowid)
+
+
 def list_users(role: Optional[str] = None) -> List[sqlite3.Row]:
     sql = """
         SELECT id, username, email, role, auth_provider, email_verified,
-               disabled, created_at
+               disabled, created_at, totp_enabled
         FROM users
         WHERE 1=1
     """
@@ -283,6 +313,14 @@ def get_user_by_email(email: str) -> Optional[sqlite3.Row]:
         ).fetchone()
 
 
+def get_user_by_google_sub(google_sub: str) -> Optional[sqlite3.Row]:
+    with get_conn() as c:
+        return c.execute(
+            "SELECT * FROM users WHERE google_sub = ?",
+            (google_sub,),
+        ).fetchone()
+
+
 def verify_user(username: str, password: str) -> Optional[sqlite3.Row]:
     u = get_user(username)
     if not u or not u["password_hash"]:
@@ -302,9 +340,14 @@ def verify_user_by_email(email: str, password: str) -> Optional[sqlite3.Row]:
 
 
 def set_password(user_id: int, password: str) -> None:
+    user = get_user_by_id(user_id)
+    provider = _merge_auth_provider(user["auth_provider"] if user else None, "local")
     with get_conn() as c:
-        c.execute("UPDATE users SET password_hash = ? WHERE id = ?",
-                  (_hash_pw(password), user_id))
+        c.execute("""
+            UPDATE users
+            SET password_hash = ?, auth_provider = ?, updated_at = ?
+            WHERE id = ?
+        """, (_hash_pw(password), provider, _now(), user_id))
 
 
 def update_user(user_id: int, *, username: Optional[str] = None,
@@ -322,6 +365,8 @@ def update_user(user_id: int, *, username: Optional[str] = None,
     if email is not None:
         parts.append("email = ?")
         args.append(email)
+        if email.lower() != str(current["email"]).lower():
+            parts.append("email_verified = 0")
     if role is not None:
         _validate_role(role)
         if current["role"] == "admin" and role != "admin":
@@ -335,16 +380,147 @@ def update_user(user_id: int, *, username: Optional[str] = None,
     if password:
         parts.append("password_hash = ?")
         args.append(_hash_pw(password))
+        parts.append("auth_provider = ?")
+        args.append(_merge_auth_provider(current["auth_provider"], "local"))
     if disabled is not None:
         if current["role"] == "admin" and disabled:
             raise ValueError("the admin account cannot be disabled")
         parts.append("disabled = ?")
         args.append(1 if disabled else 0)
     if parts:
+        parts.append("updated_at = ?")
+        args.append(_now())
         args.append(user_id)
         with get_conn() as c:
             c.execute(f"UPDATE users SET {', '.join(parts)} WHERE id = ?", args)
     return get_user_by_id(user_id)
+
+
+def update_account_profile(user_id: int, *, username: str,
+                           email: str) -> Optional[sqlite3.Row]:
+    return update_user(user_id, username=username, email=email)
+
+
+def verify_user_password(user_id: int, password: str) -> bool:
+    user = get_user_by_id(user_id)
+    if not user or not _has_password(user):
+        return False
+    return bcrypt.checkpw(password.encode("utf-8"),
+                          user["password_hash"].encode("utf-8"))
+
+
+def link_google_account(user_id: int, *, google_sub: str,
+                        email_verified: bool) -> Optional[sqlite3.Row]:
+    current = get_user_by_id(user_id)
+    if not current:
+        return None
+    provider = _merge_auth_provider(current["auth_provider"], "google")
+    with get_conn() as c:
+        c.execute("""
+            UPDATE users
+            SET google_sub = ?, auth_provider = ?, email_verified = ?,
+                updated_at = ?
+            WHERE id = ?
+        """, (
+            google_sub, provider, 1 if email_verified else current["email_verified"],
+            _now(), user_id,
+        ))
+    return get_user_by_id(user_id)
+
+
+def unlink_google_account(user_id: int) -> Optional[sqlite3.Row]:
+    current = get_user_by_id(user_id)
+    if not current:
+        return None
+    if not _has_password(current):
+        raise ValueError("set a password before disconnecting Google")
+    provider = "local"
+    with get_conn() as c:
+        c.execute("""
+            UPDATE users
+            SET google_sub = NULL, auth_provider = ?, updated_at = ?
+            WHERE id = ?
+        """, (provider, _now(), user_id))
+    return get_user_by_id(user_id)
+
+
+def account_security_summary(user_id: int) -> Optional[dict]:
+    user = get_user_by_id(user_id)
+    if not user:
+        return None
+    return {
+        "uid": user["id"],
+        "username": user["username"],
+        "role": user["role"],
+        "email": user["email"],
+        "auth_provider": user["auth_provider"],
+        "email_verified": int(user["email_verified"]),
+        "google_linked": bool(user["google_sub"]),
+        "two_factor_enabled": bool(user["totp_enabled"]),
+        "has_password": _has_password(user),
+    }
+
+
+def set_totp_secret(user_id: int, secret: str) -> None:
+    with get_conn() as c:
+        c.execute("""
+            UPDATE users
+            SET totp_secret = ?, totp_enabled = 0, totp_confirmed_at = NULL,
+                updated_at = ?
+            WHERE id = ?
+        """, (secret, _now(), user_id))
+
+
+def enable_totp(user_id: int) -> Optional[sqlite3.Row]:
+    with get_conn() as c:
+        c.execute("""
+            UPDATE users
+            SET totp_enabled = 1, totp_confirmed_at = ?, updated_at = ?
+            WHERE id = ? AND totp_secret IS NOT NULL
+        """, (_now(), _now(), user_id))
+    return get_user_by_id(user_id)
+
+
+def disable_totp(user_id: int) -> Optional[sqlite3.Row]:
+    with get_conn() as c:
+        c.execute("""
+            UPDATE users
+            SET totp_secret = NULL, totp_enabled = 0, totp_confirmed_at = NULL,
+                updated_at = ?
+            WHERE id = ?
+        """, (_now(), user_id))
+        c.execute("DELETE FROM user_recovery_codes WHERE user_id = ?", (user_id,))
+    return get_user_by_id(user_id)
+
+
+def replace_recovery_codes(user_id: int, codes: Iterable[str]) -> None:
+    with get_conn() as c:
+        c.execute("DELETE FROM user_recovery_codes WHERE user_id = ?", (user_id,))
+        c.executemany("""
+            INSERT INTO user_recovery_codes (user_id, code_hash, created_at)
+            VALUES (?, ?, ?)
+        """, [
+            (user_id, _hash_pw(code), _now())
+            for code in codes
+        ])
+
+
+def consume_recovery_code(user_id: int, code: str) -> bool:
+    with get_conn() as c:
+        rows = list(c.execute("""
+            SELECT id, code_hash
+            FROM user_recovery_codes
+            WHERE user_id = ? AND used_at IS NULL
+        """, (user_id,)))
+        for row in rows:
+            if bcrypt.checkpw(code.encode("utf-8"),
+                              row["code_hash"].encode("utf-8")):
+                c.execute(
+                    "UPDATE user_recovery_codes SET used_at = ? WHERE id = ?",
+                    (_now(), row["id"]),
+                )
+                return True
+    return False
 
 
 def delete_user(user_id: int) -> bool:
@@ -389,6 +565,55 @@ def consume_reset_token(token: str) -> Optional[int]:
         if row["expires_at"] < _now():
             return None
         c.execute("UPDATE password_resets SET used = 1 WHERE token = ?", (token,))
+        return int(row["user_id"])
+
+
+# ---------- email verification ----------
+
+def create_email_verification_token(user_id: int, ttl_min: int = 60 * 24) -> str:
+    user = get_user_by_id(user_id)
+    if not user:
+        raise ValueError("user not found")
+    token = secrets.token_urlsafe(32)
+    expires = (datetime.now(timezone.utc) + timedelta(minutes=ttl_min)).isoformat()
+    with get_conn() as c:
+        c.execute("""
+            UPDATE email_verifications
+            SET used = 1
+            WHERE user_id = ? AND used = 0
+        """, (user_id,))
+        c.execute("""
+            INSERT INTO email_verifications
+            (token,user_id,email,expires_at,used,created_at)
+            VALUES (?,?,?,?,0,?)
+        """, (token, user_id, user["email"], expires, _now()))
+    return token
+
+
+def consume_email_verification_token(token: str) -> Optional[int]:
+    """Mark the token used and verify the user's current matching email."""
+    with get_conn() as c:
+        row = c.execute("""
+            SELECT user_id, email, expires_at, used
+            FROM email_verifications
+            WHERE token = ?
+        """, (token,)).fetchone()
+        if not row or row["used"]:
+            return None
+        if row["expires_at"] < _now():
+            return None
+        user = c.execute(
+            "SELECT email FROM users WHERE id = ?",
+            (row["user_id"],),
+        ).fetchone()
+        if not user or str(user["email"]).lower() != str(row["email"]).lower():
+            return None
+        c.execute("UPDATE email_verifications SET used = 1 WHERE token = ?", (token,))
+        c.execute("""
+            UPDATE users
+            SET email_verified = 1, updated_at = ?
+            WHERE id = ?
+        """, (_now(), row["user_id"]))
         return int(row["user_id"])
 
 

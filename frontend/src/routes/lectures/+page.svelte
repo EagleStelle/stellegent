@@ -9,6 +9,7 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import ComboBox from '$lib/components/ui/ComboBox.svelte';
 	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash } from 'phosphor-svelte';
+	import { untrack } from 'svelte';
 
 	let q = $state('');
 	let facultyFilter = $state('');
@@ -53,19 +54,25 @@
 		})),
 	);
 
+	// URL -> state: adopt the courseId from the URL (deep link, back/forward).
+	// The current selection is read untracked so this effect fires only when the
+	// URL changes, never when the user picks a course (which would revert it).
 	$effect(() => {
 		const courseId = page.url.searchParams.get('courseId') ?? '';
-		if (selectedCourseId !== courseId) selectedCourseId = courseId;
+		if (untrack(() => selectedCourseId) !== courseId) selectedCourseId = courseId;
 	});
 
+	// state -> URL: when the user picks a course, push it to the URL. The URL is
+	// read untracked so this effect fires only on a user selection, not when the
+	// URL changes from the effect above.
 	$effect(() => {
-		const courseId = page.url.searchParams.get('courseId') ?? '';
-		if (selectedCourseId === courseId) return;
+		const sel = selectedCourseId;
+		const courseId = untrack(() => page.url.searchParams.get('courseId') ?? '');
+		if (sel === courseId) return;
 		const hasCourseOption =
-			selectedCourseId === '' ||
-			(courses.data ?? []).some((course) => String(course.id) === selectedCourseId);
+			sel === '' || (courses.data ?? []).some((course) => String(course.id) === sel);
 		if (!hasCourseOption) return;
-		goto(selectedCourseId ? `/lectures?courseId=${encodeURIComponent(selectedCourseId)}` : '/lectures', {
+		goto(sel ? `/lectures?courseId=${encodeURIComponent(sel)}` : '/lectures', {
 			keepFocus: true,
 			noScroll: true,
 		});

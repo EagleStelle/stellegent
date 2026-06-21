@@ -40,7 +40,7 @@
 	}
 
 	const isAuthRoute = $derived(
-		['/', '/register', '/forgot', '/reset'].includes(page.url.pathname)
+		['/', '/register', '/forgot', '/reset', '/verify-email', '/mfa'].includes(page.url.pathname)
 	);
 
 	const canTeach = $derived(me.data?.role === 'prof' || me.data?.role === 'admin');
@@ -149,9 +149,16 @@
 					<span>{theme.dark ? 'Light mode' : 'Dark mode'}</span>
 				</Button>
 
-				<Button variant="icon+text" nav aria-label="Settings">
+				<Button
+					variant="icon+text"
+					nav
+					active={isActive('/settings')}
+					href="/settings"
+					aria-current={isActive('/settings') ? 'page' : undefined}
+					aria-label="Settings"
+				>
 					{#snippet icon()}
-						<Gear size={18} />
+						<Gear size={18} weight={isActive('/settings') ? 'fill' : 'regular'} />
 					{/snippet}
 					<span>Settings</span>
 				</Button>
@@ -233,6 +240,8 @@
 						</Button>
 						<Button
 							variant="icon+text"
+							href="/settings"
+							onclick={() => (mobileMenuOpen = false)}
 							role="menuitem"
 							class="{navMotion} flex w-full items-center gap-3 rounded-lg px-3.5 py-2.5 text-sm font-medium !text-gray-300 hover:!bg-white/10 hover:!text-white !bg-transparent !shadow-none !h-auto !justify-start"
 						>

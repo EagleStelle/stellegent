@@ -21,8 +21,32 @@ from .api.v1 import api_router
 STATIC_DIR = Path(os.environ.get("STATIC_DIR", ROOT / "frontend" / "build"))
 
 
+def _is_https_request(request) -> bool:
+    forwarded = request.headers.get("x-forwarded-proto", "").split(",", 1)[0].strip()
+    return request.url.scheme == "https" or forwarded == "https"
+
+
 def create_app() -> FastAPI:
     app = FastAPI(title="Stellegent API", version="0.2.0")
+
+    if settings.security_headers:
+        @app.middleware("http")
+        async def _security_headers(request, call_next):
+            response = await call_next(request)
+            response.headers.setdefault("X-Content-Type-Options", "nosniff")
+            response.headers.setdefault("X-Frame-Options", "DENY")
+            response.headers.setdefault("Referrer-Policy", "same-origin")
+            response.headers.setdefault(
+                "Permissions-Policy",
+                "camera=(self), microphone=(), geolocation=(), payment=()",
+            )
+            response.headers.setdefault("Cross-Origin-Opener-Policy", "same-origin")
+            if settings.security_hsts_enabled or _is_https_request(request):
+                response.headers.setdefault(
+                    "Strict-Transport-Security",
+                    "max-age=31536000; includeSubDomains",
+                )
+            return response
 
     app.add_middleware(
         CORSMiddleware,
@@ -34,6 +58,17 @@ def create_app() -> FastAPI:
 
     @app.on_event("startup")
     def _startup() -> None:
+        if settings.require_secure_config:
+            if (
+                len(settings.jwt_secret) < 32
+                or settings.jwt_secret.startswith("change-me")
+                or settings.jwt_secret.startswith("replace-me")
+            ):
+                raise RuntimeError(
+                    "Set STELLEGENT_JWT_SECRET to a unique 32+ byte value"
+                )
+            if not settings.resend_api_key:
+                raise RuntimeError("Set RESEND_API_KEY for production email delivery")
         init_db()
 
     @app.get("/api/health")

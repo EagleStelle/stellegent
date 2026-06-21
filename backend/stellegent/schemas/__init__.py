@@ -15,6 +15,11 @@ class LoginRequest(BaseModel):
     password: str
 
 
+class LoginMfaRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=32)
+    mfa_token: Optional[str] = None
+
+
 class RegisterRequest(BaseModel):
     username: str = Field(min_length=3, max_length=64)
     email: EmailStr
@@ -27,11 +32,20 @@ class TokenResponse(BaseModel):
     username: str
 
 
+class MfaChallengeResponse(BaseModel):
+    mfa_required: Literal[True] = True
+    mfa_token: Optional[str] = None
+    message: str = "verification code required"
+
+
 class UserOut(BaseModel):
     uid: int
     username: str
     role: Role
     email: Optional[str] = None
+    auth_provider: str = "local"
+    google_linked: bool = False
+    two_factor_enabled: bool = False
 
 
 class ForgotPasswordRequest(BaseModel):
@@ -43,11 +57,51 @@ class ResetPasswordRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
 
 
+class VerifyEmailRequest(BaseModel):
+    token: str
+
+
 class MessageResponse(BaseModel):
     ok: bool = True
     message: Optional[str] = None
     # dev convenience: reset link/token surfaced when no SMTP is configured
     reset_token: Optional[str] = None
+    verification_token: Optional[str] = None
+
+
+class AccountOut(UserOut):
+    email_verified: int = 0
+    has_password: bool = True
+
+
+class AccountUpdateRequest(BaseModel):
+    username: str = Field(min_length=3, max_length=64)
+    email: EmailStr
+
+
+class PasswordChangeRequest(BaseModel):
+    current_password: str
+    new_password: str = Field(min_length=8, max_length=128)
+
+
+class TotpSetupResponse(BaseModel):
+    secret: str
+    otpauth_uri: str
+    qr_data_url: Optional[str] = None
+
+
+class TotpVerifyRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=32)
+
+
+class TotpEnableResponse(BaseModel):
+    ok: bool = True
+    recovery_codes: List[str] = []
+
+
+class TotpDisableRequest(BaseModel):
+    code: str = Field(min_length=4, max_length=32)
+    current_password: Optional[str] = None
 
 
 # ---- account management ----
@@ -59,6 +113,7 @@ class ManagedUserOut(BaseModel):
     auth_provider: str = "local"
     email_verified: int = 0
     disabled: int = 0
+    totp_enabled: int = 0
     created_at: str
 
 

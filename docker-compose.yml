@@ -10,6 +10,12 @@ services:
       GEMINI_API_KEY: ""
       GEMINI_MODEL: gemini-2.5-flash
       STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret
+      GOOGLE_OAUTH_CLIENT_ID: ""
+      GOOGLE_OAUTH_CLIENT_SECRET: ""
+      GOOGLE_ALLOWED_DOMAIN: ""
+      RESEND_API_KEY: ""
+      RESEND_FROM_EMAIL: "Stellegent <no-reply@example.com>"
+      RESEND_REPLY_TO: ""
     volumes:
       - ./data:/data
     depends_on:

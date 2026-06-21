@@ -23,6 +23,8 @@ def current_user(request: Request) -> dict:
     user = get_user_by_id(data["uid"])
     if not user:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
+    if user["disabled"]:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "account disabled")
     return {"uid": user["id"], "username": user["username"], "role": user["role"]}
 
 

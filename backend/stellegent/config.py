@@ -29,6 +29,39 @@ class Settings(BaseSettings):
         validation_alias="STELLEGENT_JWT_SECRET",
     )
     jwt_expiry_min: int = Field(30, validation_alias="STELLEGENT_JWT_EXPIRY_MIN")
+    app_name: str = Field("Stellegent", validation_alias="STELLEGENT_APP_NAME")
+    public_base_url: str = Field("", validation_alias="STELLEGENT_PUBLIC_BASE_URL")
+    cookie_secure: bool = Field(False, validation_alias="STELLEGENT_COOKIE_SECURE")
+    cookie_samesite: str = Field("lax", validation_alias="STELLEGENT_COOKIE_SAMESITE")
+    require_secure_config: bool = Field(
+        False, validation_alias="STELLEGENT_REQUIRE_SECURE_CONFIG"
+    )
+    security_headers: bool = Field(True, validation_alias="STELLEGENT_SECURITY_HEADERS")
+    security_hsts_enabled: bool = Field(
+        False, validation_alias="STELLEGENT_SECURITY_HSTS"
+    )
+
+    # Google OAuth / Sign in with Google.
+    google_oauth_client_id: str = Field(
+        "", validation_alias="GOOGLE_OAUTH_CLIENT_ID"
+    )
+    google_oauth_client_secret: str = Field(
+        "", validation_alias="GOOGLE_OAUTH_CLIENT_SECRET"
+    )
+    google_oauth_redirect_uri: str = Field(
+        "", validation_alias="GOOGLE_OAUTH_REDIRECT_URI"
+    )
+    google_allowed_domain: str = Field(
+        "", validation_alias="GOOGLE_ALLOWED_DOMAIN"
+    )
+
+    # Transactional email via Resend.
+    resend_api_key: str = Field("", validation_alias="RESEND_API_KEY")
+    resend_from_email: str = Field(
+        "Stellegent <onboarding@resend.dev>",
+        validation_alias="RESEND_FROM_EMAIL",
+    )
+    email_reply_to: str = Field("", validation_alias="RESEND_REPLY_TO")
 
     # OCR backend selection: auto | gemini | paddle
     ocr_backend: str = Field("auto", validation_alias="OCR_BACKEND")
@@ -70,5 +103,6 @@ OLLAMA_HOST = settings.ollama_host
 OLLAMA_MODEL = settings.ollama_model
 JWT_SECRET = settings.jwt_secret
 JWT_EXPIRY_MIN = settings.jwt_expiry_min
+APP_NAME = settings.app_name
 
 DATA_DIR.mkdir(parents=True, exist_ok=True)

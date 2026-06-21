@@ -7,12 +7,48 @@ export interface User {
 	username: string;
 	role: Role;
 	email?: string | null;
+	auth_provider?: string;
+	google_linked?: boolean;
+	two_factor_enabled?: boolean;
 }
 
 export interface TokenResponse {
 	token: string;
 	role: Role;
 	username: string;
+}
+
+export interface MfaChallenge {
+	mfa_required: true;
+	mfa_token?: string | null;
+	message: string;
+}
+
+export interface Account extends User {
+	email: string | null;
+	auth_provider: string;
+	email_verified: number;
+	google_linked: boolean;
+	two_factor_enabled: boolean;
+	has_password: boolean;
+}
+
+export interface TotpSetup {
+	secret: string;
+	otpauth_uri: string;
+	qr_data_url?: string | null;
+}
+
+export interface TotpEnableResponse {
+	ok: boolean;
+	recovery_codes: string[];
+}
+
+export interface MessageResponse {
+	ok: boolean;
+	message?: string | null;
+	reset_token?: string | null;
+	verification_token?: string | null;
 }
 
 export interface LectureSummary {

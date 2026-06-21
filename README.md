@@ -19,7 +19,7 @@ correction/summary use Phi-3-mini via Ollama; Gemini self-corrects in one call.
 | Frontend  | SvelteKit (SPA / `adapter-static`) · TypeScript · Tailwind v4 · shadcn-svelte · bits-ui · lucide · TanStack Query · openapi-fetch |
 | Backend   | FastAPI · Pydantic · Uvicorn · OpenCV · RapidOCR/onnxruntime · google-genai · Ollama |
 | Data      | SQLite + SQL schema migrations                                        |
-| Auth      | Local email + password, bcrypt, JWT (cookie + Bearer). Google OAuth columns reserved in schema. |
+| Auth      | Local email + password, bcrypt, JWT (HttpOnly cookie + Bearer), TOTP authenticator 2FA, Google OAuth/OIDC sign-in |
 | Deploy    | One multi-stage Docker image (Node build → Python runtime serves API + SPA) + Ollama |
 
 ## Layout
@@ -52,7 +52,7 @@ correction/summary use Phi-3-mini via Ollama; Gemini self-corrects in one call.
 ## Quick start (Docker)
 
 ```bash
-cp .env.example .env          # set STELLEGENT_JWT_SECRET and GEMINI_API_KEY
+cp .env.example .env          # set STELLEGENT_JWT_SECRET, GEMINI_API_KEY, optional Google OAuth
 docker compose up --build
 docker compose exec ollama ollama pull phi3:mini   # only needed for PP-OCR fallback
 docker compose exec app python backend/scripts/seed_admin.py
@@ -100,6 +100,12 @@ and writes `src/lib/api/schema.d.ts`, giving the `openapi-fetch` client end-to-e
 | Variable                | Default                  | Purpose                                            |
 | ----------------------- | ------------------------ | -------------------------------------------------- |
 | `STELLEGENT_JWT_SECRET` | built-in dev default     | JWT signing key. Must be ≥ 32 bytes.               |
+| `GOOGLE_OAUTH_CLIENT_ID` | (empty) | Google OAuth web client ID                         |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | (empty) | Google OAuth web client secret                     |
+| `GOOGLE_ALLOWED_DOMAIN` | (empty) | Optional hosted-domain restriction                 |
+| `RESEND_API_KEY` | (empty) | Resend API key for transactional email             |
+| `RESEND_FROM_EMAIL` | `Stellegent <onboarding@resend.dev>` | Verified sender address             |
+| `RESEND_REPLY_TO` | (empty) | Optional reply-to address                          |
 | `STELLEGENT_DATA`       | `./data`                 | Capture artefacts root                             |
 | `STELLEGENT_DB`         | `./data/stellegent.db`   | SQLite path                                        |
 | `OCR_BACKEND`           | `auto`                   | `auto` \| `gemini` \| `paddle`                     |
@@ -112,16 +118,36 @@ and writes `src/lib/api/schema.d.ts`, giving the `openapi-fetch` client end-to-e
 `auto` uses Gemini when `GEMINI_API_KEY` is set, otherwise PP-OCR; if a Gemini
 call fails at runtime it falls back to PP-OCR for that request.
 
+For local Svelte dev with Google OAuth, register
+`http://localhost:5173/api/v1/auth/google/callback` in Google Cloud Console.
+The app derives its public URL from browser/proxy headers, marks cookies secure
+when the request is HTTPS, and adds HSTS only on HTTPS responses. For public
+deployment, use HTTPS and a unique 32+ byte JWT secret.
+For Resend, set `RESEND_API_KEY` and a verified `RESEND_FROM_EMAIL`. If Resend
+is not configured in local development, reset and verification endpoints return
+dev-only tokens so the flows can still be tested.
+
 ---
 
 ## API (`/api/v1`)
 
 ```
 POST   /login           {email,password}           -> {token,role,username} (+cookie)
+POST   /login/mfa       {code,mfa_token?}           -> completes 2FA challenge
 POST   /register        {username,email,password}  -> creates a 'student', username stores full name
 POST   /logout
 GET    /me
-POST   /forgot-password {email}                    -> reset token (returned in dev; email TODO)
+GET    /account                                     current account/security settings
+PATCH  /account        {username,email}
+POST   /account/password {current_password,new_password}
+POST   /account/email/verification                  -> send verification email
+POST   /verify-email   {token}
+POST   /account/2fa/setup                           -> otpauth URI + QR data URL
+POST   /account/2fa/enable {code}                   -> enables TOTP + recovery codes
+POST   /account/2fa/disable {code,current_password?}
+GET    /auth/google/start?mode=login|link           Google OAuth redirect
+GET    /auth/google/callback                        Google OAuth callback
+POST   /forgot-password {email}                    -> sends reset email, returns token only in dev
 POST   /reset-password  {token,password}
 GET    /lectures?date=&course=&q=
 GET    /lectures/{id}

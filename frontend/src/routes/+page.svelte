@@ -1,15 +1,24 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { goto } from '$app/navigation';
+	import { page } from '$app/state';
 	import { useQueryClient } from '@tanstack/svelte-query';
 	import { apiPost } from '$lib/api/client';
-	import type { TokenResponse } from '$lib/types';
+	import type { MfaChallenge, TokenResponse } from '$lib/types';
 	import { theme } from '$lib/theme.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
-	import { CircleNotch, EnvelopeSimple, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
+	import {
+		CircleNotch,
+		EnvelopeSimple,
+		Lock,
+		ArrowRight,
+		Sun,
+		Moon,
+		GoogleLogoIcon
+	} from 'phosphor-svelte';
 
 	const qc = useQueryClient();
 	let email = $state('');
@@ -27,7 +36,11 @@
 		error = '';
 		loading = true;
 		try {
-			await apiPost<TokenResponse>('/api/v1/login', { email, password });
+			const res = await apiPost<TokenResponse | MfaChallenge>('/api/v1/login', { email, password });
+			if ('mfa_required' in res && res.mfa_required) {
+				goto('/mfa');
+				return;
+			}
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
@@ -38,6 +51,14 @@
 	}
 
 	const ease = 'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]';
+	const googleStatus = $derived(page.url.searchParams.get('google'));
+	const googleMessage = $derived.by(() => {
+		if (googleStatus === 'failed') return 'Google sign-in failed';
+		if (googleStatus === 'disabled') return 'That account is disabled';
+		if (googleStatus === 'invalid_state') return 'Google sign-in expired';
+		if (googleStatus === 'cancelled') return 'Google sign-in was cancelled';
+		return '';
+	});
 </script>
 
 <Button
@@ -136,6 +157,13 @@
 					>
 						{error}
 					</p>
+				{:else if googleMessage}
+					<p
+						class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
+						role="alert"
+					>
+						{googleMessage}
+					</p>
 				{/if}
 
 				<!-- Magnetic CTA with button-in-button icon -->
@@ -153,6 +181,20 @@
 				</Button>
 			</form>
 
+			<div class="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-wide text-gray-400">
+				<span class="h-px flex-1 bg-gray-200 dark:bg-gray-800"></span>
+				<span>or</span>
+				<span class="h-px flex-1 bg-gray-200 dark:bg-gray-800"></span>
+			</div>
+
+			<a
+				href="/api/v1/auth/google/start?mode=login"
+				class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-semibold text-primary transition-all duration-200 hover:border-secondary/40 hover:text-secondary focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-secondary/25 active:scale-[0.98] dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50"
+			>
+				<GoogleLogoIcon size={18} weight="bold" />
+				<span>Continue with Google</span>
+			</a>
+
 			<a
 				href="/register"
 				class="group mt-8 inline-flex items-center gap-1.5 self-start text-sm font-semibold text-zinc-500 transition-colors hover:text-secondary dark:text-zinc-400"
@@ -163,6 +205,12 @@
 					weight="bold"
 					class="transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:translate-x-1"
 				/>
+			</a>
+			<a
+				href="/forgot"
+				class="mt-3 inline-flex self-start text-sm font-semibold text-zinc-500 transition-colors hover:text-secondary dark:text-zinc-400"
+			>
+				Forgot password?
 			</a>
 		</div>
 	</div>
