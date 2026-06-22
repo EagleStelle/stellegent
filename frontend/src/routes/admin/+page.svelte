@@ -238,13 +238,11 @@
 							</td>
 							<td class="py-2.5 pr-3">
 								{#if user.disabled}
-									<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
-										<span class="size-1.5 rounded-full bg-red-500"></span>
+									<span class="text-xs font-semibold text-red-600">
 										Disabled
 									</span>
 								{:else}
-									<span class="inline-flex items-center gap-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
-										<span class="size-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></span>
+									<span class="text-xs font-semibold text-green-600">
 										Enabled
 									</span>
 								{/if}

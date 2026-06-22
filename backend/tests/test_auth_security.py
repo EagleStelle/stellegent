@@ -131,7 +131,7 @@ def test_verification_email_send_is_rate_limited(tmp_path, monkeypatch):
         response = client.post("/api/v1/account/email/verification")
 
     assert response.status_code == 429
-    assert response.json()["detail"] == "too many email requests; please wait before trying again"
+    assert response.json()["detail"] == "Too many email requests. Please wait a few minutes before trying again."
     assert len(sent) == 3
     assert all("/api/v1/verify-email?token=" in verify_url for _to, verify_url in sent)
     ratelimit.reset()
@@ -221,7 +221,7 @@ def test_login_mfa_is_rate_limited(tmp_path, monkeypatch):
         )
         assert blocked.status_code == 429
         assert blocked.json()["detail"] == (
-            "too many verification attempts; please wait before trying again"
+            "Too many verification attempts. Please wait a few minutes before trying again."
         )
     ratelimit.reset()
 
@@ -255,6 +255,60 @@ def test_login_mfa_success_clears_failure_counter(tmp_path, monkeypatch):
         ok = client.post(
             "/api/v1/login/mfa",
             json={"mfa_token": mfa_token, "code": totp_code(secret)},
+        )
+        assert ok.status_code == 200
+    ratelimit.reset()
+
+
+def test_login_is_rate_limited(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "login-rate.db")
+    ratelimit.reset()
+    from stellegent import db
+    from stellegent.main import create_app
+
+    db.init_db()
+    db.create_user("Ada Lovelace", "secret123", "student", email="ada@example.com")
+
+    with TestClient(create_app()) as client:
+        for _ in range(10):
+            bad = client.post(
+                "/api/v1/login",
+                json={"email": "ada@example.com", "password": "wrong-password"},
+            )
+            assert bad.status_code == 401
+
+        # Budget spent: blocked even with the correct password.
+        blocked = client.post(
+            "/api/v1/login",
+            json={"email": "ada@example.com", "password": "secret123"},
+        )
+        assert blocked.status_code == 429
+        assert blocked.json()["detail"] == (
+            "Too many sign-in attempts. Please wait a few minutes before trying again."
+        )
+    ratelimit.reset()
+
+
+def test_login_success_clears_failure_counter(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "login-reset.db")
+    ratelimit.reset()
+    from stellegent import db
+    from stellegent.main import create_app
+
+    db.init_db()
+    db.create_user("Ada Lovelace", "secret123", "student", email="ada@example.com")
+
+    with TestClient(create_app()) as client:
+        for _ in range(9):
+            bad = client.post(
+                "/api/v1/login",
+                json={"email": "ada@example.com", "password": "wrong-password"},
+            )
+            assert bad.status_code == 401
+
+        ok = client.post(
+            "/api/v1/login",
+            json={"email": "ada@example.com", "password": "secret123"},
         )
         assert ok.status_code == 200
     ratelimit.reset()

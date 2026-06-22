@@ -4,6 +4,7 @@ import hmac
 import logging
 import secrets
 import sqlite3
+from dataclasses import dataclass
 from urllib.parse import urlencode, urlparse
 
 import jwt
@@ -62,6 +63,13 @@ _EMAIL_PER_IP_LIMIT = 20
 _MFA_RATE_WINDOW_S = 15 * 60
 _MFA_PER_ACCOUNT_LIMIT = 5
 _MFA_PER_IP_LIMIT = 50
+# Brute-force protection for password sign-in. Same failure-counting model as
+# MFA: only bad credentials consume the budget, a success clears the account
+# counter. Keyed by the submitted email (whether or not it exists, so the limit
+# leaks no account-existence signal) plus the client IP.
+_LOGIN_RATE_WINDOW_S = 15 * 60
+_LOGIN_PER_ACCOUNT_LIMIT = 10
+_LOGIN_PER_IP_LIMIT = 50
 
 
 def _is_https_request(request: Request) -> bool:
@@ -129,29 +137,60 @@ def _verify_mfa_code(row, code: str) -> bool:
     return False
 
 
-def _mfa_rate_rules(user_id: int, ip: str) -> list[tuple[str, int, float]]:
-    rules = [(f"mfa:user:{user_id}", _MFA_PER_ACCOUNT_LIMIT, _MFA_RATE_WINDOW_S)]
-    if ip:
-        rules.append((f"mfa:ip:{ip}", _MFA_PER_IP_LIMIT, _MFA_RATE_WINDOW_S))
-    return rules
+@dataclass(frozen=True)
+class _FailureLimiter:
+    """Failure-counting brute-force guard shared by login and MFA checks.
+
+    Only failed attempts consume the budget; a success clears the per-account
+    counter so a legitimate user is never locked out by their own typos. Keyed
+    by an account identity (email or user id) and the client IP, each with its
+    own limit over the same sliding window.
+    """
+    scope: str
+    message: str
+    per_account_limit: int
+    per_ip_limit: int
+    window_s: float
+
+    def _rules(self, account: str, ip: str, *, with_limits: bool):
+        account_key = f"{self.scope}:account:{account}"
+        if with_limits:
+            rules = [(account_key, self.per_account_limit, self.window_s)]
+            if ip:
+                rules.append((f"{self.scope}:ip:{ip}", self.per_ip_limit, self.window_s))
+            return rules
+        rules = [(account_key, self.window_s)]
+        if ip:
+            rules.append((f"{self.scope}:ip:{ip}", self.window_s))
+        return rules
+
+    def enforce(self, request: Request, account: str) -> None:
+        """Raise 429 once the failed-attempt budget for this account/IP is spent."""
+        rules = self._rules(account, _client_ip(request), with_limits=True)
+        if ratelimit.is_blocked(rules):
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, self.message)
+
+    def record_failure(self, request: Request, account: str) -> None:
+        ratelimit.record(self._rules(account, _client_ip(request), with_limits=False))
+
+    def clear(self, account: str) -> None:
+        ratelimit.reset(f"{self.scope}:account:{account}")
 
 
-def _enforce_mfa_rate(request: Request, user_id: int) -> None:
-    """Raise 429 once the failed-attempt budget for this account/IP is spent."""
-    rules = _mfa_rate_rules(user_id, _client_ip(request))
-    if ratelimit.is_blocked(rules):
-        raise HTTPException(
-            status.HTTP_429_TOO_MANY_REQUESTS,
-            "too many verification attempts; please wait before trying again",
-        )
-
-
-def _record_mfa_failure(request: Request, user_id: int) -> None:
-    ip = _client_ip(request)
-    rules = [(f"mfa:user:{user_id}", _MFA_RATE_WINDOW_S)]
-    if ip:
-        rules.append((f"mfa:ip:{ip}", _MFA_RATE_WINDOW_S))
-    ratelimit.record(rules)
+_MFA_LIMITER = _FailureLimiter(
+    scope="mfa",
+    message="Too many verification attempts. Please wait a few minutes before trying again.",
+    per_account_limit=_MFA_PER_ACCOUNT_LIMIT,
+    per_ip_limit=_MFA_PER_IP_LIMIT,
+    window_s=_MFA_RATE_WINDOW_S,
+)
+_LOGIN_LIMITER = _FailureLimiter(
+    scope="login",
+    message="Too many sign-in attempts. Please wait a few minutes before trying again.",
+    per_account_limit=_LOGIN_PER_ACCOUNT_LIMIT,
+    per_ip_limit=_LOGIN_PER_IP_LIMIT,
+    window_s=_LOGIN_RATE_WINDOW_S,
+)
 
 
 def _mfa_check(request: Request, row, code: str) -> bool:
@@ -161,12 +200,12 @@ def _mfa_check(request: Request, row, code: str) -> bool:
     Records failures and clears the account counter on success. Returns whether
     the code matched.
     """
-    user_id = row["id"]
-    _enforce_mfa_rate(request, user_id)
+    account = str(row["id"])
+    _MFA_LIMITER.enforce(request, account)
     if _verify_mfa_code(row, code):
-        ratelimit.reset(f"mfa:user:{user_id}")
+        _MFA_LIMITER.clear(account)
         return True
-    _record_mfa_failure(request, user_id)
+    _MFA_LIMITER.record_failure(request, account)
     return False
 
 
@@ -299,7 +338,7 @@ def _require_email_send_allowed(request: Request, *, kind: str, to: str,
     if not _email_send_allowed(request, kind=kind, to=to, user_id=user_id):
         raise HTTPException(
             status.HTTP_429_TOO_MANY_REQUESTS,
-            "too many email requests; please wait before trying again",
+            "Too many email requests. Please wait a few minutes before trying again.",
         )
 
 
@@ -411,9 +450,13 @@ def _send_email_verification_for(row, request: Request) -> str:
 
 @router.post("/login", response_model=TokenResponse | MfaChallengeResponse)
 def login(body: LoginRequest, request: Request, response: Response):
+    account = str(body.email).strip().lower()
+    _LOGIN_LIMITER.enforce(request, account)
     user = verify_user_by_email(str(body.email), body.password)
     if not user:
+        _LOGIN_LIMITER.record_failure(request, account)
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid credentials")
+    _LOGIN_LIMITER.clear(account)
     if user["disabled"]:
         raise HTTPException(status.HTTP_403_FORBIDDEN, "account disabled")
     if user["totp_enabled"]:
@@ -587,11 +630,12 @@ def confirm_totp(body: TotpVerifyRequest, request: Request,
     row = get_user_by_id(user["uid"])
     if not row or not row["totp_secret"]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "start setup first")
-    _enforce_mfa_rate(request, user["uid"])
+    account = str(user["uid"])
+    _MFA_LIMITER.enforce(request, account)
     if not verify_totp(row["totp_secret"], body.code):
-        _record_mfa_failure(request, user["uid"])
+        _MFA_LIMITER.record_failure(request, account)
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid verification code")
-    ratelimit.reset(f"mfa:user:{user['uid']}")
+    _MFA_LIMITER.clear(account)
     enable_totp(user["uid"])
     recovery_codes = generate_recovery_codes()
     replace_recovery_codes(
