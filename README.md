@@ -62,13 +62,17 @@ The supplied Compose file starts Stellegent on port `8000` and an Ollama service
 for the offline OCR fallback path.
 
 ```bash
+cp .env.example .env
+# Edit .env with your secrets, public URL, OAuth, email, and Gemini settings.
 docker compose up -d
 docker compose exec stellegent python -m stellegent.cli adduser admin "change-this-password" --role admin --email admin@example.com
 ```
 
 Open <http://localhost:8000> and sign in with the admin account you created.
 
-For Gemini OCR, set `GEMINI_API_KEY` in the `stellegent` service environment.
+The Compose file reads deployment values from `.env` using `${...}` variable
+substitution. For Gemini OCR, set `GEMINI_API_KEY` in `.env`; set
+`GEMINI_MODELS` to use a comma-separated fallback order.
 For production, replace the default `STELLEGENT_JWT_SECRET` with a unique
 32-byte-or-longer value before exposing the app.
 
@@ -86,6 +90,9 @@ python -m stellegent.cli initdb
 python backend/scripts/seed_admin.py
 python -m stellegent.cli serve --reload
 ```
+
+For non-Docker local development, set `OLLAMA_HOST=http://127.0.0.1:11434` in
+`.env` if Ollama is running on the host.
 
 In a second terminal, start the SvelteKit dev server:
 
@@ -107,18 +114,20 @@ Convenience launchers are also included:
 
 ## Configuration
 
-Runtime settings are read from environment variables. For local development,
-copy `.env.example` to `.env`; in Docker, set values through the Compose service
-or your deployment environment.
+Runtime settings are read from environment variables. Docker Compose reads
+`.env` for the `${...}` variables listed in `docker-compose.yml`; for local
+development, the backend also reads `.env` directly.
 
 | Variable | Purpose |
 | --- | --- |
+| `STELLEGENT_PORT` | Host port used by Docker Compose for the web/API container. |
 | `STELLEGENT_JWT_SECRET` | JWT signing secret. Use a unique 32-byte-or-longer value outside development. |
 | `STELLEGENT_DATA` | Directory for generated lecture artifacts. |
 | `STELLEGENT_DB` | SQLite database path. |
 | `OCR_BACKEND` | `auto`, `gemini`, or `paddle`. |
 | `GEMINI_API_KEY` | Enables Gemini OCR when present. |
 | `GEMINI_MODEL` | Gemini model name used by the OCR backend. |
+| `GEMINI_MODELS` | Optional comma-separated Gemini OCR fallback order. Overrides `GEMINI_MODEL` when set. |
 | `OLLAMA_HOST` | Ollama endpoint for local correction and summarization. |
 | `OLLAMA_MODEL` | Local Ollama model used by the fallback path. |
 | `OLLAMA_NUM_CTX` | Ollama context window. Lower values reduce VRAM/KV-cache use. |

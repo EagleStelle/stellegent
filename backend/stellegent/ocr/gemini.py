@@ -8,11 +8,16 @@ google-genai is absent or no API key is configured.
 """
 from __future__ import annotations
 
+import logging
+from typing import Sequence
+
 import cv2
 import numpy as np
 
 from .base import OCRResult
 from ..config import settings
+
+log = logging.getLogger(__name__)
 
 _OCR_PROMPT = (
     "Transcribe ALL text written on this whiteboard exactly as it appears. "
@@ -55,4 +60,31 @@ class GeminiBackend:
             ],
         )
         text = (resp.text or "").strip()
-        return OCRResult(full_text=text, lines=[], has_layout=False, engine=self.name)
+        return OCRResult(
+            full_text=text,
+            lines=[],
+            has_layout=False,
+            engine=f"{self.name}:{self.model}",
+        )
+
+
+class GeminiCascadeBackend:
+    name = "gemini"
+    has_layout = False
+
+    def __init__(self, models: Sequence[str] | None = None):
+        self.models = tuple(models or settings.gemini_model_list)
+        if not self.models:
+            raise RuntimeError("No Gemini OCR models configured")
+        self._backends = [GeminiBackend(model=model) for model in self.models]
+
+    def recognize(self, img: np.ndarray) -> OCRResult:
+        last_error: Exception | None = None
+        for backend in self._backends:
+            try:
+                return backend.recognize(img)
+            except Exception as exc:  # noqa: BLE001 - try next configured model.
+                last_error = exc
+                log.warning("Gemini OCR model %s failed: %r", backend.model, exc)
+        assert last_error is not None
+        raise last_error

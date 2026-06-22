@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     ocr_backend: str = Field("auto", validation_alias="OCR_BACKEND")
     gemini_api_key: str = Field("", validation_alias="GEMINI_API_KEY")
     gemini_model: str = Field("gemini-2.5-flash", validation_alias="GEMINI_MODEL")
+    gemini_models: str = Field("", validation_alias="GEMINI_MODELS")
 
     # Local NLP (Ollama)
     ollama_host: str = Field("http://127.0.0.1:11434", validation_alias="OLLAMA_HOST")
@@ -102,6 +103,19 @@ class Settings(BaseSettings):
     @property
     def db_file(self) -> Path:
         return self._resolve(self.db_path)
+
+    @property
+    def gemini_model_list(self) -> Tuple[str, ...]:
+        raw = self.gemini_models or self.gemini_model
+        models = []
+        seen = set()
+        for model in raw.split(","):
+            model = model.strip()
+            if not model or model in seen:
+                continue
+            models.append(model)
+            seen.add(model)
+        return tuple(models)
 
 
 settings = Settings()

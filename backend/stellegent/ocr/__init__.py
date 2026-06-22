@@ -31,8 +31,8 @@ def _make_paddle() -> OCRBackend:
 
 
 def _make_gemini() -> OCRBackend:
-    from .gemini import GeminiBackend
-    return GeminiBackend()
+    from .gemini import GeminiCascadeBackend
+    return GeminiCascadeBackend(settings.gemini_model_list)
 
 
 def get_fallback() -> OCRBackend:
@@ -63,7 +63,9 @@ def run_ocr(img: np.ndarray, engine: Optional[OCRBackend] = None) -> OCRResult:
     try:
         return eng.recognize(img)
     except Exception as e:  # noqa: BLE001
-        if settings.ocr_backend.lower() == "auto" and eng is not get_fallback():
+        if settings.ocr_backend.lower() == "auto" and (
+            _FALLBACK is None or eng is not _FALLBACK
+        ):
             log.warning("primary OCR (%s) failed: %r; falling back to PP-OCR", eng.name, e)
             return get_fallback().recognize(img)
         raise

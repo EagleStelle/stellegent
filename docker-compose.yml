@@ -2,44 +2,56 @@ services:
   stellegent:
     image: eaglestelle/stellegent:latest
     ports:
-      - "8000:8000"
+      - "${STELLEGENT_PORT:-8000}:8000"
     environment:
+      # Docker Compose reads these values from .env for ${...} substitutions.
       # Core security
-      STELLEGENT_JWT_SECRET: change-me-to-a-32-plus-char-secret # openssl rand -hex 32
-      ADMIN_EMAIL: "admin@example.com"
-      ADMIN_PASSWORD: "admin123"
-      STELLEGENT_REQUIRE_SECURE_CONFIG: "false"
+      ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin123}"
+      STELLEGENT_JWT_SECRET: "${STELLEGENT_JWT_SECRET:?Set STELLEGENT_JWT_SECRET in .env}"
+      STELLEGENT_JWT_EXPIRY_MIN: "${STELLEGENT_JWT_EXPIRY_MIN:-30}"
+      STELLEGENT_REQUIRE_SECURE_CONFIG: "${STELLEGENT_REQUIRE_SECURE_CONFIG:-false}"
+
+      # App paths
+      STELLEGENT_APP_NAME: "${STELLEGENT_APP_NAME:-Stellegent}"
+      STELLEGENT_DATA: "${STELLEGENT_DATA:-data}"
+      STELLEGENT_DB: "${STELLEGENT_DB:-data/stellegent.db}"
 
       # Public URL
-      STELLEGENT_PUBLIC_BASE_URL: ""
-      STELLEGENT_COOKIE_SECURE: "true"
-      STELLEGENT_COOKIE_SAMESITE: "lax"
-      STELLEGENT_SECURITY_HEADERS: "true"
-      STELLEGENT_SECURITY_HSTS: "true"
+      STELLEGENT_PUBLIC_BASE_URL: "${STELLEGENT_PUBLIC_BASE_URL:-}"
+      STELLEGENT_COOKIE_SECURE: "${STELLEGENT_COOKIE_SECURE:-false}"
+      STELLEGENT_COOKIE_SAMESITE: "${STELLEGENT_COOKIE_SAMESITE:-lax}"
+      STELLEGENT_SECURITY_HEADERS: "${STELLEGENT_SECURITY_HEADERS:-true}"
+      STELLEGENT_SECURITY_HSTS: "${STELLEGENT_SECURITY_HSTS:-false}"
 
       # Google OAuth
-      GOOGLE_OAUTH_CLIENT_ID: ""
-      GOOGLE_OAUTH_CLIENT_SECRET: ""
+      GOOGLE_OAUTH_CLIENT_ID: "${GOOGLE_OAUTH_CLIENT_ID:-}"
+      GOOGLE_OAUTH_CLIENT_SECRET: "${GOOGLE_OAUTH_CLIENT_SECRET:-}"
+      GOOGLE_OAUTH_REDIRECT_URI: "${GOOGLE_OAUTH_REDIRECT_URI:-}"
+      GOOGLE_ALLOWED_DOMAIN: "${GOOGLE_ALLOWED_DOMAIN:-}"
 
       # Email (Resend)
-      RESEND_API_KEY: ""
-      RESEND_FROM_EMAIL: "Stellegent <no-reply@example.com>"
-      RESEND_REPLY_TO: ""
+      RESEND_API_KEY: "${RESEND_API_KEY:-}"
+      RESEND_FROM_EMAIL: "${RESEND_FROM_EMAIL:-Stellegent <no-reply@example.com>}"
+      RESEND_REPLY_TO: "${RESEND_REPLY_TO:-}"
 
       # OCR
-      OCR_BACKEND: auto
-      GEMINI_API_KEY: ""
-      GEMINI_MODEL: gemini-3.5-flash
+      OCR_BACKEND: "${OCR_BACKEND:-auto}"
+      GEMINI_API_KEY: "${GEMINI_API_KEY:-}"
+      GEMINI_MODEL: "${GEMINI_MODEL:-gemini-3.5-flash}"
+      GEMINI_MODELS: "${GEMINI_MODELS:-}"
 
       # Local NLP (Ollama)
-      OLLAMA_HOST: http://ollama:11434
-      OLLAMA_MODEL: phi3:mini
-      OLLAMA_AUTO_PULL: "true"
-      OLLAMA_PULL_TIMEOUT: 1800
-      OLLAMA_REQUEST_TIMEOUT: 1800
-      # 4 GB VRAM: smaller context reduces CPU spillover.
-      # OLLAMA_NUM_CTX: 1024
-      # OLLAMA_KEEP_ALIVE: 30m
+      OLLAMA_HOST: "${OLLAMA_HOST:-http://ollama:11434}"
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-phi3:mini}"
+      OLLAMA_AUTO_PULL: "${OLLAMA_AUTO_PULL:-true}"
+      OLLAMA_PULL_TIMEOUT: "${OLLAMA_PULL_TIMEOUT:-1800}"
+      OLLAMA_REQUEST_TIMEOUT: "${OLLAMA_REQUEST_TIMEOUT:-1800}"
+      OLLAMA_NUM_CTX: "${OLLAMA_NUM_CTX:-4096}"
+      OLLAMA_KEEP_ALIVE: "${OLLAMA_KEEP_ALIVE:-5m}"
+
+      # CORS (dev only; prod is same-origin)
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173}"
     volumes:
       - ./data:/app/data
     depends_on:
@@ -54,10 +66,10 @@ services:
     # GPU acceleration (local dev only; NOT used on Raspberry Pi 5 production).
     # Requires an NVIDIA GPU + nvidia-container-toolkit on the host.
     # Uncomment to offload inference to the GPU instead of CPU.
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - driver: nvidia
-    #           count: all
-    #           capabilities: [gpu]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
