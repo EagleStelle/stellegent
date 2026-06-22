@@ -136,8 +136,6 @@
 		}
 	}
 
-	const selectClass =
-		"h-10 rounded-lg border border-gray-200 bg-white px-3 text-sm font-medium text-primary outline-none focus:border-secondary/60 focus:ring-3 focus:ring-secondary/15 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-50";
 	const th =
 		"cursor-pointer select-none py-2.5 pr-3 text-left text-[11px] font-semibold uppercase tracking-wide text-black dark:text-white";
 </script>
@@ -156,15 +154,17 @@
 			/>
 		</div>
 
-		<ComboBox
-			bind:value={roleFilter}
-			class="{selectClass} w-full"
-			options={[
-				{ value: "all", label: "All roles" },
-				{ value: "prof", label: "Faculty" },
-				{ value: "student", label: "Student" },
-			]}
-		/>
+		<div class="w-full lg:w-56">
+			<ComboBox
+				bind:value={roleFilter}
+				class="w-full"
+				options={[
+					{ value: "all", label: "All roles" },
+					{ value: "prof", label: "Faculty" },
+					{ value: "student", label: "Student" },
+				]}
+			/>
+		</div>
 
 		<Button
 			variant="icon+text"

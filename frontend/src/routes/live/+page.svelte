@@ -58,6 +58,17 @@
 		queryFn: () => apiGet<Course[]>('/api/v1/courses')
 	}));
 
+	// A captured lecture always inherits its course's visibility. When a course is
+	// selected we force the visibility combobox to the course setting and lock it;
+	// only "No course" lets the user choose freely.
+	const selectedCourse = $derived(
+		(courses.data ?? []).find((c) => String(c.id) === selectedCourseId) ?? null
+	);
+
+	$effect(() => {
+		if (selectedCourse) visibility = selectedCourse.visibility;
+	});
+
 	function stopClientCamera() {
 		stream?.getTracks().forEach((t) => t.stop());
 		stream = null;
@@ -368,7 +379,13 @@
 				/>
 			</div>
 			<div class="w-32">
-				<ComboBox bind:value={visibility} placeholder="Visibility" portalTo={cameraShell} options={visibilityOptions} />
+				<ComboBox
+					bind:value={visibility}
+					placeholder="Visibility"
+					portalTo={cameraShell}
+					options={visibilityOptions}
+					disabled={selectedCourse !== null}
+				/>
 			</div>
 			<Button onclick={capture} disabled={capturing || initializing} class="h-10 px-5 shadow-lg shadow-black/20">
 				{#if capturing}

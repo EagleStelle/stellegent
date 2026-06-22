@@ -3,21 +3,19 @@
 	import { page } from '$app/state';
 	import { createQuery, useQueryClient } from '@tanstack/svelte-query';
 	import { apiGet, apiDelete } from '$lib/api/client';
-	import type { Course, CourseOptions, LectureSummary, ProcessingTask, User, Visibility } from '$lib/types';
+	import type { Course, CourseOptions, LectureSummary, ProcessingTask, User } from '$lib/types';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Card from '$lib/components/ui/Card.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
 	import ComboBox from '$lib/components/ui/ComboBox.svelte';
 	import { CircleNotch, MagnifyingGlass, Plus, CalendarBlank, PencilSimple, Trash, BookOpen, UserCircle, WarningCircle } from 'phosphor-svelte';
 	import { untrack } from 'svelte';
+	import { pendingUpload } from '$lib/upload.svelte';
 
 	let q = $state('');
 	let facultyFilter = $state('');
 	let uploadInput: HTMLInputElement | null = $state(null);
-	let uploading = $state(false);
-	let uploadError = $state('');
 	let selectedCourseId = $state(page.url.searchParams.get('courseId') ?? '');
-	let visibility = $state<Visibility>('public');
 
 	const lectures = createQuery(() => ({
 		queryKey: ['lectures'],
@@ -106,42 +104,18 @@
 	});
 
 	function chooseUpload() {
-		if (!uploading) uploadInput?.click();
+		uploadInput?.click();
 	}
 
-	async function onFile(e: Event) {
+	// Picking a file no longer uploads immediately. Stash it and head to the add
+	// page, where the user sets course/visibility and confirms with a preview.
+	function onFile(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const selected = input.files?.[0];
-		if (!selected) return;
-		await upload(selected);
 		input.value = '';
-	}
-
-	async function upload(selected: File) {
-		uploadError = '';
-		uploading = true;
-		const fd = new FormData();
-		fd.append('image', selected);
-		fd.append('visibility', visibility);
-		if (selectedCourseId) fd.append('course_id', selectedCourseId);
-
-		try {
-			const res = await fetch('/api/v1/upload', {
-				method: 'POST',
-				credentials: 'include',
-				body: fd
-			});
-			if (!res.ok) {
-				const body = (await res.json().catch(() => null)) as { detail?: string } | null;
-				throw new Error(body?.detail ?? res.statusText);
-			}
-			await res.json();
-			await qc.invalidateQueries({ queryKey: ['processing-tasks'] });
-			uploading = false;
-		} catch (err) {
-			uploadError = err instanceof Error ? err.message : 'Upload failed';
-			uploading = false;
-		}
+		if (!selected) return;
+		pendingUpload.set(selected);
+		goto(selectedCourseId ? `/lectures/add?courseId=${encodeURIComponent(selectedCourseId)}` : '/lectures/add');
 	}
 
 	function taskTitle(task: ProcessingTask) {
@@ -202,33 +176,21 @@
 			type="file"
 			accept=".png,.jpg,.jpeg,.webp,.bmp,.tif,.tiff"
 			onchange={onFile}
-			disabled={uploading}
 			class="sr-only"
 		/>
 		<Button
 			variant="icon+text"
 			type="button"
 			onclick={chooseUpload}
-			disabled={uploading}
 			aria-label="Add lecture"
 		>
 			{#snippet icon()}
-				{#if uploading}
-					<CircleNotch size={18} class="animate-spin" />
-				{:else}
-					<Plus size={18} />
-				{/if}
+				<Plus size={18} />
 			{/snippet}
-			{uploading ? 'Queuing' : 'Add lecture'}
+			Add lecture
 		</Button>
 	{/if}
 </div>
-
-{#if uploadError}
-	<p class="mb-4 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400" role="alert">
-		{uploadError}
-	</p>
-{/if}
 
 {#if lectures.isLoading}
 	<p class="text-zinc-500 dark:text-zinc-400">Loading</p>

@@ -5,7 +5,6 @@ services:
     ports:
       - "${STELLEGENT_PORT:-8000}:8000"
     environment:
-      # Docker Compose reads these values from .env for ${...} substitutions.
       # Core security
       ADMIN_EMAIL: "${ADMIN_EMAIL:-admin@example.com}"
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:-admin123}"
@@ -50,13 +49,7 @@ services:
       OLLAMA_REQUEST_TIMEOUT: "${OLLAMA_REQUEST_TIMEOUT:-1800}"
       OLLAMA_NUM_CTX: "${OLLAMA_NUM_CTX:-4096}"
       OLLAMA_KEEP_ALIVE: "${OLLAMA_KEEP_ALIVE:-5m}"
-
-      # CORS (dev only; prod is same-origin)
-      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173}"
     volumes:
-      # Docker-managed named volume. MUST NOT be a bind mount into a
-      # cloud-synced folder (Synology Drive / Dropbox / OneDrive) — sync clients
-      # mutate the SQLite file under the running process and corrupt it.
       - stellegent-data:/app/data
     depends_on:
       - ollama
@@ -67,9 +60,6 @@ services:
     volumes:
       - ./local/ollama:/root/.ollama
     restart: unless-stopped
-    # GPU acceleration (local dev only; NOT used on Raspberry Pi 5 production).
-    # Requires an NVIDIA GPU + nvidia-container-toolkit on the host.
-    # Uncomment to offload inference to the GPU instead of CPU.
     deploy:
       resources:
         reservations:
@@ -79,7 +69,4 @@ services:
               capabilities: [gpu]
 
 volumes:
-  # DB + lecture artifacts live here. Named (Docker-managed) on purpose so a
-  # cloud-sync client can never touch the open SQLite file. Do not convert this
-  # back to a bind mount inside a synced folder.
   stellegent-data:

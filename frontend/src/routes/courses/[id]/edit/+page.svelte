@@ -172,7 +172,9 @@
 		<!-- Scrollable Middle -->
 		<div class="flex flex-col flex-1 gap-6 py-4">
 			<div class="grid gap-6 md:grid-cols-2">
-				<Input id="course-name" label="Name" bind:value={draftName} />
+				<div class="md:col-span-2">
+					<Input id="course-name" label="Name" bind:value={draftName} />
+				</div>
 				{#if isAdmin}
 					<label class="grid gap-1.5">
 						<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Faculty</span>

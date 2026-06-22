@@ -27,15 +27,18 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
 def _resolve_course(course_name: Optional[str], course_id: Optional[int],
-                    user: dict) -> tuple[Optional[str], Optional[int]]:
+                    user: dict) -> tuple[Optional[str], Optional[int], Optional[str]]:
+    """Returns (name, id, visibility). A lecture under a course always inherits
+    that course's visibility, so callers override the requested value with the
+    returned one. visibility is None when no course is selected."""
     if course_id is None:
-        return course_name, None
+        return course_name, None, None
     course = get_course(course_id)
     if not course:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "course not found")
     if not can_manage_course(course, user_id=user["uid"], role=user["role"]):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
-    return course["name"], course_id
+    return course["name"], course_id, course["visibility"]
 
 
 def _validate_visibility(value: str) -> str:
@@ -85,7 +88,9 @@ async def upload(request: Request, image: UploadFile = File(...),
     if ext not in ALLOWED_UPLOAD_EXT:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, f"unsupported ext {ext}")
     raw = await _read_upload_limited(image)
-    course_name, resolved_course_id = _resolve_course(course or None, course_id, user)
+    course_name, resolved_course_id, course_visibility = _resolve_course(
+        course or None, course_id, user)
+    effective_visibility = course_visibility or _validate_visibility(visibility)
     task = await asyncio.to_thread(
         enqueue_upload_bytes,
         raw=raw,
@@ -94,7 +99,7 @@ async def upload(request: Request, image: UploadFile = File(...),
         course_name=course_name,
         course_id=resolved_course_id,
         owner_user_id=user["uid"],
-        visibility=_validate_visibility(visibility),
+        visibility=effective_visibility,
     )
     log_action(request, user, "upload:queued", task["id"])
     return dict(task)
@@ -108,18 +113,20 @@ def capture(request: Request, body: CaptureRequest | None = None,
     frame = get_hub().snapshot()
     if frame is None:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "camera read failed")
-    course_name, course_id = _resolve_course(
+    course_name, course_id, course_visibility = _resolve_course(
         body.course if body else None,
         body.course_id if body else None,
         user,
     )
+    effective_visibility = course_visibility or _validate_visibility(
+        body.visibility if body else "public")
     task = enqueue_capture_frame(
         frame=frame,
         filename="capture.jpg",
         course_name=course_name,
         course_id=course_id,
         owner_user_id=user["uid"],
-        visibility=_validate_visibility(body.visibility if body else "public"),
+        visibility=effective_visibility,
     )
     log_action(request, user, "capture:queued", task["id"])
     return dict(task)
