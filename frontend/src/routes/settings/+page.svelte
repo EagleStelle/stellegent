@@ -8,6 +8,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import MfaModal from '$lib/components/ui/MfaModal.svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		CheckCircle,
 		CircleNotch,
@@ -40,25 +41,16 @@
 	let email = $state('');
 
 	let profileLoading = $state(false);
-	let profileMessage = $state('');
-	let profileError = $state('');
 	let verificationLoading = $state(false);
-	let verificationMessage = $state('');
-	let verificationError = $state('');
-	let verificationToken = $state('');
 
 	let currentPassword = $state('');
 	let newPassword = $state('');
 	let passwordLoading = $state(false);
-	let passwordMessage = $state('');
-	let passwordError = $state('');
 
 	let setup = $state<TotpSetup | null>(null);
 	let setupCode = $state('');
 	let setupLoading = $state(false);
 	let confirmLoading = $state(false);
-	let twoFactorError = $state('');
-	let twoFactorMessage = $state('');
 	let recoveryCodes = $state<string[]>([]);
 	let copiedCodes = $state(false);
 
@@ -67,7 +59,6 @@
 	let disableLoading = $state(false);
 
 	let googleLoading = $state(false);
-	let googleError = $state('');
 
 	// Authenticator step-up: when 2FA is on, sensitive changes route through the
 	// MFA modal, which calls back into the pending action with the entered code.
@@ -89,24 +80,26 @@
 	const passwordChanged = $derived(currentPassword.length > 0 || newPassword.length > 0);
 	const disableTotpChanged = $derived(disableCode.length > 0 || disablePassword.length > 0);
 
-	const googleStatus = $derived(page.url.searchParams.get('google'));
-	const googleNotice = $derived.by(() => {
-		if (googleStatus === 'linked') return 'Google account connected';
-		if (googleStatus === 'conflict') return 'That Google account is already connected elsewhere';
-		if (googleStatus === 'failed') return 'Google connection failed';
-		if (googleStatus === 'login_required') return 'Sign in again before connecting Google';
-		if (googleStatus === 'invalid_state') return 'Google connection expired';
-		if (googleStatus === 'cancelled') return 'Google connection was cancelled';
-		return '';
+	// Google OAuth redirects back with a status query param. Surface it once as a
+	// toast, then move on.
+	let googleNotified = false;
+	$effect(() => {
+		const status = page.url.searchParams.get('google');
+		if (!status || googleNotified) return;
+		googleNotified = true;
+		const messages: Record<string, { text: string; error: boolean }> = {
+			linked: { text: 'Google account connected', error: false },
+			conflict: { text: 'That Google account is already connected to another user', error: true },
+			failed: { text: 'Google connection failed', error: true },
+			login_required: { text: 'Sign in again to connect Google', error: true },
+			invalid_state: { text: 'Google connection expired. Try again', error: true },
+			cancelled: { text: 'Google connection cancelled', error: true }
+		};
+		const notice = messages[status];
+		if (!notice) return;
+		if (notice.error) toast.error(notice.text);
+		else toast.success(notice.text);
 	});
-	const googleNoticeError = $derived(
-		['conflict', 'failed', 'login_required', 'invalid_state', 'cancelled'].includes(googleStatus ?? '')
-	);
-
-	const okNotice =
-		'rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-700 dark:text-emerald-300';
-	const errorNotice =
-		'rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-600 dark:text-red-400';
 
 	async function refreshAccount() {
 		await qc.invalidateQueries({ queryKey: ['account'] });
@@ -121,14 +114,14 @@
 		});
 		fullName = updated.username;
 		email = updated.email ?? '';
-		profileMessage = updated.email_verified ? 'Account updated' : 'Account updated. Verification email sent.';
+		toast.success(
+			updated.email_verified ? 'Account updated' : 'Account updated. Verification email sent.'
+		);
 		await refreshAccount();
 	}
 
 	async function saveProfile(e: SubmitEvent) {
 		e.preventDefault();
-		profileMessage = '';
-		profileError = '';
 		if (account.data?.two_factor_enabled) {
 			pendingMfa = submitProfile;
 			mfaOpen = true;
@@ -138,7 +131,7 @@
 		try {
 			await submitProfile();
 		} catch (err) {
-			profileError = err instanceof Error ? err.message : 'Update failed';
+			toast.error(err instanceof Error ? err.message : 'Update failed');
 		} finally {
 			profileLoading = false;
 		}
@@ -146,15 +139,11 @@
 
 	async function sendVerificationEmail() {
 		verificationLoading = true;
-		verificationMessage = '';
-		verificationError = '';
-		verificationToken = '';
 		try {
 			const res = await apiPost<MessageResponse>('/api/v1/account/email/verification');
-			verificationMessage = res.message ?? 'Verification Email Sent';
-			verificationToken = res.verification_token ?? '';
+			toast.success(res.message ?? 'Verification email sent');
 		} catch (err) {
-			verificationError = err instanceof Error ? err.message : 'Could not send verification email';
+			toast.error(err instanceof Error ? err.message : 'Could not send verification email');
 		} finally {
 			verificationLoading = false;
 		}
@@ -166,16 +155,15 @@
 			new_password: newPassword,
 			code
 		});
+		const hadPassword = account.data?.has_password;
 		currentPassword = '';
 		newPassword = '';
-		passwordMessage = account.data?.has_password ? 'Password changed' : 'Password added';
+		toast.success(hadPassword ? 'Password changed' : 'Password added');
 		await refreshAccount();
 	}
 
 	async function changePassword(e: SubmitEvent) {
 		e.preventDefault();
-		passwordMessage = '';
-		passwordError = '';
 		if (account.data?.two_factor_enabled) {
 			pendingMfa = submitPassword;
 			mfaOpen = true;
@@ -185,7 +173,7 @@
 		try {
 			await submitPassword();
 		} catch (err) {
-			passwordError = err instanceof Error ? err.message : 'Password update failed';
+			toast.error(err instanceof Error ? err.message : 'Password update failed');
 		} finally {
 			passwordLoading = false;
 		}
@@ -200,14 +188,12 @@
 
 	async function startTotpSetup() {
 		setupLoading = true;
-		twoFactorError = '';
-		twoFactorMessage = '';
 		recoveryCodes = [];
 		try {
 			setup = await apiPost<TotpSetup>('/api/v1/account/2fa/setup');
 			setupCode = '';
 		} catch (err) {
-			twoFactorError = err instanceof Error ? err.message : 'Setup failed';
+			toast.error(err instanceof Error ? err.message : 'Setup failed');
 		} finally {
 			setupLoading = false;
 		}
@@ -216,8 +202,6 @@
 	async function confirmTotp(e: SubmitEvent) {
 		e.preventDefault();
 		confirmLoading = true;
-		twoFactorError = '';
-		twoFactorMessage = '';
 		try {
 			const res = await apiPost<TotpEnableResponse>('/api/v1/account/2fa/enable', {
 				code: setupCode
@@ -225,10 +209,10 @@
 			recoveryCodes = res.recovery_codes;
 			setup = null;
 			setupCode = '';
-			twoFactorMessage = 'Two-factor authentication enabled';
+			toast.success('Authenticator enabled');
 			await refreshAccount();
 		} catch (err) {
-			twoFactorError = err instanceof Error ? err.message : 'Verification failed';
+			toast.error(err instanceof Error ? err.message : 'Verification failed');
 		} finally {
 			confirmLoading = false;
 		}
@@ -237,8 +221,6 @@
 	async function disableTotp(e: SubmitEvent) {
 		e.preventDefault();
 		disableLoading = true;
-		twoFactorError = '';
-		twoFactorMessage = '';
 		try {
 			await apiPost('/api/v1/account/2fa/disable', {
 				current_password: disablePassword || undefined,
@@ -248,10 +230,10 @@
 			disableCode = '';
 			recoveryCodes = [];
 			setup = null;
-			twoFactorMessage = 'Two-factor authentication disabled';
+			toast.success('Authenticator disabled');
 			await refreshAccount();
 		} catch (err) {
-			twoFactorError = err instanceof Error ? err.message : 'Disable failed';
+			toast.error(err instanceof Error ? err.message : 'Disable failed');
 		} finally {
 			disableLoading = false;
 		}
@@ -259,12 +241,12 @@
 
 	async function unlinkGoogle() {
 		googleLoading = true;
-		googleError = '';
 		try {
 			await apiPost<Account>('/api/v1/account/google/unlink');
+			toast.success('Google account disconnected');
 			await refreshAccount();
 		} catch (err) {
-			googleError = err instanceof Error ? err.message : 'Disconnect failed';
+			toast.error(err instanceof Error ? err.message : 'Disconnect failed');
 		} finally {
 			googleLoading = false;
 		}
@@ -313,18 +295,6 @@
 					disabled={account.data.email_locked}
 				/>
 
-				{#if profileError}
-					<p class={errorNotice} role="alert">{profileError}</p>
-				{:else if profileMessage}
-					<p class={okNotice}>{profileMessage}</p>
-				{/if}
-
-				{#if verificationError}
-					<p class={errorNotice} role="alert">{verificationError}</p>
-				{:else if verificationMessage}
-					<p class={okNotice}>{verificationMessage}{#if verificationToken} <code class="break-all">{verificationToken}</code>{/if}</p>
-				{/if}
-
 				<div class="mt-1 flex flex-wrap items-center gap-3">
 					{#if profileChanged}
 						<Button type="submit" disabled={profileLoading} class="w-max">
@@ -372,12 +342,6 @@
 					required
 				/>
 
-				{#if passwordError}
-					<p class={errorNotice} role="alert">{passwordError}</p>
-				{:else if passwordMessage}
-					<p class={okNotice}>{passwordMessage}</p>
-				{/if}
-
 				{#if passwordChanged}
 					<Button type="submit" disabled={passwordLoading} class="mt-1 w-max">
 						{account.data.has_password ? 'Change password' : 'Add password'}
@@ -403,13 +367,6 @@
 						</span>
 					{/if}
 				</div>
-
-				{#if googleNotice}
-					<p class={googleNoticeError ? errorNotice : okNotice}>{googleNotice}</p>
-				{/if}
-				{#if googleError}
-					<p class={errorNotice} role="alert">{googleError}</p>
-				{/if}
 
 				{#if account.data.google_linked}
 					<Button
@@ -446,12 +403,6 @@
 						</span>
 					{/if}
 				</div>
-
-				{#if twoFactorError}
-					<p class={errorNotice} role="alert">{twoFactorError}</p>
-				{:else if twoFactorMessage}
-					<p class={okNotice}>{twoFactorMessage}</p>
-				{/if}
 
 				{#if recoveryCodes.length}
 					<div class="grid gap-2 rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-3">

@@ -5,25 +5,22 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
+	import { toast } from 'svelte-sonner';
 	import { ArrowLeft, CircleNotch, Key } from 'phosphor-svelte';
 
 	let password = $state('');
 	let loading = $state(false);
-	let error = $state('');
-	let message = $state('');
 	const token = $derived(page.url.searchParams.get('token') ?? '');
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		loading = true;
-		error = '';
-		message = '';
 		try {
 			await apiPost('/api/v1/reset-password', { token, password });
-			message = 'Password updated';
+			toast.success('Password updated');
 			setTimeout(() => goto('/'), 900);
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Password reset failed';
+			toast.error(err instanceof Error ? err.message : 'Password reset failed');
 		} finally {
 			loading = false;
 		}
@@ -56,15 +53,7 @@
 
 			{#if !token}
 				<p class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400" role="alert">
-					Reset token missing.
-				</p>
-			{:else if error}
-				<p class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400" role="alert">
-					{error}
-				</p>
-			{:else if message}
-				<p class="rounded-lg bg-emerald-500/10 px-3.5 py-2.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-					{message}
+					Reset token missing
 				</p>
 			{/if}
 

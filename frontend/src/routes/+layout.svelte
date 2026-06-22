@@ -14,12 +14,26 @@
 		Sun,
 		Moon,
 		SignOut,
-		Gear
+		Gear,
+		User as UserIcon
 	} from 'phosphor-svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { Toaster } from 'svelte-sonner';
 
 	let { children } = $props();
+
+	// Desktop puts toasts bottom right; mobile moves them top center so the
+	// bottom tab bar never covers them.
+	let isMobile = $state(false);
+	$effect(() => {
+		const mq = window.matchMedia('(max-width: 767px)');
+		const update = () => (isMobile = mq.matches);
+		update();
+		mq.addEventListener('change', update);
+		return () => mq.removeEventListener('change', update);
+	});
+	const toastPosition = $derived(isMobile ? 'top-center' : 'bottom-right');
 
 	const queryClient = new QueryClient({
 		defaultOptions: { queries: { retry: false, refetchOnWindowFocus: false } }
@@ -196,12 +210,12 @@
 					active={isActive('/settings')}
 					href="/settings"
 					aria-current={isActive('/settings') ? 'page' : undefined}
-					aria-label="Settings"
+					aria-label={currentUser?.username ?? 'Settings'}
 				>
 					{#snippet icon()}
-						<Gear size={18} weight={isActive('/settings') ? 'fill' : 'regular'} />
+						<UserIcon size={18} weight={isActive('/settings') ? 'fill' : 'regular'} />
 					{/snippet}
-					<span>Settings</span>
+					<span class="truncate">{currentUser?.username ?? 'Settings'}</span>
 				</Button>
 
 				<Button
@@ -323,3 +337,10 @@
 		{/if}
 	</main>
 {/if}
+
+<Toaster
+	position={toastPosition}
+	theme={theme.dark ? 'dark' : 'light'}
+	richColors
+	closeButton
+/>

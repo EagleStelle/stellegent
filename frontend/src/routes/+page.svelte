@@ -10,6 +10,7 @@
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { toast } from 'svelte-sonner';
 	import {
 		CircleNotch,
 		EnvelopeSimple,
@@ -44,20 +45,29 @@
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Sign in failed';
+			const msg = err instanceof Error ? err.message : 'Sign in failed';
+			error = msg;
+			toast.error(msg);
 		} finally {
 			loading = false;
 		}
 	}
 
 	const ease = 'transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]';
-	const googleStatus = $derived(page.url.searchParams.get('google'));
-	const googleMessage = $derived.by(() => {
-		if (googleStatus === 'failed') return 'Google sign-in failed';
-		if (googleStatus === 'disabled') return 'That account is disabled';
-		if (googleStatus === 'invalid_state') return 'Google sign-in expired';
-		if (googleStatus === 'cancelled') return 'Google sign-in was cancelled';
-		return '';
+
+	// Google OAuth bounces back with a status query param. Surface it once.
+	let googleNotified = false;
+	$effect(() => {
+		const status = page.url.searchParams.get('google');
+		if (!status || googleNotified) return;
+		googleNotified = true;
+		const messages: Record<string, string> = {
+			failed: 'Google sign in failed',
+			disabled: 'That account is disabled',
+			invalid_state: 'Google sign in expired. Try again',
+			cancelled: 'Google sign in cancelled'
+		};
+		if (messages[status]) toast.error(messages[status]);
 	});
 </script>
 
@@ -149,22 +159,6 @@
 					required
 					error={!!error}
 				/>
-
-				{#if error}
-					<p
-						class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
-						role="alert"
-					>
-						{error}
-					</p>
-				{:else if googleMessage}
-					<p
-						class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
-						role="alert"
-					>
-						{googleMessage}
-					</p>
-				{/if}
 
 				<!-- Magnetic CTA with button-in-button icon -->
 				<Button

@@ -4,26 +4,23 @@
 	import Button from '$lib/components/ui/Button.svelte';
 	import Input from '$lib/components/ui/Input.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
+	import { toast } from 'svelte-sonner';
 	import { ArrowLeft, CircleNotch, EnvelopeSimple } from 'phosphor-svelte';
 
 	let email = $state('');
 	let loading = $state(false);
-	let error = $state('');
-	let message = $state('');
 	let devToken = $state('');
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault();
 		loading = true;
-		error = '';
-		message = '';
 		devToken = '';
 		try {
 			const res = await apiPost<MessageResponse>('/api/v1/forgot-password', { email });
-			message = res.message ?? 'Reset link sent.';
+			toast.success(res.message ?? 'Reset link sent');
 			devToken = res.reset_token ?? '';
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Could not send reset email';
+			toast.error(err instanceof Error ? err.message : 'Could not send reset email');
 		} finally {
 			loading = false;
 		}
@@ -52,16 +49,6 @@
 				autocomplete="email"
 				required
 			/>
-
-			{#if error}
-				<p class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400" role="alert">
-					{error}
-				</p>
-			{:else if message}
-				<p class="rounded-lg bg-emerald-500/10 px-3.5 py-2.5 text-sm font-medium text-emerald-700 dark:text-emerald-300">
-					{message}
-				</p>
-			{/if}
 
 			{#if devToken}
 				<a

@@ -9,6 +9,7 @@
 	import InputPassword from '$lib/components/ui/InputPassword.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { toast } from 'svelte-sonner';
 	import { CircleNotch, User, EnvelopeSimple, Lock, ArrowRight, Sun, Moon } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
@@ -32,7 +33,9 @@
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Registration failed';
+			const msg = err instanceof Error ? err.message : 'Registration failed';
+			error = msg;
+			toast.error(msg);
 		} finally {
 			loading = false;
 		}
@@ -140,15 +143,6 @@
 					required
 					error={!!error}
 				/>
-
-				{#if error}
-					<p
-						class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
-						role="alert"
-					>
-						{error}
-					</p>
-				{/if}
 
 				<!-- Magnetic CTA with button-in-button icon -->
 				<Button

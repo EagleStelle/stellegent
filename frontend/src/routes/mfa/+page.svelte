@@ -6,6 +6,7 @@
 	import Input from '$lib/components/ui/Input.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
 	import Button from '$lib/components/ui/Button.svelte';
+	import { toast } from 'svelte-sonner';
 	import { ArrowLeft, CircleNotch, Key, ShieldCheck } from 'phosphor-svelte';
 
 	const qc = useQueryClient();
@@ -22,7 +23,9 @@
 			await qc.invalidateQueries({ queryKey: ['me'] });
 			goto('/courses');
 		} catch (err) {
-			error = err instanceof Error ? err.message : 'Verification failed';
+			const msg = err instanceof Error ? err.message : 'Verification failed';
+			error = msg;
+			toast.error(msg);
 		} finally {
 			loading = false;
 		}
@@ -52,15 +55,6 @@
 				required
 				error={!!error}
 			/>
-
-			{#if error}
-				<p
-					class="rounded-lg bg-red-500/10 px-3.5 py-2.5 text-sm font-medium text-red-600 dark:text-red-400"
-					role="alert"
-				>
-					{error}
-				</p>
-			{/if}
 
 			<Button type="submit" disabled={loading} class="w-full text-sm font-semibold shadow-md shadow-primary/20">
 				{loading ? 'Verifying...' : 'Verify'}
