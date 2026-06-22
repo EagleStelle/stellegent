@@ -14,7 +14,7 @@ from ...db import (can_manage_lecture, can_view_lecture, delete_lecture,
                    user_has_role, add_annotation, get_annotations)
 from ...deps import current_user, log_action
 from ...export import write_documents
-from ...nlp import summarize
+from ...nlp import summarize, generate_title
 from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
                         AnnotateRequest, LectureUpdateRequest,
                         MessageResponse)
@@ -102,7 +102,14 @@ def regenerate_summary(lecture_id: str, request: Request,
         raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
     source = (row["corrected_text"] or row["raw_ocr_text"] or "").strip()
     new_summary = summarize(source)
-    update_lecture(lecture_id, summary=new_summary)
+    updates = {"summary": new_summary}
+    # Title only generated when the lecture has none yet; never overwrite a
+    # title the owner has set.
+    if not (row["title"] or "").strip():
+        new_title = generate_title(new_summary, course_name=row["course_name"])
+        if new_title:
+            updates["title"] = new_title
+    update_lecture(lecture_id, **updates)
     if row["docx_path"] and row["pdf_path"] and row["txt_path"]:
         try:
             write_documents(docx_path=row["docx_path"], pdf_path=row["pdf_path"],
