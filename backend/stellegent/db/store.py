@@ -47,8 +47,15 @@ def _validate_task_status(status: str) -> None:
 def get_conn(db_path: Optional[Path] = None):
     p = Path(db_path or cfg.DB_PATH)
     p.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(p))
+    conn = sqlite3.connect(str(p), timeout=30.0)
     conn.row_factory = sqlite3.Row
+    # WAL: writers don't block readers and a crash mid-write rolls back cleanly
+    # instead of leaving a torn page. NORMAL sync is durable under WAL. The
+    # busy_timeout avoids "database is locked" under concurrent access. These
+    # also harden against the partial-write class of corruption.
+    conn.execute("PRAGMA journal_mode = WAL")
+    conn.execute("PRAGMA synchronous = NORMAL")
+    conn.execute("PRAGMA busy_timeout = 30000")
     conn.execute("PRAGMA foreign_keys = ON")
     try:
         yield conn
