@@ -212,9 +212,7 @@
 				{:else}
 					{#each visible as user (user.id)}
 						<tr
-							class="border-b border-gray-100 last:border-0 dark:border-gray-800 {user.disabled
-								? 'opacity-55'
-								: ''}"
+							class="border-b border-gray-100 last:border-0 dark:border-gray-800"
 						>
 							<td class="py-2.5 pr-3">
 								<div class="flex items-center gap-2">
@@ -230,19 +228,23 @@
 								{user.email ?? "—"}
 							</td>
 							<td class="py-2.5 pr-3">
-								<span class="rounded-lg bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+								<span
+									class={user.role === "student"
+										? "text-sm font-normal text-gray-400 dark:text-gray-500"
+										: "text-sm font-medium text-gray-700 dark:text-gray-200"}
+								>
 									{roleLabel(user.role)}
 								</span>
 							</td>
 							<td class="py-2.5 pr-3">
 								{#if user.disabled}
-									<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
-										<span class="size-1.5 rounded-full bg-gray-400"></span>
+									<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400">
+										<span class="size-1.5 rounded-full bg-red-500"></span>
 										Disabled
 									</span>
 								{:else}
-									<span class="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-										<span class="size-1.5 rounded-full bg-emerald-500"></span>
+									<span class="inline-flex items-center gap-1.5 text-xs font-normal text-gray-400 dark:text-gray-500">
+										<span class="size-1.5 rounded-full bg-gray-300 dark:bg-gray-600"></span>
 										Enabled
 									</span>
 								{/if}
