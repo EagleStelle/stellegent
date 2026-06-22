@@ -183,7 +183,7 @@
 		<ComboBox
 			bind:value={facultyFilter}
 			placeholder="All faculty"
-			class="w-48 shrink-0"
+			class="w-full"
 			options={facultyOptions.map((f) => ({
 				value: String(f.id),
 				label: f.username,
@@ -192,7 +192,7 @@
 		<ComboBox
 			bind:value={selectedCourseId}
 			placeholder="All courses"
-			class="w-48 shrink-0"
+			class="w-full"
 			options={courseFilterOptions}
 		/>
 	</div>

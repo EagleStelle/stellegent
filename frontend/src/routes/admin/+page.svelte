@@ -143,7 +143,7 @@
 </script>
 
 <section class="grid gap-4">
-	<div class="flex items-center gap-2">
+	<div class="flex flex-col gap-2 lg:flex-row lg:items-center">
 		<div class="relative min-w-0 flex-1">
 			<MagnifyingGlass
 				size={18}
@@ -158,7 +158,7 @@
 
 		<ComboBox
 			bind:value={roleFilter}
-			class="{selectClass} w-40 shrink-0"
+			class="{selectClass} w-full"
 			options={[
 				{ value: "all", label: "All roles" },
 				{ value: "prof", label: "Faculty" },

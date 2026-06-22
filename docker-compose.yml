@@ -1,5 +1,6 @@
 services:
   stellegent:
+    build: .
     image: eaglestelle/stellegent:latest
     ports:
       - "${STELLEGENT_PORT:-8000}:8000"
