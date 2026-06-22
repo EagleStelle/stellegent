@@ -17,7 +17,13 @@ log = logging.getLogger(__name__)
 # Any leading list marker (-, *, bullets, numbering) we replace with "- ".
 _BULLET_RE = re.compile(r"^\s*(?:[-*•·●▪◦‣–—]+|\d+[.)])\s*")
 
-_PROMPT = """Summarize the following lecture board content in 4-8 concise bullet points. Preserve key concepts, definitions, formulas, and step structure. Do not invent facts. Output only the bullets.
+# Below this word count the source is too thin for an LLM to summarize without
+# padding/inventing. We bullet the lines verbatim instead of asking the model.
+_MIN_WORDS = 25
+
+_PROMPT = """You are summarizing a single lecture board. Use ONLY the text below. Do not add, infer, or expand on anything that is not explicitly written. Do not invent facts, examples, definitions, or formulas. If a detail is not in the text, leave it out.
+
+Write between 3 and 8 concise bullet points, but use FEWER bullets if the text is short — never pad to reach a count. Preserve the original concepts, definitions, formulas, and step structure exactly as given. Output only the bullets.
 
 LECTURE TEXT:
 {text}
@@ -43,10 +49,17 @@ def _normalize_bullets(raw: str) -> str:
 
 
 def summarize(text: str) -> str:
-    if not text.strip():
+    stripped = text.strip()
+    if not stripped:
         return ""
+    # Too little content to summarize safely: an LLM would invent filler to hit
+    # a bullet count. Bullet the source lines verbatim instead.
+    if len(stripped.split()) < _MIN_WORDS:
+        return _normalize_bullets(stripped)
     try:
-        raw = ollama_client.generate(_PROMPT.format(text=text))
+        # temperature=0 for grounded, deterministic output (no creative padding).
+        raw = ollama_client.generate(
+            _PROMPT.format(text=stripped), options={"temperature": 0.0})
     except requests.exceptions.RequestException as e:
         # Ollama unreachable/slow — degrade gracefully so the rest of the
         # pipeline (OCR, export, DB) still completes.
