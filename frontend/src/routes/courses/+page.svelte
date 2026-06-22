@@ -91,15 +91,17 @@
 	<div class="min-w-0 flex-1">
 		<Input id="search" bind:value={q} icon={MagnifyingGlass} />
 	</div>
-	<ComboBox
-		bind:value={facultyFilter}
-		placeholder="All faculty"
-		class="w-full"
-		options={facultyOptions.map((f) => ({
-			value: String(f.id),
-			label: f.username,
-		}))}
-	/>
+	<div class="w-full lg:w-56">
+		<ComboBox
+			bind:value={facultyFilter}
+			placeholder="All faculty"
+			class="w-full"
+			options={facultyOptions.map((f) => ({
+				value: String(f.id),
+				label: f.username,
+			}))}
+		/>
+	</div>
 	{#if canTeach}
 		<Button variant="icon+text" type="button" onclick={openCreate}>
 			{#snippet icon()}

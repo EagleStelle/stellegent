@@ -54,7 +54,7 @@ services:
       # CORS (dev only; prod is same-origin)
       CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173}"
     volumes:
-      - ./data:/app/data
+      - ./local/data:/app/data
     depends_on:
       - ollama
     restart: unless-stopped
@@ -62,7 +62,7 @@ services:
   ollama:
     image: ollama/ollama:latest
     volumes:
-      - ./ollama:/root/.ollama
+      - ./local/ollama:/root/.ollama
     restart: unless-stopped
     # GPU acceleration (local dev only; NOT used on Raspberry Pi 5 production).
     # Requires an NVIDIA GPU + nvidia-container-toolkit on the host.
