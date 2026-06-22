@@ -53,6 +53,34 @@ def allow_many(rules: Iterable[tuple[str, int, float]]) -> bool:
         return True
 
 
+def is_blocked(rules: Iterable[tuple[str, int, float]]) -> bool:
+    """Return True if any rule is already at/over its limit, without recording.
+
+    Use together with `record` for failure-counting limiters (e.g. MFA brute
+    force), where only failed attempts should consume the budget.
+    """
+    now = time.monotonic()
+    with _lock:
+        for key, limit, window_s in rules:
+            cutoff = now - window_s
+            hits = [t for t in _hits.get(key, ()) if t > cutoff]
+            _hits[key] = hits
+            if len(hits) >= limit:
+                return True
+    return False
+
+
+def record(rules: Iterable[tuple[str, float]]) -> None:
+    """Record a hit for every (key, window_s) rule."""
+    now = time.monotonic()
+    with _lock:
+        for key, window_s in rules:
+            cutoff = now - window_s
+            hits = [t for t in _hits.get(key, ()) if t > cutoff]
+            hits.append(now)
+            _hits[key] = hits
+
+
 def reset(key: str | None = None) -> None:
     """Clear limiter state (all keys, or one). Intended for tests."""
     with _lock:

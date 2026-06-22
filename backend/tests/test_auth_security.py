@@ -187,6 +187,79 @@ def test_password_reset_email_send_is_rate_limited_without_enumeration(tmp_path,
     ratelimit.reset()
 
 
+def test_login_mfa_is_rate_limited(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "mfa-rate.db")
+    ratelimit.reset()
+    from stellegent import db
+    from stellegent.main import create_app
+
+    db.init_db()
+    uid = db.create_user("Ada Lovelace", "secret123", "student", email="ada@example.com")
+    secret = generate_totp_secret()
+    db.set_totp_secret(uid, secret)
+    db.enable_totp(uid)
+
+    with TestClient(create_app()) as client:
+        login = client.post(
+            "/api/v1/login",
+            json={"email": "ada@example.com", "password": "secret123"},
+        )
+        assert login.status_code == 200
+        mfa_token = login.json()["mfa_token"]
+
+        for _ in range(5):
+            bad = client.post(
+                "/api/v1/login/mfa",
+                json={"mfa_token": mfa_token, "code": "000000"},
+            )
+            assert bad.status_code == 401
+
+        # Budget spent: further attempts are blocked even with a valid code.
+        blocked = client.post(
+            "/api/v1/login/mfa",
+            json={"mfa_token": mfa_token, "code": totp_code(secret)},
+        )
+        assert blocked.status_code == 429
+        assert blocked.json()["detail"] == (
+            "too many verification attempts; please wait before trying again"
+        )
+    ratelimit.reset()
+
+
+def test_login_mfa_success_clears_failure_counter(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "mfa-reset.db")
+    ratelimit.reset()
+    from stellegent import db
+    from stellegent.main import create_app
+
+    db.init_db()
+    uid = db.create_user("Ada Lovelace", "secret123", "student", email="ada@example.com")
+    secret = generate_totp_secret()
+    db.set_totp_secret(uid, secret)
+    db.enable_totp(uid)
+
+    with TestClient(create_app()) as client:
+        login = client.post(
+            "/api/v1/login",
+            json={"email": "ada@example.com", "password": "secret123"},
+        )
+        mfa_token = login.json()["mfa_token"]
+
+        for _ in range(4):
+            bad = client.post(
+                "/api/v1/login/mfa",
+                json={"mfa_token": mfa_token, "code": "000000"},
+            )
+            assert bad.status_code == 401
+
+        ok = client.post(
+            "/api/v1/login/mfa",
+            json={"mfa_token": mfa_token, "code": totp_code(secret)},
+        )
+        assert ok.status_code == 200
+    ratelimit.reset()
+
+
 def test_resend_payload(monkeypatch):
     sent = {}
 

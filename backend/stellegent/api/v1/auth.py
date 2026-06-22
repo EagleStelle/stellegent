@@ -55,6 +55,13 @@ _EMAIL_RATE_WINDOW_S = 60 * 60
 _EMAIL_PER_ADDRESS_LIMIT = 3
 _EMAIL_PER_ACCOUNT_LIMIT = 3
 _EMAIL_PER_IP_LIMIT = 20
+# Brute-force protection for authenticator/recovery code verification. Only
+# failed attempts are counted; a success clears the account counter. Sized to
+# stop online guessing of a 6-digit TOTP while leaving room for fat-finger
+# retries by a legitimate user.
+_MFA_RATE_WINDOW_S = 15 * 60
+_MFA_PER_ACCOUNT_LIMIT = 5
+_MFA_PER_IP_LIMIT = 50
 
 
 def _is_https_request(request: Request) -> bool:
@@ -122,18 +129,60 @@ def _verify_mfa_code(row, code: str) -> bool:
     return False
 
 
-def _require_mfa(user_id: int, code: str | None) -> None:
+def _mfa_rate_rules(user_id: int, ip: str) -> list[tuple[str, int, float]]:
+    rules = [(f"mfa:user:{user_id}", _MFA_PER_ACCOUNT_LIMIT, _MFA_RATE_WINDOW_S)]
+    if ip:
+        rules.append((f"mfa:ip:{ip}", _MFA_PER_IP_LIMIT, _MFA_RATE_WINDOW_S))
+    return rules
+
+
+def _enforce_mfa_rate(request: Request, user_id: int) -> None:
+    """Raise 429 once the failed-attempt budget for this account/IP is spent."""
+    rules = _mfa_rate_rules(user_id, _client_ip(request))
+    if ratelimit.is_blocked(rules):
+        raise HTTPException(
+            status.HTTP_429_TOO_MANY_REQUESTS,
+            "too many verification attempts; please wait before trying again",
+        )
+
+
+def _record_mfa_failure(request: Request, user_id: int) -> None:
+    ip = _client_ip(request)
+    rules = [(f"mfa:user:{user_id}", _MFA_RATE_WINDOW_S)]
+    if ip:
+        rules.append((f"mfa:ip:{ip}", _MFA_RATE_WINDOW_S))
+    ratelimit.record(rules)
+
+
+def _mfa_check(request: Request, row, code: str) -> bool:
+    """Rate-limited authenticator/recovery verification.
+
+    Raises 429 before verifying once the failed-attempt budget is exhausted.
+    Records failures and clears the account counter on success. Returns whether
+    the code matched.
+    """
+    user_id = row["id"]
+    _enforce_mfa_rate(request, user_id)
+    if _verify_mfa_code(row, code):
+        ratelimit.reset(f"mfa:user:{user_id}")
+        return True
+    _record_mfa_failure(request, user_id)
+    return False
+
+
+def _require_mfa(request: Request, user_id: int, code: str | None) -> None:
     """Enforce an authenticator code for sensitive account changes.
 
     No-op when 2FA is not enabled. Raises 400 when the code is missing or wrong
-    so the client can prompt for (or re-prompt) the authenticator code.
+    so the client can prompt for (or re-prompt) the authenticator code, or 429
+    when the brute-force budget is exhausted.
     """
     row = get_user_by_id(user_id)
     if not row or not row["totp_enabled"]:
         return
     if not code:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "verification code required")
-    if not _verify_mfa_code(row, code):
+    if not _mfa_check(request, row, code):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid verification code")
 
 
@@ -381,7 +430,7 @@ def login_mfa(body: LoginMfaRequest, request: Request, response: Response):
     user = get_user_by_id(data["uid"])
     if not user or user["disabled"] or not user["totp_enabled"]:
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "unauthorized")
-    if not _verify_mfa_code(user, body.code):
+    if not _mfa_check(request, user, body.code):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "invalid verification code")
     _delete_cookie(response, request, "mfa_token")
     return _token_response(user, request, response)
@@ -441,7 +490,7 @@ def update_account(body: AccountUpdateRequest, request: Request,
         raise HTTPException(status.HTTP_400_BAD_REQUEST,
                             "email is managed by your Google account")
     if summary["two_factor_enabled"]:
-        _require_mfa(user["uid"], body.code)
+        _require_mfa(request, user["uid"], body.code)
     try:
         row = update_account_profile(
             user["uid"], username=body.username.strip(), email=new_email,
@@ -510,7 +559,7 @@ def change_password(body: PasswordChangeRequest, request: Request,
     ):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "current password is incorrect")
     if summary["two_factor_enabled"]:
-        _require_mfa(user["uid"], body.code)
+        _require_mfa(request, user["uid"], body.code)
     set_password(user["uid"], body.new_password)
     log_action(request, user, "change_password", str(user["uid"]))
     return MessageResponse(ok=True, message="password updated")
@@ -538,8 +587,11 @@ def confirm_totp(body: TotpVerifyRequest, request: Request,
     row = get_user_by_id(user["uid"])
     if not row or not row["totp_secret"]:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "start setup first")
+    _enforce_mfa_rate(request, user["uid"])
     if not verify_totp(row["totp_secret"], body.code):
+        _record_mfa_failure(request, user["uid"])
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid verification code")
+    ratelimit.reset(f"mfa:user:{user['uid']}")
     enable_totp(user["uid"])
     recovery_codes = generate_recovery_codes()
     replace_recovery_codes(
@@ -561,7 +613,7 @@ def disable_totp_route(body: TotpDisableRequest, request: Request,
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "current password required")
         if not verify_user_password(user["uid"], body.current_password):
             raise HTTPException(status.HTTP_400_BAD_REQUEST, "current password is incorrect")
-    if not _verify_mfa_code(row, body.code):
+    if not _mfa_check(request, row, body.code):
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "invalid verification code")
     disable_totp(user["uid"])
     log_action(request, user, "disable_2fa", str(user["uid"]))
