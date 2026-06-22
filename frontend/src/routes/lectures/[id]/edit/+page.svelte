@@ -119,6 +119,15 @@
 		draftStudentIds = [...lecture.data.student_ids];
 	});
 
+	// A lecture under a course always inherits the course's visibility; lock the
+	// visibility picker while a course is selected. Mirrors /lectures/add and /live.
+	const selectedCourse = $derived(
+		(courses.data ?? []).find((c) => String(c.id) === draftCourseId) ?? null,
+	);
+	$effect(() => {
+		if (selectedCourse) draftVisibility = selectedCourse.visibility;
+	});
+
 	async function removeLecture() {
 		if (!confirm("Delete this lecture?")) return;
 		editError = "";
@@ -165,7 +174,7 @@
 	>
 		<!-- Sticky Header -->
 		<header
-			class="sticky top-0 z-10 flex items-center gap-4 bg-gray-50 pb-2 dark:bg-gray-950 shadow-sm border-b border-gray-200 dark:border-gray-800"
+			class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
 		>
 			<Button
 				variant="icon"
@@ -225,6 +234,7 @@
 					<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Visibility</span>
 					<ComboBox
 						bind:value={draftVisibility}
+						disabled={selectedCourse !== null}
 						options={[
 							{ value: "public", label: "Public" },
 							{ value: "private", label: "Private" },

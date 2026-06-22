@@ -108,7 +108,7 @@
 <form onsubmit={submit} class="relative flex min-h-[calc(100dvh-2rem)] flex-col">
 	<!-- Sticky Header -->
 	<header
-		class="sticky top-0 z-10 flex items-center gap-4 bg-gray-50 pb-2 dark:bg-gray-950 shadow-sm border-b border-gray-200 dark:border-gray-800"
+		class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
 	>
 		<Button
 			variant="icon"
@@ -171,10 +171,10 @@
 				type="button"
 				onclick={pickImage}
 				title={file ? "Click to choose a different image" : "Click to select an image"}
-				class="group flex min-h-48 w-full items-center justify-center overflow-hidden rounded-lg border border-dashed border-gray-300 bg-white transition-colors hover:border-secondary/60 dark:border-gray-700 dark:bg-gray-950"
+				class="group relative flex min-h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl bg-gray-50 object-contain ring-1 ring-gray-900/5 transition-all dark:bg-gray-800/50 dark:ring-white/10"
 			>
 				{#if previewUrl}
-					<img src={previewUrl} alt="Selected lecture" class="max-h-128 w-full object-contain" />
+					<img src={previewUrl} alt="Selected lecture" class="block max-h-128 w-full object-contain transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:scale-[1.015]" />
 				{:else}
 					<span class="flex flex-col items-center gap-2 px-4 py-12 text-gray-500 dark:text-gray-400">
 						<ImageSquare size={32} />

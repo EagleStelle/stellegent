@@ -1026,6 +1026,28 @@ def set_course_students(course_id: int, student_ids: Iterable[int]) -> None:
         """, [(course_id, sid, _now()) for sid in ids])
 
 
+def _strip_course_prefix(title: Optional[str],
+                         course_name: Optional[str]) -> Optional[str]:
+    """Return the base title with any ``"<course>: "`` prefix removed.
+
+    The lecture's stored ``course_name`` is the prefix we previously applied, so
+    stripping it leaves the user-authored title untouched across reassignments.
+    """
+    if title and course_name:
+        prefix = f"{course_name}: "
+        if title.startswith(prefix):
+            return title[len(prefix):]
+    return title
+
+
+def _prefixed_title(title: Optional[str],
+                    course_name: str) -> Optional[str]:
+    """Build ``"<course>: <title>"`` from a base title (empty title stays empty)."""
+    if title:
+        return f"{course_name}: {title}"
+    return title
+
+
 def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
                             owner_user_id: Optional[int] = None) -> None:
     ids = list(dict.fromkeys(str(lid) for lid in lecture_ids))
@@ -1034,6 +1056,7 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
                            (course_id,)).fetchone()
         if not course:
             raise ValueError("course not found")
+        new_name = course["name"]
         if ids:
             placeholders = ",".join("?" for _ in ids)
             args: List = ids[:]
@@ -1048,23 +1071,38 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
             missing = [lid for lid in ids if lid not in found]
             if missing:
                 raise ValueError("lecture not found")
-        if owner_user_id is None:
-            c.execute("UPDATE lectures SET course_id = NULL WHERE course_id = ?",
-                      (course_id,))
-        else:
-            c.execute("""
-                UPDATE lectures SET course_id = NULL
-                WHERE course_id = ?
-                  AND owner_user_id = ?
-            """, (course_id, owner_user_id))
+        # Detach lectures leaving this course: drop the course prefix so the
+        # title reverts to its base form.
+        detach_clause = ""
+        detach_args: List = [course_id]
+        if owner_user_id is not None:
+            detach_clause = " AND owner_user_id = ?"
+            detach_args.append(owner_user_id)
+        current = list(c.execute(
+            f"SELECT id, title, course_name FROM lectures WHERE course_id = ?{detach_clause}",
+            detach_args))
+        for r in current:
+            if str(r["id"]) in ids:
+                continue
+            base = _strip_course_prefix(r["title"], r["course_name"])
+            c.execute(
+                "UPDATE lectures SET course_id = NULL, title = ? WHERE id = ?",
+                (base, str(r["id"])))
         # A lecture belongs to exactly one course and is owned by that course's
-        # faculty: attaching it here transfers ownership to the course owner.
-        c.executemany("""
-            UPDATE lectures
-            SET course_id = ?, course_name = ?, owner_user_id = ?
-            WHERE id = ?
-        """, [(course_id, course["name"], course["faculty_id"], lid)
-              for lid in ids])
+        # faculty: attaching it here transfers ownership to the course owner and
+        # rewrites the title to "<course>: <title>". Reassigning only swaps the
+        # prefix, leaving the base title intact.
+        for lid in ids:
+            row = c.execute(
+                "SELECT title, course_name FROM lectures WHERE id = ?",
+                (lid,)).fetchone()
+            base = _strip_course_prefix(row["title"], row["course_name"]) if row else None
+            c.execute("""
+                UPDATE lectures
+                SET course_id = ?, course_name = ?, owner_user_id = ?, title = ?
+                WHERE id = ?
+            """, (course_id, new_name, course["faculty_id"],
+                  _prefixed_title(base, new_name), lid))
 
 
 def list_lecture_student_ids(lecture_id: str) -> List[int]:
