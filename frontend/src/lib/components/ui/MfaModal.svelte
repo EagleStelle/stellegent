@@ -52,8 +52,6 @@
 			<h2 class="text-lg font-bold tracking-tight text-primary dark:text-gray-50">{title}</h2>
 		</div>
 
-		<p class="mb-4 text-sm text-primary/70 dark:text-gray-400">{description}</p>
-
 		<form onsubmit={submit} class="grid gap-3">
 			<Input
 				id="mfa-modal-code"

@@ -151,7 +151,7 @@
 		verificationToken = '';
 		try {
 			const res = await apiPost<MessageResponse>('/api/v1/account/email/verification');
-			verificationMessage = res.message ?? 'Verification email sent';
+			verificationMessage = res.message ?? 'Verification Email Sent';
 			verificationToken = res.verification_token ?? '';
 		} catch (err) {
 			verificationError = err instanceof Error ? err.message : 'Could not send verification email';

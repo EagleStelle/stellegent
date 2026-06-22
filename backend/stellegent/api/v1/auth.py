@@ -480,7 +480,7 @@ def send_account_verification(request: Request, user: dict = Depends(current_use
     except Exception as exc:
         log.warning("verification email failed for user %s: %s", user["uid"], exc)
         raise HTTPException(status.HTTP_502_BAD_GATEWAY, "email delivery failed")
-    return MessageResponse(ok=True, message="verification email sent")
+    return MessageResponse(ok=True, message="Verification Email Sent")
 
 
 @router.get("/verify-email", include_in_schema=False)

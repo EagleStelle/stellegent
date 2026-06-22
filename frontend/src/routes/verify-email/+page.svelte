@@ -2,9 +2,8 @@
 	import { onMount } from 'svelte';
 	import { page } from '$app/state';
 	import { apiPost } from '$lib/api/client';
-	import Button from '$lib/components/ui/Button.svelte';
 	import Logo from '$lib/components/ui/Logo.svelte';
-	import { CheckCircle, CircleNotch, WarningCircle } from 'phosphor-svelte';
+	import { ArrowLeft, CheckCircle, CircleNotch, WarningCircle } from 'phosphor-svelte';
 
 	const token = $derived(page.url.searchParams.get('token') ?? '');
 	const verified = $derived(page.url.searchParams.get('verified') === '1');
@@ -43,27 +42,39 @@
 </script>
 
 <div class="grid min-h-dvh place-items-center bg-gray-50 px-6 py-10 dark:bg-gray-950">
-	<div class="w-full max-w-sm text-center">
-		<a href="/" class="mx-auto mb-8 flex w-max items-center gap-2.5">
+	<div class="w-full max-w-sm">
+		<a href="/" class="mb-8 flex w-max items-center gap-2.5">
 			<Logo size={36} />
 			<span class="text-base font-bold tracking-tight text-zinc-900 dark:text-white">Stellegent</span>
 		</a>
 
-		<div class="mx-auto mb-4 grid size-12 place-items-center rounded-lg {ok ? 'bg-emerald-500/10 text-emerald-600' : 'bg-secondary/10 text-secondary'}">
+		<div class="mb-5 flex items-center gap-3">
 			{#if loading}
-				<CircleNotch size={24} class="animate-spin" />
+				<CircleNotch size={24} class="text-secondary shrink-0 animate-spin" />
 			{:else if ok}
-				<CheckCircle size={26} weight="fill" />
+				<CheckCircle size={24} weight="fill" class="text-secondary shrink-0" />
 			{:else}
-				<WarningCircle size={26} weight="fill" />
+				<WarningCircle size={24} weight="fill" class="text-secondary shrink-0" />
 			{/if}
+			<h1 class="text-xl font-bold tracking-tight text-primary dark:text-gray-50">
+				{loading ? 'Verifying email' : ok ? 'Email verified' : 'Verification failed'}
+			</h1>
 		</div>
 
-		<h1 class="text-2xl font-bold tracking-tight text-zinc-900 dark:text-white">
-			{loading ? 'Verifying email' : ok ? 'Email verified' : 'Verification failed'}
-		</h1>
-		<p class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">{message}</p>
+		{#if !ok}
+			<p class="text-sm font-medium text-gray-500 dark:text-gray-400">{message}</p>
+		{/if}
 
-		<Button href="/settings" class="mt-6">Back to settings</Button>
+		<a
+			href="/settings"
+			class="group mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-zinc-500 transition-colors hover:text-secondary dark:text-zinc-400"
+		>
+			<ArrowLeft
+				size={15}
+				weight="bold"
+				class="transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover:-translate-x-1"
+			/>
+			Back to settings
+		</a>
 	</div>
 </div>

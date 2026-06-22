@@ -25,7 +25,8 @@
 		role="dialog"
 		aria-modal="true"
 		aria-label={label}
-		class="dark fixed inset-0 z-50 flex items-center justify-center bg-primary p-4"
+		class="dark fixed inset-0 z-50 flex items-center justify-center p-4 backdrop-blur-xl"
+		style="background-image: radial-gradient(125% 125% at 50% 0%, color-mix(in srgb, var(--color-secondary) 16%, transparent) 0%, transparent 45%), linear-gradient(to bottom right, color-mix(in srgb, var(--color-primary) 88%, transparent), color-mix(in srgb, var(--color-primary) 72%, transparent));"
 	>
 
 		
