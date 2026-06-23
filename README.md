@@ -124,6 +124,8 @@ development, the backend also reads `.env` directly.
 | `STELLEGENT_JWT_SECRET` | JWT signing secret. Use a unique 32-byte-or-longer value outside development. |
 | `STELLEGENT_DATA` | Directory for generated lecture artifacts. |
 | `STELLEGENT_DB` | SQLite database path. |
+| `STELLEGENT_RETENTION_AUDIT_DAYS` | Days to keep `audit_log` rows before the retention sweeper purges them (`0` = keep forever). Default `90`. |
+| `STELLEGENT_RETENTION_SWEEP_HOURS` | Interval between retention sweeps (runs once at startup, then every N hours). Default `6`. |
 | `OCR_BACKEND` | `auto`, `gemini`, or `paddle`. |
 | `GEMINI_API_KEY` | Enables Gemini OCR when present. |
 | `GEMINI_MODEL` | Gemini model name used by the OCR backend. |
@@ -176,6 +178,11 @@ pytest backend/tests
   run `python -m stellegent.cli capture --pi`.
 - The offline fallback path uses ONNX Runtime to avoid ARM64 PaddlePaddle wheel
   issues.
+- A background retention sweeper runs on startup and every
+  `STELLEGENT_RETENTION_SWEEP_HOURS`: it always deletes used/expired password
+  reset and email verification tokens, and purges `audit_log` rows older than
+  `STELLEGENT_RETENTION_AUDIT_DAYS`. User content (lectures, courses, accounts)
+  is never auto-deleted.
 
 ## Credits
 

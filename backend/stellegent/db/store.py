@@ -869,6 +869,37 @@ def consume_email_verification_token(token: str) -> Optional[int]:
         return int(row["user_id"])
 
 
+# ---------- retention / purge ----------
+
+def purge_expired_password_resets() -> int:
+    """Delete reset tokens that are already used or past expiry. Returns rows deleted."""
+    with get_conn() as c:
+        cur = c.execute(
+            "DELETE FROM password_resets WHERE used = 1 OR expires_at < ?", (_now(),))
+        return cur.rowcount
+
+
+def purge_expired_email_verifications() -> int:
+    """Delete verification tokens that are already used or past expiry. Returns rows deleted."""
+    with get_conn() as c:
+        cur = c.execute(
+            "DELETE FROM email_verifications WHERE used = 1 OR expires_at < ?", (_now(),))
+        return cur.rowcount
+
+
+def purge_old_audit_log(max_age_days: int) -> int:
+    """Delete audit rows older than max_age_days. No-op (returns 0) if <= 0.
+
+    timestamp is stored as ISO-8601 UTC, so a lexicographic compare is correct.
+    """
+    if max_age_days <= 0:
+        return 0
+    cutoff = (datetime.now(timezone.utc) - timedelta(days=max_age_days)).isoformat()
+    with get_conn() as c:
+        cur = c.execute("DELETE FROM audit_log WHERE timestamp < ?", (cutoff,))
+        return cur.rowcount
+
+
 # ---------- courses ----------
 
 def list_courses(*, user_id: Optional[int] = None,

@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from .config import settings, ROOT
 from .db import init_db
 from .api.v1 import api_router
+from .core.retention import retention_sweeper
 from .processing_queue import processing_queue
 
 # Built SPA location (override with STATIC_DIR in the container).
@@ -72,9 +73,11 @@ def create_app() -> FastAPI:
                 raise RuntimeError("Set RESEND_API_KEY for production email delivery")
         init_db()
         processing_queue.start()
+        retention_sweeper.start()
 
     @app.on_event("shutdown")
     async def _shutdown() -> None:
+        await retention_sweeper.stop()
         await processing_queue.stop()
 
     @app.get("/api/health")

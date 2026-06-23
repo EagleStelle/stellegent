@@ -92,6 +92,15 @@ class Settings(BaseSettings):
     # CORS origin for the SvelteKit dev server (prod serves SPA same-origin)
     cors_origins: str = Field("http://localhost:5173", validation_alias="CORS_ORIGINS")
 
+    # Data retention. A background sweeper deletes dead rows so the DB doesn't
+    # grow unbounded: used/expired single-use tokens are always purged; audit_log
+    # rows older than retention_audit_days are purged (0 = keep forever). The
+    # sweep runs once at startup and then every retention_sweep_hours.
+    retention_audit_days: int = Field(90, validation_alias="STELLEGENT_RETENTION_AUDIT_DAYS")
+    retention_sweep_hours: float = Field(
+        6.0, validation_alias="STELLEGENT_RETENTION_SWEEP_HOURS"
+    )
+
     def _resolve(self, p: Path) -> Path:
         p = Path(p)
         return p if p.is_absolute() else (ROOT / p).resolve()

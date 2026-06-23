@@ -12,6 +12,8 @@ from .store import (
     replace_recovery_codes, consume_recovery_code,
     create_reset_token, consume_reset_token,
     create_email_verification_token, consume_email_verification_token,
+    purge_expired_password_resets, purge_expired_email_verifications,
+    purge_old_audit_log,
     list_courses, get_course, can_manage_course, create_course, update_course,
     delete_course, list_course_student_ids, list_course_lecture_ids,
     set_course_students, replace_course_lectures,
