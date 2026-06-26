@@ -93,11 +93,15 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                    raw_image_path: Optional[str] = None) -> None:
     _validate_visibility(visibility)
     with get_conn() as c:
-        if course_id is not None and course_name is None:
-            course = c.execute("SELECT name FROM courses WHERE id = ?",
-                               (course_id,)).fetchone()
+        if course_id is not None:
+            course = c.execute(
+                "SELECT name, visibility FROM courses WHERE id = ?",
+                (course_id,)).fetchone()
             if course:
-                course_name = course["name"]
+                if course_name is None:
+                    course_name = course["name"]
+                if course["visibility"] == "private":
+                    visibility = "private"
         c.execute("""
             INSERT OR REPLACE INTO lectures
             (id,date,course_name,title,captured_at,image_path,raw_image_path,
@@ -142,7 +146,10 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
             sql += """
                 AND (
                     l.owner_user_id = ?
-                    OR l.visibility = 'public'
+                    OR (
+                        l.visibility = 'public'
+                        AND COALESCE(c.visibility, 'public') = 'public'
+                    )
                     OR EXISTS (
                         SELECT 1 FROM courses owned
                         WHERE owned.id = l.course_id
@@ -154,7 +161,10 @@ def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
         elif role == "student":
             sql += """
                 AND (
-                    l.visibility = 'public'
+                    (
+                        l.visibility = 'public'
+                        AND COALESCE(c.visibility, 'public') = 'public'
+                    )
                     OR EXISTS (
                         SELECT 1 FROM lecture_students ls
                         WHERE ls.lecture_id = l.id
@@ -185,6 +195,14 @@ def get_lecture(lecture_id: str) -> Optional[sqlite3.Row]:
         """, (lecture_id,)).fetchone()
 
 
+def _is_effectively_public_lecture(row: sqlite3.Row) -> bool:
+    course_visibility = row["course_visibility"] \
+        if "course_visibility" in row.keys() else None
+    return row["visibility"] == "public" and (
+        row["course_id"] is None or course_visibility == "public"
+    )
+
+
 def can_view_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
     _validate_role(role)
     if role == "admin":
@@ -194,20 +212,16 @@ def can_view_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
             return True
         course_id = row["course_id"]
         if course_id is None:
-            if row["visibility"] == "public":
-                return True
-            return False
+            return _is_effectively_public_lecture(row)
         with get_conn() as c:
             is_faculty = c.execute(
                 "SELECT 1 FROM courses WHERE id = ? AND faculty_id = ?",
                 (course_id, user_id)).fetchone() is not None
             if is_faculty:
                 return True
-            
-        if row["visibility"] == "public" and row["course_visibility"] == "public":
-            return True
-            
-    if row["visibility"] == "public":
+        return _is_effectively_public_lecture(row)
+
+    if _is_effectively_public_lecture(row):
         return True
     with get_conn() as c:
         if c.execute(
@@ -239,14 +253,22 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
         return get_lecture(lecture_id)
     if updates.get("course_id") is not None:
         with get_conn() as c:
-            course = c.execute("SELECT name, faculty_id FROM courses WHERE id = ?",
-                               (updates["course_id"],)).fetchone()
+            course = c.execute(
+                "SELECT name, faculty_id, visibility FROM courses WHERE id = ?",
+                (updates["course_id"],)).fetchone()
             if course:
                 if "course_name" not in updates:
                     updates["course_name"] = course["name"]
                 # A lecture is owned by the faculty of the course it sits on, so
                 # moving it to another course transfers ownership accordingly.
                 updates["owner_user_id"] = course["faculty_id"]
+                if course["visibility"] == "private":
+                    updates["visibility"] = "private"
+    elif updates.get("visibility") == "public" and "course_id" not in updates:
+        current = get_lecture(lecture_id)
+        if current and current["course_id"] is not None \
+                and current["course_visibility"] == "private":
+            updates["visibility"] = "private"
     parts = [f"{k} = ?" for k in updates]
     args = list(updates.values()) + [lecture_id]
     with get_conn() as c:
@@ -1001,6 +1023,10 @@ def update_course(course_id: int, *, name: Optional[str] = None,
                 c.execute(
                     "UPDATE lectures SET owner_user_id = ? WHERE course_id = ?",
                     (faculty_id, course_id))
+            if visibility == "private":
+                c.execute(
+                    "UPDATE lectures SET visibility = 'private' WHERE course_id = ?",
+                    (course_id,))
     return get_course(course_id)
 
 
@@ -1083,8 +1109,9 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
                             owner_user_id: Optional[int] = None) -> None:
     ids = list(dict.fromkeys(str(lid) for lid in lecture_ids))
     with get_conn() as c:
-        course = c.execute("SELECT name, faculty_id FROM courses WHERE id = ?",
-                           (course_id,)).fetchone()
+        course = c.execute(
+            "SELECT name, faculty_id, visibility FROM courses WHERE id = ?",
+            (course_id,)).fetchone()
         if not course:
             raise ValueError("course not found")
         new_name = course["name"]
@@ -1130,10 +1157,14 @@ def replace_course_lectures(course_id: int, lecture_ids: Iterable[str],
             base = _strip_course_prefix(row["title"], row["course_name"]) if row else None
             c.execute("""
                 UPDATE lectures
-                SET course_id = ?, course_name = ?, owner_user_id = ?, title = ?
+                SET course_id = ?, course_name = ?, owner_user_id = ?, title = ?,
+                    visibility = CASE
+                        WHEN ? = 'private' THEN 'private'
+                        ELSE visibility
+                    END
                 WHERE id = ?
             """, (course_id, new_name, course["faculty_id"],
-                  _prefixed_title(base, new_name), lid))
+                  _prefixed_title(base, new_name), course["visibility"], lid))
 
 
 def list_lecture_student_ids(lecture_id: str) -> List[int]:

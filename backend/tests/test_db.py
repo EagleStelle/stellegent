@@ -108,6 +108,7 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
         name="Hidden Math", faculty_id=prof_id, visibility="private"
     )
     db.set_course_students(course_id, [student_id])
+    db.set_course_students(private_course_id, [student_id])
 
     db.insert_lecture(
         lecture_id="public", date="2026-05-03", course_name="Math",
@@ -153,7 +154,7 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
 
     other_rows = db.list_lectures(user_id=other_student_id, role="student")
     assert {r["id"] for r in other_rows} == {
-        "public", "private-direct", "public-private-course"
+        "public", "private-direct"
     }
 
     private_row = db.get_lecture("private-course")
@@ -161,12 +162,76 @@ def test_lecture_visibility_and_course_access(tmp_path, monkeypatch):
     assert not db.can_manage_lecture(private_row, user_id=student_id, role="student")
 
     public_private_course_row = db.get_lecture("public-private-course")
+    assert public_private_course_row["visibility"] == "private"
     assert db.can_view_lecture(
         public_private_course_row, user_id=student_id, role="student"
     )
-    assert db.can_view_lecture(
+    assert not db.can_view_lecture(
         public_private_course_row, user_id=other_student_id, role="student"
     )
+
+
+def test_private_course_privates_existing_lectures(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "course-private.db")
+    from stellegent import db
+
+    db.init_db()
+    prof_id = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
+    student_id = db.create_user("student1", "secret123", "student", email="student1@example.com")
+    other_student_id = db.create_user("student2", "secret123", "student", email="student2@example.com")
+    course_id = db.create_course(name="Math", faculty_id=prof_id)
+    db.set_course_students(course_id, [student_id])
+
+    db.insert_lecture(
+        lecture_id="to-private", date="2026-05-03", course_name="Math",
+        captured_at="2026-05-03T10:00:00+00:00",
+        image_path="/tmp/i.png", docx_path="/tmp/i.docx", pdf_path="/tmp/i.pdf",
+        txt_path="/tmp/i.txt", manifest_path="/tmp/m.json",
+        raw_ocr_text="hello", corrected_text="Hello", summary="- hello",
+        tags=[], owner_user_id=prof_id, visibility="public",
+        course_id=course_id,
+    )
+
+    assert "to-private" in {
+        r["id"] for r in db.list_lectures(user_id=other_student_id, role="student")
+    }
+
+    db.update_course(course_id, visibility="private")
+    row = db.get_lecture("to-private")
+    assert row["visibility"] == "private"
+    assert db.can_view_lecture(row, user_id=student_id, role="student")
+    assert not db.can_view_lecture(row, user_id=other_student_id, role="student")
+    assert "to-private" not in {
+        r["id"] for r in db.list_lectures(user_id=other_student_id, role="student")
+    }
+
+
+def test_adding_lecture_to_private_course_marks_it_private(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "private-assignment.db")
+    from stellegent import db
+
+    db.init_db()
+    prof_id = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
+    student_id = db.create_user("student1", "secret123", "student", email="student1@example.com")
+    course_id = db.create_course(
+        name="Hidden Math", faculty_id=prof_id, visibility="private"
+    )
+    db.set_course_students(course_id, [student_id])
+    db.insert_lecture(
+        lecture_id="assigned", date="2026-05-03", course_name=None,
+        captured_at="2026-05-03T10:00:00+00:00",
+        image_path="/tmp/i.png", docx_path="/tmp/i.docx", pdf_path="/tmp/i.pdf",
+        txt_path="/tmp/i.txt", manifest_path="/tmp/m.json",
+        raw_ocr_text="hello", corrected_text="Hello", summary="- hello",
+        tags=[], owner_user_id=prof_id, visibility="public",
+    )
+
+    db.replace_course_lectures(course_id, ["assigned"], owner_user_id=prof_id)
+
+    row = db.get_lecture("assigned")
+    assert row["course_id"] == course_id
+    assert row["visibility"] == "private"
+    assert db.can_view_lecture(row, user_id=student_id, role="student")
 
 
 def test_student_courses_are_readable_without_management_roster(tmp_path, monkeypatch):
