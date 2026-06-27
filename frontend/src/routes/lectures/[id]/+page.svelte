@@ -101,6 +101,13 @@
 		});
 	}
 
+	function formatPercent(value: number | null | undefined) {
+		if (value === null || value === undefined || Number.isNaN(value)) {
+			return "N/A";
+		}
+		return `${(value * 100).toFixed(1)}%`;
+	}
+
 	const pill =
 		"inline-flex h-8 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-2.5 sm:px-3 text-sm font-medium outline-none transition-all duration-200 active:scale-[0.98] focus-visible:ring-3";
 </script>
@@ -146,6 +153,8 @@
 	</Card>
 {:else if lecture.data}
 	{@const lec = lecture.data}
+	{@const evaluation = lec.evaluation}
+	{@const hasEvaluation = Boolean(evaluation.raw_ocr || evaluation.corrected || evaluation.summary)}
 	<section
 		class="flex flex-col gap-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-2rem)]"
 	>
@@ -274,7 +283,7 @@
 			/>
 		</div>
 
-		<div class="grid shrink-0 gap-4 md:grid-cols-2">
+		<div class="grid shrink-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
 			<div
 				role="button"
 				tabindex="0"
@@ -332,6 +341,103 @@
 				>
 					{lec.summary?.trim() ? lec.summary : "No summary yet."}
 				</p>
+			</div>
+
+			<div
+				class={cn(cardVariants(), "flex w-full flex-col gap-3 md:col-span-2 xl:col-span-1")}
+			>
+				<div class="flex min-h-8 w-full items-center justify-between gap-2">
+					<h2 class="text-sm font-semibold text-primary dark:text-gray-50">
+						Evaluation
+					</h2>
+					{#if !hasEvaluation}
+						<span class="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+							Reference needed
+						</span>
+					{/if}
+				</div>
+
+				{#if hasEvaluation}
+					<div class="grid gap-3 text-sm">
+						{#if evaluation.raw_ocr}
+							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
+									Raw OCR
+								</p>
+								<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">CER</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.error_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">CRR</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.recognition_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">WER</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.error_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">WRR</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.recognition_rate)}</span>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						{#if evaluation.corrected}
+							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
+									Corrected
+								</p>
+								<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">CER</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.cer.error_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">CRR</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.cer.recognition_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">WER</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.wer.error_rate)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">WRR</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.wer.recognition_rate)}</span>
+									</div>
+								</div>
+							</div>
+						{/if}
+
+						{#if evaluation.summary}
+							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
+								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
+									Summary
+								</p>
+								<div class="grid grid-cols-3 gap-2">
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-1</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge1.fmeasure)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-2</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge2.fmeasure)}</span>
+									</div>
+									<div>
+										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-L</span>
+										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rougeL.fmeasure)}</span>
+									</div>
+								</div>
+							</div>
+						{/if}
+					</div>
+				{:else}
+					<p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+						Add a real transcript or reference summary to calculate scores.
+					</p>
+				{/if}
 			</div>
 		</div>
 	</section>

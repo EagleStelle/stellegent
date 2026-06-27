@@ -14,6 +14,7 @@
 	import { Plus, ArrowLeft, Trash } from "phosphor-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
+	import Textarea from "$lib/components/ui/Textarea.svelte";
 	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 
 	const qc = useQueryClient();
@@ -48,6 +49,8 @@
 	let draftVisibility = $state<Visibility>("public");
 	let draftCourseId = $state("");
 	let draftStudentIds = $state<number[]>([]);
+	let draftReferenceTranscript = $state("");
+	let draftReferenceSummary = $state("");
 	
 	let pendingStudentId = $state("");
 
@@ -117,6 +120,8 @@
 			? String(lecture.data.course_id)
 			: "";
 		draftStudentIds = [...lecture.data.student_ids];
+		draftReferenceTranscript = lecture.data.reference_transcript ?? "";
+		draftReferenceSummary = lecture.data.reference_summary ?? "";
 	});
 
 	// A lecture under a course always inherits the course's visibility; lock the
@@ -149,6 +154,8 @@
 			course_id: draftCourseId ? Number(draftCourseId) : null,
 			visibility: draftVisibility,
 			student_ids: draftStudentIds,
+			reference_transcript: draftReferenceTranscript.trim() || null,
+			reference_summary: draftReferenceSummary.trim() || null,
 		};
 		try {
 			await apiPatch<LectureDetail>(`/api/v1/lectures/${id}`, body);
@@ -242,6 +249,23 @@
 					/>
 				</label>
 			</div>
+
+			<section class="grid gap-4 md:grid-cols-2">
+				<Textarea
+					id="reference-transcript"
+					label="Real Transcript"
+					bind:value={draftReferenceTranscript}
+					rows={10}
+					placeholder="Paste the human-verified lecture transcript"
+				/>
+				<Textarea
+					id="reference-summary"
+					label="Reference Summary"
+					bind:value={draftReferenceSummary}
+					rows={10}
+					placeholder="Paste the human/reference summary for ROUGE"
+				/>
+			</section>
 
 			{#if draftVisibility === "private" && options.data?.students?.length}
 				<section class="grid content-start gap-3">

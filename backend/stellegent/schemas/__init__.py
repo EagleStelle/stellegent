@@ -209,6 +209,40 @@ class AnnotateRequest(BaseModel):
     note: str = Field(min_length=1)
 
 
+class ErrorMetric(BaseModel):
+    errors: int
+    substitutions: int
+    insertions: int
+    deletions: int
+    reference_length: int
+    hypothesis_length: int
+    error_rate: float
+    recognition_rate: float
+
+
+class TranscriptEvaluation(BaseModel):
+    cer: ErrorMetric
+    wer: ErrorMetric
+
+
+class RougeMetric(BaseModel):
+    precision: float
+    recall: float
+    fmeasure: float
+
+
+class SummaryEvaluation(BaseModel):
+    rouge1: RougeMetric
+    rouge2: RougeMetric
+    rougeL: RougeMetric
+
+
+class LectureEvaluation(BaseModel):
+    raw_ocr: Optional[TranscriptEvaluation] = None
+    corrected: Optional[TranscriptEvaluation] = None
+    summary: Optional[SummaryEvaluation] = None
+
+
 class LectureDetail(BaseModel):
     id: str
     date: str
@@ -223,6 +257,9 @@ class LectureDetail(BaseModel):
     raw_ocr_text: Optional[str] = None
     corrected_text: Optional[str] = None
     summary: Optional[str] = None
+    reference_transcript: Optional[str] = None
+    reference_summary: Optional[str] = None
+    evaluation: LectureEvaluation = Field(default_factory=LectureEvaluation)
     tags: Optional[str] = None
     manifest: Optional[dict] = None
     student_ids: List[int] = []
@@ -237,6 +274,8 @@ class LectureUpdateRequest(BaseModel):
     visibility: Optional[Visibility] = None
     corrected_text: Optional[str] = None
     summary: Optional[str] = None
+    reference_transcript: Optional[str] = None
+    reference_summary: Optional[str] = None
     student_ids: Optional[List[int]] = None
 
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-import jiwer  # type: ignore
+from stellegent.evaluation import score_transcript
 
 
 def main(argv):
@@ -12,15 +12,20 @@ def main(argv):
         return 2
     pred = Path(argv[1]).read_text(encoding="utf-8").strip()
     ref = Path(argv[2]).read_text(encoding="utf-8").strip()
-    transform = jiwer.Compose([
-        jiwer.ToLowerCase(),
-        jiwer.RemoveMultipleSpaces(),
-        jiwer.Strip(),
-    ])
-    wer = jiwer.wer(ref, pred, truth_transform=transform, hypothesis_transform=transform)
-    cer = jiwer.cer(ref, pred, truth_transform=transform, hypothesis_transform=transform)
-    print(f"WER: {wer:.4f}  ({(1-wer)*100:.2f}% WRR)")
-    print(f"CER: {cer:.4f}  ({(1-cer)*100:.2f}% CRR)")
+    scores = score_transcript(hypothesis=pred, reference=ref)
+    if scores is None:
+        print("reference needed")
+        return 1
+    wer = scores["wer"]
+    cer = scores["cer"]
+    print(
+        f"WER: {wer['error_rate']:.4f}  "
+        f"({wer['recognition_rate'] * 100:.2f}% WRR)"
+    )
+    print(
+        f"CER: {cer['error_rate']:.4f}  "
+        f"({cer['recognition_rate'] * 100:.2f}% CRR)"
+    )
     return 0
 
 

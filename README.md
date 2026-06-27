@@ -19,8 +19,7 @@ locally, in Docker, or on Raspberry Pi 5-class hardware.
 ## Features
 
 - Whiteboard upload, live preview, and camera capture workflows.
-- OCR via Google Gemini when configured, with RapidOCR/PP-OCR on ONNX Runtime as
-  the offline fallback.
+- Offline OCR via RapidOCR/PP-OCR on ONNX Runtime.
 - Transcript correction, lecture summaries, course organization, annotations,
   and lecture search.
 - Export formats: PDF, DOCX, TXT, source image, and JSON manifest.
@@ -35,7 +34,7 @@ locally, in Docker, or on Raspberry Pi 5-class hardware.
 | --- | --- |
 | Frontend | SvelteKit, TypeScript, Tailwind CSS, TanStack Query, openapi-fetch |
 | Backend | FastAPI, Pydantic, Uvicorn, OpenCV, Pillow |
-| OCR and NLP | Google Gemini, RapidOCR/PP-OCR, ONNX Runtime, Ollama |
+| OCR and NLP | RapidOCR/PP-OCR, ONNX Runtime, Ollama |
 | Data | SQLite with numbered SQL migrations |
 | Deployment | Docker, Docker Compose, static SvelteKit build served by FastAPI |
 
@@ -63,7 +62,7 @@ for the offline OCR fallback path.
 
 ```bash
 cp .env.example .env
-# Edit .env with your secrets, public URL, OAuth, email, and Gemini settings.
+# Edit .env with your secrets, public URL, OAuth, and email settings.
 docker compose up -d
 docker compose exec stellegent python -m stellegent.cli adduser admin "change-this-password" --role admin --email admin@example.com
 ```
@@ -71,8 +70,7 @@ docker compose exec stellegent python -m stellegent.cli adduser admin "change-th
 Open <http://localhost:8000> and sign in with the admin account you created.
 
 The Compose file reads deployment values from `.env` using `${...}` variable
-substitution. For Gemini OCR, set `GEMINI_API_KEY` in `.env`; set
-`GEMINI_MODELS` to use a comma-separated fallback order.
+substitution.
 For production, replace the default `STELLEGENT_JWT_SECRET` with a unique
 32-byte-or-longer value before exposing the app.
 
@@ -126,10 +124,7 @@ development, the backend also reads `.env` directly.
 | `STELLEGENT_DB` | SQLite database path. |
 | `STELLEGENT_RETENTION_AUDIT_DAYS` | Days to keep `audit_log` rows before the retention sweeper purges them (`0` = keep forever). Default `90`. |
 | `STELLEGENT_RETENTION_SWEEP_HOURS` | Interval between retention sweeps (runs once at startup, then every N hours). Default `6`. |
-| `OCR_BACKEND` | `auto`, `gemini`, or `paddle`. |
-| `GEMINI_API_KEY` | Enables Gemini OCR when present. |
-| `GEMINI_MODEL` | Gemini model name used by the OCR backend. |
-| `GEMINI_MODELS` | Optional comma-separated Gemini OCR fallback order. Overrides `GEMINI_MODEL` when set. |
+| `OCR_BACKEND` | `auto` or `paddle`. |
 | `OLLAMA_HOST` | Ollama endpoint for local correction and summarization. |
 | `OLLAMA_MODEL` | Local Ollama model used by the fallback path. |
 | `OLLAMA_NUM_CTX` | Ollama context window. Lower values reduce VRAM/KV-cache use. |
@@ -190,4 +185,4 @@ pytest backend/tests
   `backend/stellegent/export/assets/fonts` for PDF generation. DejaVu fonts are
   provided by the DejaVu Fonts project.
 - Stellegent is built on FastAPI, SvelteKit, Tailwind CSS, RapidOCR/PP-OCR, ONNX
-  Runtime, OpenCV, Ollama, Google Gemini, lucide, and Phosphor Icons.
+  Runtime, OpenCV, Ollama, lucide, and Phosphor Icons.

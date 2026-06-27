@@ -861,6 +861,25 @@ export interface components {
             /** Lecture Ids */
             lecture_ids?: string[] | null;
         };
+        /** ErrorMetric */
+        ErrorMetric: {
+            /** Errors */
+            errors: number;
+            /** Substitutions */
+            substitutions: number;
+            /** Insertions */
+            insertions: number;
+            /** Deletions */
+            deletions: number;
+            /** Reference Length */
+            reference_length: number;
+            /** Hypothesis Length */
+            hypothesis_length: number;
+            /** Error Rate */
+            error_rate: number;
+            /** Recognition Rate */
+            recognition_rate: number;
+        };
         /** ForgotPasswordRequest */
         ForgotPasswordRequest: {
             /**
@@ -903,6 +922,15 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /** LectureEvaluation */
+        LectureEvaluation: {
+            /** Raw Ocr */
+            raw_ocr?: components["schemas"]["TranscriptEvaluation"] | null;
+            /** Corrected */
+            corrected?: components["schemas"]["TranscriptEvaluation"] | null;
+            /** Summary */
+            summary?: components["schemas"]["SummaryEvaluation"] | null;
+        };
         /** LectureDetail */
         LectureDetail: {
             /** Id */
@@ -935,6 +963,12 @@ export interface components {
             corrected_text?: string | null;
             /** Summary */
             summary?: string | null;
+            /** Reference Transcript */
+            reference_transcript?: string | null;
+            /** Reference Summary */
+            reference_summary?: string | null;
+            /** Evaluation */
+            evaluation?: components["schemas"]["LectureEvaluation"];
             /** Tags */
             tags?: string | null;
             /** Manifest */
@@ -999,6 +1033,10 @@ export interface components {
             corrected_text?: string | null;
             /** Summary */
             summary?: string | null;
+            /** Reference Transcript */
+            reference_transcript?: string | null;
+            /** Reference Summary */
+            reference_summary?: string | null;
             /** Student Ids */
             student_ids?: number[] | null;
         };
@@ -1185,6 +1223,15 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** RougeMetric */
+        RougeMetric: {
+            /** Precision */
+            precision: number;
+            /** Recall */
+            recall: number;
+            /** Fmeasure */
+            fmeasure: number;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Token */
@@ -1230,6 +1277,22 @@ export interface components {
         TotpVerifyRequest: {
             /** Code */
             code: string;
+        };
+        /** SummaryEvaluation */
+        SummaryEvaluation: {
+            /** Rouge1 */
+            rouge1: components["schemas"]["RougeMetric"];
+            /** Rouge2 */
+            rouge2: components["schemas"]["RougeMetric"];
+            /** Rougel */
+            rougeL: components["schemas"]["RougeMetric"];
+        };
+        /** TranscriptEvaluation */
+        TranscriptEvaluation: {
+            /** Cer */
+            cer: components["schemas"]["ErrorMetric"];
+            /** Wer */
+            wer: components["schemas"]["ErrorMetric"];
         };
         /** UserOut */
         UserOut: {

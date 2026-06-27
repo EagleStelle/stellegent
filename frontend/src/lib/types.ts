@@ -76,9 +76,46 @@ export interface Annotation {
 	created_at: string;
 }
 
+export interface ErrorMetric {
+	errors: number;
+	substitutions: number;
+	insertions: number;
+	deletions: number;
+	reference_length: number;
+	hypothesis_length: number;
+	error_rate: number;
+	recognition_rate: number;
+}
+
+export interface TranscriptEvaluation {
+	cer: ErrorMetric;
+	wer: ErrorMetric;
+}
+
+export interface RougeMetric {
+	precision: number;
+	recall: number;
+	fmeasure: number;
+}
+
+export interface SummaryEvaluation {
+	rouge1: RougeMetric;
+	rouge2: RougeMetric;
+	rougeL: RougeMetric;
+}
+
+export interface LectureEvaluation {
+	raw_ocr: TranscriptEvaluation | null;
+	corrected: TranscriptEvaluation | null;
+	summary: SummaryEvaluation | null;
+}
+
 export interface LectureDetail extends LectureSummary {
 	raw_ocr_text: string | null;
 	corrected_text: string | null;
+	reference_transcript: string | null;
+	reference_summary: string | null;
+	evaluation: LectureEvaluation;
 	manifest: Record<string, unknown> | null;
 	student_ids: number[];
 	annotations: Annotation[];

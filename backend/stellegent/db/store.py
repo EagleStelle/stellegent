@@ -244,7 +244,8 @@ def can_manage_lecture(row: sqlite3.Row, *, user_id: int, role: str) -> bool:
 def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
     allowed = {
         "course_name", "title", "summary", "corrected_text", "visibility",
-        "owner_user_id", "course_id",
+        "reference_transcript", "reference_summary", "owner_user_id",
+        "course_id",
     }
     updates = {k: v for k, v in fields.items() if k in allowed}
     if "visibility" in updates and updates["visibility"] is not None:

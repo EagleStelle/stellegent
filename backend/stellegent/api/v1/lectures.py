@@ -13,6 +13,7 @@ from ...db import (can_manage_lecture, can_view_lecture, delete_lecture,
                    list_lectures, set_lecture_students, update_lecture,
                    user_has_role, add_annotation, get_annotations)
 from ...deps import current_user, log_action
+from ...evaluation import evaluate_lecture
 from ...export import write_documents
 from ...nlp import summarize, generate_title
 from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
@@ -27,6 +28,13 @@ _FILE_KEYS = {"pdf": "pdf_path", "docx": "docx_path", "txt": "txt_path",
 _INLINE_TYPES = {"image", "image_raw"}
 
 
+def _clean_optional_text(value: Optional[str]) -> Optional[str]:
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
 @router.get("", response_model=List[LectureSummary])
 def list_all(date: Optional[str] = None, course: Optional[str] = None,
              q: Optional[str] = None, user: dict = Depends(current_user)):
@@ -37,14 +45,24 @@ def list_all(date: Optional[str] = None, course: Optional[str] = None,
     ]
 
 
-def _detail_payload(row) -> dict:
+def _detail_payload(row, user: dict) -> dict:
     out = dict(row)
+    out["evaluation"] = evaluate_lecture(
+        raw_ocr_text=row["raw_ocr_text"],
+        corrected_text=row["corrected_text"],
+        summary=row["summary"],
+        reference_transcript=row["reference_transcript"],
+        reference_summary=row["reference_summary"],
+    )
     try:
         out["manifest"] = json.loads(Path(row["manifest_path"]).read_text("utf-8"))
     except Exception:
         out["manifest"] = None
     out["student_ids"] = list_lecture_student_ids(row["id"])
     out["annotations"] = [dict(a) for a in get_annotations(row["id"])]
+    if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
+        out["reference_transcript"] = None
+        out["reference_summary"] = None
     return out
 
 
@@ -53,7 +71,7 @@ def detail(lecture_id: str, user: dict = Depends(current_user)):
     row = get_lecture(lecture_id)
     if not row or not can_view_lecture(row, user_id=user["uid"], role=user["role"]):
         raise HTTPException(status.HTTP_404_NOT_FOUND, "not found")
-    return _detail_payload(row)
+    return _detail_payload(row, user)
 
 
 @router.get("/{lecture_id}/file")
@@ -118,7 +136,7 @@ def regenerate_summary(lecture_id: str, request: Request,
         except Exception:  # noqa: BLE001 — DB summary already saved; files best-effort
             pass
     log_action(request, user, "summarize", lecture_id)
-    return _detail_payload(get_lecture(lecture_id))
+    return _detail_payload(get_lecture(lecture_id), user)
 
 
 @router.patch("/{lecture_id}", response_model=LectureDetail)
@@ -140,6 +158,14 @@ def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
         updates["summary"] = body.summary
     if "corrected_text" in fields:
         updates["corrected_text"] = body.corrected_text
+    if "reference_transcript" in fields:
+        updates["reference_transcript"] = _clean_optional_text(
+            body.reference_transcript
+        )
+    if "reference_summary" in fields:
+        updates["reference_summary"] = _clean_optional_text(
+            body.reference_summary
+        )
     if "visibility" in fields and body.visibility is not None:
         updates["visibility"] = body.visibility
     if "owner_user_id" in fields:
@@ -182,7 +208,7 @@ def update(lecture_id: str, body: LectureUpdateRequest, request: Request,
         except Exception:  # noqa: BLE001 — DB already saved; files best-effort
             pass
     log_action(request, user, "update_lecture", lecture_id)
-    return _detail_payload(refreshed)
+    return _detail_payload(refreshed, user)
 
 
 @router.delete("/{lecture_id}", response_model=MessageResponse)
