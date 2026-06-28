@@ -971,10 +971,6 @@ export interface components {
             evaluation?: components["schemas"]["LectureEvaluation"];
             /** Tags */
             tags?: string | null;
-            /** Manifest */
-            manifest?: {
-                [key: string]: unknown;
-            } | null;
             /**
              * Student Ids
              * @default []

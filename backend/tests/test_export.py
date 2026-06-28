@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 import numpy as np
 
@@ -20,11 +19,8 @@ def test_export_all(tmp_path):
     assert (d / "lecture.docx").exists()
     assert (d / "lecture.pdf").exists()
     assert (d / "transcript.txt").exists()
-    assert (d / "manifest.json").exists()
     # documents carry summary + transcript only — no embedded image
     txt = (d / "transcript.txt").read_text("utf-8")
     assert "Summary" in txt and "Transcript" in txt
     assert "- intro" in txt
-    m = json.loads((d / "manifest.json").read_text("utf-8"))
-    assert "math-equations" in m["tags"]
-    assert len(m["lines"]) == 2
+    assert "math-equations" in res.tags

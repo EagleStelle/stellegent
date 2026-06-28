@@ -1,4 +1,4 @@
-"""Export OCR + NLP results to DOCX, PDF, TXT, WebP images, JSON manifest.
+"""Export OCR + NLP results to DOCX, PDF, TXT, WebP images.
 
 DOCX, PDF and TXT share one layout: summary bullet points on top, the
 transcript below. No images are embedded in any document. Board images are
@@ -10,12 +10,11 @@ DejaVu TrueType font is embedded so unicode (bullets, circled digits, math
 symbols) renders identically on every platform, including Docker.
 """
 from __future__ import annotations
-import json
 import re
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 import uuid
 
 import cv2
@@ -50,7 +49,7 @@ class ExportResult:
     txt_path: str
     docx_path: str
     pdf_path: str
-    manifest_path: str
+    tags: List[str]
 
     def to_dict(self) -> dict:
         return asdict(self)
@@ -205,25 +204,6 @@ def export_all(image: np.ndarray, lines: Sequence[OCRLine],
     write_documents(docx_path=docx_path, pdf_path=pdf_path, txt_path=txt_path,
                     summary=summary, corrected=corrected)
 
-    manifest: Dict = {
-        "lecture_id": lecture_id,
-        "course_name": course_name,
-        "captured_at": now.isoformat(),
-        "language": "en",
-        "engine": "stellegent",
-        "tags": _detect_tags(raw_text + "\n" + corrected),
-        "lines": [l.to_dict() for l in lines],
-        "files": {
-            "image": image_path.name,
-            "image_raw": raw_image_path.name,
-            "txt": txt_path.name,
-            "docx": docx_path.name,
-            "pdf": pdf_path.name,
-        },
-    }
-    manifest_path = out_dir / "manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
-
     return ExportResult(
         lecture_id=lecture_id,
         captured_at=now.isoformat(),
@@ -233,5 +213,5 @@ def export_all(image: np.ndarray, lines: Sequence[OCRLine],
         txt_path=str(txt_path),
         docx_path=str(docx_path),
         pdf_path=str(pdf_path),
-        manifest_path=str(manifest_path),
+        tags=_detect_tags(raw_text + "\n" + corrected),
     )

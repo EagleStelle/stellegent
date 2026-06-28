@@ -14,7 +14,6 @@ def _insert_lecture(db, *, lecture_id: str, owner_user_id: int) -> None:
         docx_path="/tmp/i.docx",
         pdf_path="/tmp/i.pdf",
         txt_path="/tmp/i.txt",
-        manifest_path="/tmp/m.json",
         raw_ocr_text="helo world",
         corrected_text="hello world",
         summary="hello world summary",

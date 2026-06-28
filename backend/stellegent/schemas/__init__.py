@@ -276,7 +276,6 @@ class LectureDetail(BaseModel):
     evaluation: LectureEvaluation = Field(default_factory=LectureEvaluation)
     processing_timing: Optional[ProcessingTiming] = None
     tags: Optional[str] = None
-    manifest: Optional[dict] = None
     student_ids: List[int] = []
     annotations: List[AnnotationOut] = []
 

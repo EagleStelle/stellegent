@@ -84,7 +84,7 @@ def init_db(db_path: Optional[Path] = None) -> None:
 
 def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                    captured_at: str, image_path: str, docx_path: str,
-                   pdf_path: str, txt_path: str, manifest_path: str,
+                   pdf_path: str, txt_path: str,
                    raw_ocr_text: str, corrected_text: str, summary: str,
                    tags: Iterable[str], title: Optional[str] = None,
                    owner_user_id: Optional[int] = None,
@@ -106,12 +106,12 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
         c.execute("""
             INSERT OR REPLACE INTO lectures
             (id,date,course_name,title,captured_at,image_path,raw_image_path,
-             docx_path,pdf_path,txt_path,manifest_path,raw_ocr_text,
+             docx_path,pdf_path,txt_path,raw_ocr_text,
              corrected_text,summary,tags,owner_user_id,visibility,course_id,
              processing_timing)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (lecture_id, date, course_name, title, captured_at, image_path,
-              raw_image_path, docx_path, pdf_path, txt_path, manifest_path,
+              raw_image_path, docx_path, pdf_path, txt_path,
               raw_ocr_text, corrected_text, summary, json.dumps(list(tags)),
               owner_user_id, visibility, course_id,
               json.dumps(processing_timing) if processing_timing is not None else None))
@@ -301,9 +301,9 @@ def delete_lecture(lecture_id: str) -> None:
 
 
 # Each lecture owns a directory (DATA_DIR/<date>/<lecture_id>/) holding its
-# image, docs and manifest. Dropping the DB row alone orphans those files, so
+# image and docs. Dropping the DB row alone orphans those files, so
 # remove the whole directory on delete.
-_LECTURE_FILE_KEYS = ("manifest_path", "image_path", "raw_image_path",
+_LECTURE_FILE_KEYS = ("image_path", "raw_image_path",
                       "docx_path", "pdf_path", "txt_path")
 
 

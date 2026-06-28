@@ -131,7 +131,6 @@ export interface LectureDetail extends LectureSummary {
 	reference_summary: string | null;
 	evaluation: LectureEvaluation;
 	processing_timing: ProcessingTiming | null;
-	manifest: Record<string, unknown> | null;
 	student_ids: number[];
 	annotations: Annotation[];
 }

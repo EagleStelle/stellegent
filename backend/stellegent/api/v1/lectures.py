@@ -23,8 +23,7 @@ from ...schemas import (LectureSummary, LectureDetail, AnnotationOut,
 router = APIRouter(prefix="/lectures", tags=["lectures"])
 
 _FILE_KEYS = {"pdf": "pdf_path", "docx": "docx_path", "txt": "txt_path",
-              "image": "image_path", "image_raw": "raw_image_path",
-              "manifest": "manifest_path"}
+              "image": "image_path", "image_raw": "raw_image_path"}
 _INLINE_TYPES = {"image", "image_raw"}
 
 
@@ -61,10 +60,6 @@ def _detail_payload(row, user: dict) -> dict:
         )
     except Exception:
         out["processing_timing"] = None
-    try:
-        out["manifest"] = json.loads(Path(row["manifest_path"]).read_text("utf-8"))
-    except Exception:
-        out["manifest"] = None
     out["student_ids"] = list_lecture_student_ids(row["id"])
     out["annotations"] = [dict(a) for a in get_annotations(row["id"])]
     if not can_manage_lecture(row, user_id=user["uid"], role=user["role"]):
