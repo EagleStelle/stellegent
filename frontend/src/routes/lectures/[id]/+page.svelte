@@ -163,21 +163,21 @@
 				{/snippet}
 			</Button>
 			<div class="flex min-w-0 flex-1 flex-col gap-2">
-				<div class="flex items-center gap-3">
+				<div class="flex items-start gap-3">
 					<h1
-						class="text-2xl font-bold tracking-tight text-balance text-primary dark:text-gray-50"
+						class="line-clamp-2 text-xl font-bold tracking-tight text-balance text-primary sm:text-2xl dark:text-gray-50"
 					>
 						{lec.title ?? lec.course_name ?? "Lecture"}
 					</h1>
 					<span
-						class="flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary"
+						class="mt-0.5 flex shrink-0 items-center gap-1.5 rounded-full bg-secondary/10 px-2.5 py-1 text-xs font-semibold text-secondary"
 					>
 						{#if lec.visibility === "public"}
 							<GlobeHemisphereWest size={14} />
-							<span>Public</span>
+							<span class="hidden sm:inline">Public</span>
 						{:else}
 							<LockSimple size={14} />
-							<span>Private</span>
+							<span class="hidden sm:inline">Private</span>
 						{/if}
 					</span>
 				</div>
@@ -221,12 +221,12 @@
 						</div>
 					</div>
 
-					<div class="flex shrink-0 items-center gap-4 max-sm:gap-5">
+					<div class="flex shrink-0 items-center gap-4 max-sm:w-full max-sm:gap-5">
 						{#each downloads as d (d.type)}
 							<Button
 								variant="icon+text"
 								class="h-auto bg-transparent px-0 text-sm text-black shadow-none hover:bg-transparent hover:underline dark:text-white"
-								labelClass="hidden sm:inline"
+								labelClass="hidden lg:inline"
 								onclick={() => downloadFile(d.type)}
 								title={`Download ${d.label}`}
 							>
@@ -240,7 +240,7 @@
 							<Button
 								variant="icon+text"
 								class="h-auto bg-transparent px-0 text-sm text-secondary shadow-none hover:bg-transparent hover:underline"
-								labelClass="hidden sm:inline"
+								labelClass="hidden lg:inline"
 								onclick={() => goto(`/lectures/${id}/edit`)}
 								title="Edit lecture"
 							>
@@ -252,7 +252,7 @@
 							<Button
 								variant="icon+text"
 								class="h-auto bg-transparent px-0 text-sm text-secondary shadow-none hover:bg-transparent hover:underline"
-								labelClass="hidden sm:inline"
+								labelClass="hidden lg:inline"
 								onclick={() => goto(`/lectures/${id}/evaluation`)}
 								title="Evaluation"
 							>
@@ -263,8 +263,8 @@
 							</Button>
 							<Button
 								variant="icon+text"
-								class="h-auto bg-transparent px-0 text-sm text-red-500 shadow-none hover:bg-transparent hover:underline"
-								labelClass="hidden sm:inline"
+								class="h-auto bg-transparent px-0 text-sm text-red-500 shadow-none hover:bg-transparent hover:underline max-sm:ml-auto"
+								labelClass="hidden lg:inline"
 								onclick={remove}
 								title="Delete lecture"
 							>
