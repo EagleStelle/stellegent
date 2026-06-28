@@ -27,18 +27,19 @@ MAX_UPLOAD_BYTES = 25 * 1024 * 1024  # 25 MB
 
 
 def _resolve_course(course_name: Optional[str], course_id: Optional[int],
-                    user: dict) -> tuple[Optional[str], Optional[int], Optional[str]]:
-    """Returns (name, id, visibility). A lecture under a course always inherits
-    that course's visibility, so callers override the requested value with the
-    returned one. visibility is None when no course is selected."""
+                    user: dict) -> tuple[Optional[str], Optional[int], Optional[str], Optional[int]]:
+    """Returns (name, id, visibility, owner_user_id). A lecture under a course
+    always inherits that course's visibility and is owned by the course's
+    faculty, so callers override the requested values with the returned ones.
+    visibility and owner_user_id are None when no course is selected."""
     if course_id is None:
-        return course_name, None, None
+        return course_name, None, None, None
     course = get_course(course_id)
     if not course:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "course not found")
     if not can_manage_course(course, user_id=user["uid"], role=user["role"]):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "forbidden")
-    return course["name"], course_id, course["visibility"]
+    return course["name"], course_id, course["visibility"], course["faculty_id"]
 
 
 def _validate_visibility(value: str) -> str:
@@ -88,7 +89,7 @@ async def upload(request: Request, image: UploadFile = File(...),
     if ext not in ALLOWED_UPLOAD_EXT:
         raise HTTPException(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, f"unsupported ext {ext}")
     raw = await _read_upload_limited(image)
-    course_name, resolved_course_id, course_visibility = _resolve_course(
+    course_name, resolved_course_id, course_visibility, course_owner = _resolve_course(
         course or None, course_id, user)
     effective_visibility = course_visibility or _validate_visibility(visibility)
     task = await asyncio.to_thread(
@@ -98,7 +99,8 @@ async def upload(request: Request, image: UploadFile = File(...),
         filename=image.filename,
         course_name=course_name,
         course_id=resolved_course_id,
-        owner_user_id=user["uid"],
+        owner_user_id=course_owner if course_owner is not None else user["uid"],
+        created_by_user_id=user["uid"],
         visibility=effective_visibility,
     )
     log_action(request, user, "upload:queued", task["id"])
@@ -113,7 +115,7 @@ def capture(request: Request, body: CaptureRequest | None = None,
     frame = get_hub().snapshot()
     if frame is None:
         raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, "camera read failed")
-    course_name, course_id, course_visibility = _resolve_course(
+    course_name, course_id, course_visibility, course_owner = _resolve_course(
         body.course if body else None,
         body.course_id if body else None,
         user,
@@ -125,7 +127,8 @@ def capture(request: Request, body: CaptureRequest | None = None,
         filename="capture.jpg",
         course_name=course_name,
         course_id=course_id,
-        owner_user_id=user["uid"],
+        owner_user_id=course_owner if course_owner is not None else user["uid"],
+        created_by_user_id=user["uid"],
         visibility=effective_visibility,
     )
     log_action(request, user, "capture:queued", task["id"])

@@ -23,12 +23,13 @@ QUEUE_DIR = DATA_DIR / "queue"
 
 
 def _task_payload(*, image_path: Path, course_name: Optional[str],
-                  owner_user_id: Optional[int], visibility: str,
-                  course_id: Optional[int]) -> dict:
+                  owner_user_id: Optional[int], created_by_user_id: Optional[int],
+                  visibility: str, course_id: Optional[int]) -> dict:
     return {
         "image_path": str(image_path),
         "course_name": course_name,
         "owner_user_id": owner_user_id,
+        "created_by_user_id": created_by_user_id,
         "visibility": visibility,
         "course_id": course_id,
     }
@@ -105,7 +106,7 @@ class ProcessingQueue:
             lecture_id = result["lecture_id"]
             complete_processing_task(task_id, lecture_id=lecture_id)
             audit(
-                payload.get("owner_user_id"),
+                payload.get("created_by_user_id", payload.get("owner_user_id")),
                 f"{task['kind']}:complete",
                 lecture_id,
                 None,
@@ -120,7 +121,7 @@ class ProcessingQueue:
             try:
                 payload = json.loads(task["payload"])
                 audit(
-                    payload.get("owner_user_id"),
+                    payload.get("created_by_user_id", payload.get("owner_user_id")),
                     f"{task['kind']}:failed",
                     task_id,
                     None,
@@ -134,7 +135,8 @@ processing_queue = ProcessingQueue()
 
 def enqueue_upload_bytes(*, raw: bytes, extension: str, filename: Optional[str],
                          course_name: Optional[str], course_id: Optional[int],
-                         owner_user_id: Optional[int], visibility: str):
+                         owner_user_id: Optional[int], created_by_user_id: Optional[int],
+                         visibility: str):
     QUEUE_DIR.mkdir(parents=True, exist_ok=True)
     task_id = uuid4().hex
     suffix = extension if extension.startswith(".") else f".{extension}"
@@ -143,7 +145,7 @@ def enqueue_upload_bytes(*, raw: bytes, extension: str, filename: Optional[str],
     row = create_processing_task(
         task_id=task_id,
         kind="upload",
-        created_by_user_id=owner_user_id,
+        created_by_user_id=created_by_user_id,
         course_name=course_name,
         course_id=course_id,
         filename=filename,
@@ -151,6 +153,7 @@ def enqueue_upload_bytes(*, raw: bytes, extension: str, filename: Optional[str],
             image_path=image_path,
             course_name=course_name,
             owner_user_id=owner_user_id,
+            created_by_user_id=created_by_user_id,
             visibility=visibility,
             course_id=course_id,
         ),
@@ -161,7 +164,8 @@ def enqueue_upload_bytes(*, raw: bytes, extension: str, filename: Optional[str],
 
 def enqueue_capture_frame(*, frame: np.ndarray, filename: str,
                           course_name: Optional[str], course_id: Optional[int],
-                          owner_user_id: Optional[int], visibility: str):
+                          owner_user_id: Optional[int], created_by_user_id: Optional[int],
+                          visibility: str):
     QUEUE_DIR.mkdir(parents=True, exist_ok=True)
     task_id = uuid4().hex
     image_path = QUEUE_DIR / f"{task_id}.jpg"
@@ -170,7 +174,7 @@ def enqueue_capture_frame(*, frame: np.ndarray, filename: str,
     row = create_processing_task(
         task_id=task_id,
         kind="capture",
-        created_by_user_id=owner_user_id,
+        created_by_user_id=created_by_user_id,
         course_name=course_name,
         course_id=course_id,
         filename=filename,
@@ -178,6 +182,7 @@ def enqueue_capture_frame(*, frame: np.ndarray, filename: str,
             image_path=image_path,
             course_name=course_name,
             owner_user_id=owner_user_id,
+            created_by_user_id=created_by_user_id,
             visibility=visibility,
             course_id=course_id,
         ),
