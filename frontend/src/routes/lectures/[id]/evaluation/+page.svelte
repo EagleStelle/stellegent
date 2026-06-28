@@ -315,19 +315,26 @@
 						{/if}
 					</div>
 					{#if evaluation.summary}
-						<div class="grid grid-cols-3 gap-3">
-							<div>
-								<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-1</span>
-								<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge1.fmeasure)}</span>
+						{@const rouge = [
+							{ label: "ROUGE-1", score: evaluation.summary.rouge1 },
+							{ label: "ROUGE-2", score: evaluation.summary.rouge2 },
+							{ label: "ROUGE-L", score: evaluation.summary.rougeL },
+						]}
+						<div class="grid gap-3">
+							<div class="grid grid-cols-[auto_1fr_1fr_1fr] gap-3 text-xs text-gray-500 dark:text-gray-400">
+								<span></span>
+								<span class="text-right">Precision</span>
+								<span class="text-right">Recall</span>
+								<span class="text-right">F-measure</span>
 							</div>
-							<div>
-								<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-2</span>
-								<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge2.fmeasure)}</span>
-							</div>
-							<div>
-								<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-L</span>
-								<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rougeL.fmeasure)}</span>
-							</div>
+							{#each rouge as { label, score } (label)}
+								<div class="grid grid-cols-[auto_1fr_1fr_1fr] items-center gap-3">
+									<span class="text-xs text-gray-500 dark:text-gray-400">{label}</span>
+									<span class="text-right font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(score.precision)}</span>
+									<span class="text-right font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(score.recall)}</span>
+									<span class="text-right font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(score.fmeasure)}</span>
+								</div>
+							{/each}
 						</div>
 					{:else}
 						<p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
