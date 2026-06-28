@@ -90,7 +90,8 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
                    owner_user_id: Optional[int] = None,
                    visibility: str = "public",
                    course_id: Optional[int] = None,
-                   raw_image_path: Optional[str] = None) -> None:
+                   raw_image_path: Optional[str] = None,
+                   processing_timing: Optional[Dict[str, Any]] = None) -> None:
     _validate_visibility(visibility)
     with get_conn() as c:
         if course_id is not None:
@@ -106,12 +107,14 @@ def insert_lecture(*, lecture_id: str, date: str, course_name: Optional[str],
             INSERT OR REPLACE INTO lectures
             (id,date,course_name,title,captured_at,image_path,raw_image_path,
              docx_path,pdf_path,txt_path,manifest_path,raw_ocr_text,
-             corrected_text,summary,tags,owner_user_id,visibility,course_id)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+             corrected_text,summary,tags,owner_user_id,visibility,course_id,
+             processing_timing)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (lecture_id, date, course_name, title, captured_at, image_path,
               raw_image_path, docx_path, pdf_path, txt_path, manifest_path,
               raw_ocr_text, corrected_text, summary, json.dumps(list(tags)),
-              owner_user_id, visibility, course_id))
+              owner_user_id, visibility, course_id,
+              json.dumps(processing_timing) if processing_timing is not None else None))
 
 
 def list_lectures(*, date: Optional[str] = None, course: Optional[str] = None,
@@ -274,6 +277,18 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
     args = list(updates.values()) + [lecture_id]
     with get_conn() as c:
         c.execute(f"UPDATE lectures SET {', '.join(parts)} WHERE id = ?", args)
+    return get_lecture(lecture_id)
+
+
+def update_lecture_processing_timing(
+    lecture_id: str,
+    processing_timing: Dict[str, Any],
+) -> Optional[sqlite3.Row]:
+    with get_conn() as c:
+        c.execute(
+            "UPDATE lectures SET processing_timing = ? WHERE id = ?",
+            (json.dumps(processing_timing), lecture_id),
+        )
     return get_lecture(lecture_id)
 
 

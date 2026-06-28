@@ -6,7 +6,7 @@
 		createQuery,
 		useQueryClient,
 	} from "@tanstack/svelte-query";
-	import { apiDelete, apiGet, apiPost } from "$lib/api/client";
+	import { apiDelete, apiGet, apiPatch, apiPost } from "$lib/api/client";
 	import type { LectureDetail, User } from "$lib/types";
 	import {
 		Trash,
@@ -23,10 +23,12 @@
 		ArrowLeft,
 		Sparkle,
 		CircleNotch,
+		CaretDown,
 	} from "phosphor-svelte";
 	import Card, { cardVariants } from "$lib/components/ui/Card.svelte";
 	import ImageModal from "$lib/components/modal/Image.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
+	import Textarea from "$lib/components/ui/Textarea.svelte";
 	import { cn } from "$lib/utils";
 
 	const qc = useQueryClient();
@@ -54,6 +56,24 @@
 			qc.setQueryData(["lecture", id], data);
 		},
 	}));
+
+	let evaluationOpen = $state(false);
+	let savingEvaluation = $state(false);
+	let evaluationError = $state("");
+	let evaluationStatus = $state("");
+	let evaluationSeedId = $state<string | null>(null);
+	let draftReferenceTranscript = $state("");
+	let draftReferenceSummary = $state("");
+
+	$effect(() => {
+		if (!lecture.data || evaluationSeedId === lecture.data.id) return;
+		evaluationSeedId = lecture.data.id;
+		draftReferenceTranscript = lecture.data.reference_transcript ?? "";
+		draftReferenceSummary = lecture.data.reference_summary ?? "";
+		evaluationError = "";
+		evaluationStatus = "";
+	});
+
 	const downloads = [
 		{ type: "pdf", label: "PDF", Icon: FilePdf },
 		{ type: "docx", label: "DOCX", Icon: FileDoc },
@@ -91,6 +111,40 @@
 		goto("/lectures");
 	}
 
+	function resetEvaluationDrafts() {
+		draftReferenceTranscript = lecture.data?.reference_transcript ?? "";
+		draftReferenceSummary = lecture.data?.reference_summary ?? "";
+		evaluationError = "";
+		evaluationStatus = "";
+	}
+
+	async function saveEvaluation() {
+		savingEvaluation = true;
+		evaluationError = "";
+		evaluationStatus = "";
+		try {
+			const data = await apiPatch<LectureDetail>(`/api/v1/lectures/${id}`, {
+				reference_transcript: draftReferenceTranscript.trim() || null,
+				reference_summary: draftReferenceSummary.trim() || null,
+			});
+			qc.setQueryData(["lecture", id], data);
+			evaluationSeedId = data.id;
+			draftReferenceTranscript = data.reference_transcript ?? "";
+			draftReferenceSummary = data.reference_summary ?? "";
+			evaluationStatus = "Saved";
+		} catch (err) {
+			evaluationError = err instanceof Error ? err.message : "Save failed";
+		} finally {
+			savingEvaluation = false;
+		}
+	}
+
+	async function clearEvaluationReferences() {
+		draftReferenceTranscript = "";
+		draftReferenceSummary = "";
+		await saveEvaluation();
+	}
+
 	function formatDate(value: string) {
 		return new Date(value).toLocaleString(undefined, {
 			weekday: "short",
@@ -106,6 +160,16 @@
 			return "N/A";
 		}
 		return `${(value * 100).toFixed(1)}%`;
+	}
+
+	function formatDuration(value: number | null | undefined) {
+		if (value === null || value === undefined || Number.isNaN(value)) {
+			return "Not recorded";
+		}
+		if (value >= 1000) {
+			return `${(value / 1000).toFixed(value >= 10000 ? 1 : 2)}s`;
+		}
+		return `${value.toFixed(0)}ms`;
 	}
 
 	const pill =
@@ -154,9 +218,10 @@
 {:else if lecture.data}
 	{@const lec = lecture.data}
 	{@const evaluation = lec.evaluation}
-	{@const hasEvaluation = Boolean(evaluation.raw_ocr || evaluation.corrected || evaluation.summary)}
+	{@const latency = lec.processing_timing}
+	{@const hasEvaluation = Boolean(evaluation.raw_ocr || evaluation.summary)}
 	<section
-		class="flex flex-col gap-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-2rem)]"
+		class="flex flex-col gap-4 lg:h-[calc(100dvh-2rem)] lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto lg:pr-1"
 	>
 		<header
 			class="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
@@ -283,7 +348,7 @@
 			/>
 		</div>
 
-		<div class="grid shrink-0 gap-4 md:grid-cols-2 xl:grid-cols-3">
+		<div class="grid shrink-0 gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(18rem,0.8fr)]">
 			<div
 				role="button"
 				tabindex="0"
@@ -293,12 +358,12 @@
 			>
 				<div class="flex min-h-8 w-full items-center justify-between gap-2">
 					<h2 class="text-sm font-semibold text-primary transition-colors group-hover:text-secondary dark:text-gray-50">
-						Transcript
+						OCR
 					</h2>
 					<ArrowRight size={16} class="shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-secondary" />
 				</div>
 				<p class="whitespace-pre-wrap text-sm leading-6 text-gray-600 dark:text-gray-300" style="display:-webkit-box;-webkit-line-clamp:6;-webkit-box-orient:vertical;overflow:hidden;">
-					{lec.corrected_text?.trim() ? lec.corrected_text : "No text yet."}
+					{lec.raw_ocr_text?.trim() ? lec.raw_ocr_text : "No OCR text yet."}
 				</p>
 			</div>
 
@@ -348,97 +413,194 @@
 			>
 				<div class="flex min-h-8 w-full items-center justify-between gap-2">
 					<h2 class="text-sm font-semibold text-primary dark:text-gray-50">
-						Evaluation
+						Latency
 					</h2>
-					{#if !hasEvaluation}
-						<span class="rounded-full bg-amber-500/10 px-2.5 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
-							Reference needed
-						</span>
-					{/if}
 				</div>
 
-				{#if hasEvaluation}
-					<div class="grid gap-3 text-sm">
-						{#if evaluation.raw_ocr}
-							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
-									Raw OCR
-								</p>
-								<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">CER</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.error_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">CRR</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.recognition_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">WER</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.error_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">WRR</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.recognition_rate)}</span>
-									</div>
-								</div>
+				{#if latency}
+					<div class="grid gap-2 text-sm">
+						{#each latency.stages as stage (stage.key)}
+							<div class="flex items-center justify-between gap-3">
+								<span class="min-w-0 truncate text-gray-600 dark:text-gray-300">
+									{stage.label}
+								</span>
+								<span class="shrink-0 font-semibold tabular-nums text-primary dark:text-gray-50">
+									{stage.triggered ? formatDuration(stage.duration_ms) : "Skipped"}
+								</span>
 							</div>
-						{/if}
-
-						{#if evaluation.corrected}
-							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
-									Corrected
-								</p>
-								<div class="grid grid-cols-2 gap-2 sm:grid-cols-4">
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">CER</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.cer.error_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">CRR</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.cer.recognition_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">WER</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.wer.error_rate)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">WRR</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.corrected.wer.recognition_rate)}</span>
-									</div>
-								</div>
-							</div>
-						{/if}
-
-						{#if evaluation.summary}
-							<div class="grid gap-2 border-t border-gray-100 pt-3 dark:border-gray-800">
-								<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
-									Summary
-								</p>
-								<div class="grid grid-cols-3 gap-2">
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-1</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge1.fmeasure)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-2</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge2.fmeasure)}</span>
-									</div>
-									<div>
-										<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-L</span>
-										<span class="font-semibold text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rougeL.fmeasure)}</span>
-									</div>
-								</div>
-							</div>
-						{/if}
+						{/each}
+					</div>
+					<div class="grid gap-2 border-t border-gray-100 pt-3 text-sm dark:border-gray-800">
+						<div class="flex items-center justify-between gap-3">
+							<span class="font-medium text-gray-600 dark:text-gray-300">Total</span>
+							<span class="font-semibold tabular-nums text-primary dark:text-gray-50">
+								{formatDuration(latency.total_ms)}
+							</span>
+						</div>
+						<div class="flex items-center justify-between gap-3">
+							<span class="font-medium text-gray-600 dark:text-gray-300">Mean / median</span>
+							<span class="font-semibold tabular-nums text-primary dark:text-gray-50">
+								{formatDuration(latency.mean_ms)} / {formatDuration(latency.median_ms)}
+							</span>
+						</div>
 					</div>
 				{:else}
 					<p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
-						Add a real transcript or reference summary to calculate scores.
+						Latency was not recorded for this lecture.
 					</p>
 				{/if}
 			</div>
 		</div>
+
+		<section class={cn(cardVariants(), "grid shrink-0 gap-4")}>
+			<div class="flex min-h-8 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div class="flex min-w-0 items-center gap-3">
+					<h2 class="text-sm font-semibold text-primary dark:text-gray-50">
+						Evaluation
+					</h2>
+					{#if hasEvaluation}
+						<span class="rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-semibold text-emerald-700 dark:text-emerald-300">
+							Scores ready
+						</span>
+					{:else}
+						<span class="rounded-lg bg-amber-500/10 px-2 py-1 text-xs font-semibold text-amber-700 dark:text-amber-300">
+							Reference needed
+						</span>
+					{/if}
+				</div>
+				<Button
+					variant="icon+text"
+					secondary
+					onclick={() => (evaluationOpen = !evaluationOpen)}
+					title={evaluationOpen ? "Collapse evaluation" : "Expand evaluation"}
+				>
+					{#snippet icon()}
+						<CaretDown
+							size={16}
+							class={cn("transition-transform duration-200", evaluationOpen && "rotate-180")}
+						/>
+					{/snippet}
+					{evaluationOpen ? "Collapse" : "Expand"}
+				</Button>
+			</div>
+
+			{#if evaluationOpen}
+				<div class="grid gap-4 border-t border-gray-100 pt-4 dark:border-gray-800">
+					{#if canManage}
+						<div class="grid gap-4 md:grid-cols-2">
+							<Textarea
+								id="evaluation-reference-transcript"
+								label="Real transcript"
+								bind:value={draftReferenceTranscript}
+								rows={8}
+								placeholder="Paste the human-verified lecture transcript"
+							/>
+							<Textarea
+								id="evaluation-reference-summary"
+								label="Reference summary"
+								bind:value={draftReferenceSummary}
+								rows={8}
+								placeholder="Paste the human/reference summary for ROUGE"
+							/>
+						</div>
+						<div class="flex flex-wrap items-center justify-between gap-3">
+							<div class="min-h-5 text-sm font-medium">
+								{#if evaluationError}
+									<span class="text-red-600 dark:text-red-400">{evaluationError}</span>
+								{:else if evaluationStatus}
+									<span class="text-emerald-700 dark:text-emerald-300">{evaluationStatus}</span>
+								{/if}
+							</div>
+							<div class="flex flex-wrap items-center gap-2">
+								<Button
+									ghost
+									type="button"
+									onclick={resetEvaluationDrafts}
+									disabled={savingEvaluation}
+								>
+									Reset
+								</Button>
+								<Button
+									ghost
+									danger
+									type="button"
+									onclick={clearEvaluationReferences}
+									disabled={savingEvaluation}
+								>
+									Clear
+								</Button>
+								<Button
+									type="button"
+									onclick={saveEvaluation}
+									disabled={savingEvaluation}
+								>
+									{savingEvaluation ? "Saving..." : "Save evaluation"}
+								</Button>
+							</div>
+						</div>
+					{:else}
+						<p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+							Only lecture owners can edit reference text. Scores still show here when references exist.
+						</p>
+					{/if}
+
+					{#if hasEvaluation}
+						<div class="grid gap-4 lg:grid-cols-2">
+							{#if evaluation.raw_ocr}
+								<div class="grid gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
+									<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
+										OCR
+									</p>
+									<div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">CER</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.error_rate)}</span>
+										</div>
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">CRR</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.cer.recognition_rate)}</span>
+										</div>
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">WER</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.error_rate)}</span>
+										</div>
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">WRR</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.raw_ocr.wer.recognition_rate)}</span>
+										</div>
+									</div>
+								</div>
+							{/if}
+
+							{#if evaluation.summary}
+								<div class="grid gap-3 rounded-lg bg-gray-50 p-3 dark:bg-gray-950">
+									<p class="text-xs font-semibold uppercase text-primary/60 dark:text-gray-400">
+										Summary
+									</p>
+									<div class="grid grid-cols-3 gap-3">
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-1</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge1.fmeasure)}</span>
+										</div>
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-2</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rouge2.fmeasure)}</span>
+										</div>
+										<div>
+											<span class="block text-xs text-gray-500 dark:text-gray-400">ROUGE-L</span>
+											<span class="font-semibold tabular-nums text-primary dark:text-gray-50">{formatPercent(evaluation.summary.rougeL.fmeasure)}</span>
+										</div>
+									</div>
+								</div>
+							{/if}
+						</div>
+					{:else}
+						<p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+							Add a real transcript for OCR scores or a reference summary for ROUGE scores.
+						</p>
+					{/if}
+				</div>
+			{/if}
+		</section>
 	</section>
 {/if}

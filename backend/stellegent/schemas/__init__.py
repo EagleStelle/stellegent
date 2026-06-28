@@ -243,6 +243,20 @@ class LectureEvaluation(BaseModel):
     summary: Optional[SummaryEvaluation] = None
 
 
+class ProcessingStageTiming(BaseModel):
+    key: str
+    label: str
+    duration_ms: float
+    triggered: bool = True
+
+
+class ProcessingTiming(BaseModel):
+    stages: List[ProcessingStageTiming] = []
+    total_ms: float = 0.0
+    mean_ms: float = 0.0
+    median_ms: float = 0.0
+
+
 class LectureDetail(BaseModel):
     id: str
     date: str
@@ -260,6 +274,7 @@ class LectureDetail(BaseModel):
     reference_transcript: Optional[str] = None
     reference_summary: Optional[str] = None
     evaluation: LectureEvaluation = Field(default_factory=LectureEvaluation)
+    processing_timing: Optional[ProcessingTiming] = None
     tags: Optional[str] = None
     manifest: Optional[dict] = None
     student_ids: List[int] = []
@@ -288,6 +303,7 @@ class PipelineResult(BaseModel):
     corrected_text: str
     summary: str
     tags: List[str] = []
+    processing_timing: Optional[ProcessingTiming] = None
 
 
 class ProcessingTaskOut(BaseModel):

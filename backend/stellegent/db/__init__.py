@@ -2,6 +2,7 @@ from .store import (
     init_db, get_conn,
     insert_lecture, list_lectures, get_lecture, delete_lecture,
     can_view_lecture, can_manage_lecture, update_lecture,
+    update_lecture_processing_timing,
     create_user, get_user, get_user_by_id, get_user_by_email, verify_user,
     verify_user_by_email, verify_user_password,
     create_google_user, get_user_by_google_sub,

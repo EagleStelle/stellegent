@@ -15,9 +15,9 @@
 	}));
 
 	const body = $derived(
-		lecture.data?.corrected_text?.trim()
-			? lecture.data.corrected_text
-			: "No text yet.",
+		lecture.data?.raw_ocr_text?.trim()
+			? lecture.data.raw_ocr_text
+			: "No OCR text yet.",
 	);
 </script>
 
@@ -40,7 +40,7 @@
 				<h1
 					class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
 				>
-					Transcript
+					OCR
 				</h1>
 			</div>
 		</header>

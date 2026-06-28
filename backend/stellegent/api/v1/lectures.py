@@ -55,6 +55,13 @@ def _detail_payload(row, user: dict) -> dict:
         reference_summary=row["reference_summary"],
     )
     try:
+        out["processing_timing"] = (
+            json.loads(row["processing_timing"])
+            if row["processing_timing"] else None
+        )
+    except Exception:
+        out["processing_timing"] = None
+    try:
         out["manifest"] = json.loads(Path(row["manifest_path"]).read_text("utf-8"))
     except Exception:
         out["manifest"] = None

@@ -110,12 +110,27 @@ export interface LectureEvaluation {
 	summary: SummaryEvaluation | null;
 }
 
+export interface ProcessingStageTiming {
+	key: string;
+	label: string;
+	duration_ms: number;
+	triggered: boolean;
+}
+
+export interface ProcessingTiming {
+	stages: ProcessingStageTiming[];
+	total_ms: number;
+	mean_ms: number;
+	median_ms: number;
+}
+
 export interface LectureDetail extends LectureSummary {
 	raw_ocr_text: string | null;
 	corrected_text: string | null;
 	reference_transcript: string | null;
 	reference_summary: string | null;
 	evaluation: LectureEvaluation;
+	processing_timing: ProcessingTiming | null;
 	manifest: Record<string, unknown> | null;
 	student_ids: number[];
 	annotations: Annotation[];
@@ -173,6 +188,7 @@ export interface PipelineResult {
 	corrected_text: string;
 	summary: string;
 	tags: string[];
+	processing_timing?: ProcessingTiming | null;
 }
 
 export type ProcessingTaskKind = 'upload' | 'capture';
