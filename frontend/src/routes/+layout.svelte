@@ -158,14 +158,14 @@
 
 {#if !isAuthRoute}
 	<aside
-		class="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-primary p-4 text-white md:flex border-r border-white/5 shadow-2xl"
+		class="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col bg-primary p-4 text-white md:flex lg:w-64 border-r border-white/5 shadow-2xl max-lg:px-2"
 	>
 		<a
 			href="/lectures"
-			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3.5 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80"
+			class="{navMotion} mb-2 flex items-center gap-3 rounded-lg px-3.5 py-2 text-xl font-bold tracking-tight text-white hover:opacity-80 max-lg:justify-center max-lg:px-0"
 		>
 			<Logo size={40} />
-			<span>Stellegent</span>
+			<span class="hidden lg:inline">Stellegent</span>
 		</a>
 
 		{#if isSignedIn}
@@ -178,6 +178,9 @@
 						{active}
 						href={link.href}
 						aria-current={active ? 'page' : undefined}
+						labelClass="hidden lg:inline"
+						class="max-lg:justify-center max-lg:px-0"
+						title={link.label}
 					>
 						{#snippet icon()}
 							<link.icon size={18} weight={active ? 'fill' : 'regular'} />
@@ -193,6 +196,9 @@
 					nav
 					onclick={() => theme.toggle()}
 					aria-label={theme.dark ? 'Switch to light mode' : 'Switch to dark mode'}
+					title={theme.dark ? 'Light mode' : 'Dark mode'}
+					labelClass="hidden lg:inline"
+					class="max-lg:justify-center max-lg:px-0"
 				>
 					{#snippet icon()}
 						{#if theme.dark}
@@ -211,6 +217,9 @@
 					href="/settings"
 					aria-current={isActive('/settings') ? 'page' : undefined}
 					aria-label={currentUser?.username ?? 'Settings'}
+					title={currentUser?.username ?? 'Settings'}
+					labelClass="hidden lg:inline"
+					class="max-lg:justify-center max-lg:px-0"
 				>
 					{#snippet icon()}
 						<UserIcon size={18} weight={isActive('/settings') ? 'fill' : 'regular'} />
@@ -224,7 +233,9 @@
 					danger
 					onclick={logout}
 					aria-label="Log out"
-					class="h-auto! w-full justify-start gap-3 px-3.5 py-2.5"
+					title="Log out"
+					labelClass="hidden lg:inline"
+					class="h-auto! w-full justify-start gap-3 px-3.5 py-2.5 max-lg:justify-center max-lg:px-0"
 				>
 					{#snippet icon()}
 						<SignOut size={18} />
@@ -329,7 +340,7 @@
 	</main>
 {:else}
 	<main
-		class="min-h-dvh bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-64"
+		class="min-h-dvh bg-gray-50 p-4 text-primary dark:bg-gray-950 dark:text-gray-50 md:ml-16 lg:ml-64"
 	>
 		{@render children()}
 		{#if isSignedIn}
