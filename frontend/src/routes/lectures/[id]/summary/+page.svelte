@@ -8,7 +8,7 @@
 	} from "@tanstack/svelte-query";
 	import { apiGet, apiPost } from "$lib/api/client";
 	import type { LectureDetail, User } from "$lib/types";
-	import { ArrowLeft, Sparkle, CircleNotch } from "phosphor-svelte";
+	import { ArrowLeft } from "phosphor-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 
 	const qc = useQueryClient();
@@ -45,7 +45,9 @@
 </script>
 
 {#if lecture.data}
-	<div class="relative flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] flex-col">
+	<div
+		class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
+	>
 		<header
 			class="shrink-0 flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 		>
@@ -68,25 +70,18 @@
 			</div>
 			{#if canManage}
 				<Button
-					variant="icon+text"
+					variant="text"
 					class="ml-auto"
 					onclick={() => generateSummary.mutate()}
 					disabled={generateSummary.isPending}
 					title="Generate summary"
 				>
-					{#snippet icon()}
-						{#if generateSummary.isPending}
-							<CircleNotch size={16} class="animate-spin" />
-						{:else}
-							<Sparkle size={16} />
-						{/if}
-					{/snippet}
 					{generateSummary.isPending ? "Generating…" : "Generate"}
 				</Button>
 			{/if}
 		</header>
 
-		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto py-4 pr-2">
+		<div class="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-2">
 			{#each body.split('\n') as line}
 				{#if line.trim().startsWith('- ')}
 					<div class="flex items-start gap-3">

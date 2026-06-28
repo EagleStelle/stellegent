@@ -105,31 +105,34 @@
 	}
 </script>
 
-<form onsubmit={submit} class="relative flex min-h-[calc(100dvh-2rem)] flex-col">
-	<!-- Sticky Header -->
-	<header
-		class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
-	>
-		<Button
-			variant="icon"
-			ghost
-			type="button"
-			onclick={cancel}
-			title="Back to lectures"
+<form
+	onsubmit={submit}
+	class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
+>
+	<header class="shrink-0">
+		<div
+			class="flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 		>
-			{#snippet icon()}
-				<ArrowLeft size={20} />
-			{/snippet}
-		</Button>
-		<div>
-			<h1 class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50">
-				Add Lecture
-			</h1>
+			<Button
+				variant="icon"
+				ghost
+				type="button"
+				onclick={cancel}
+				title="Back to lectures"
+			>
+				{#snippet icon()}
+					<ArrowLeft size={20} />
+				{/snippet}
+			</Button>
+			<div>
+				<h1 class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50">
+					Add Lecture
+				</h1>
+			</div>
 		</div>
 	</header>
 
-	<!-- Scrollable Middle -->
-	<div class="flex flex-col flex-1 gap-6 py-4">
+	<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
 		<div class="grid gap-6 md:grid-cols-2">
 			<label class="grid gap-1.5">
 				<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Course</span>
@@ -194,18 +197,19 @@
 		{/if}
 	</div>
 
-	<!-- Sticky Footer -->
-	<footer
-		class="sticky bottom-20 z-10 flex items-center justify-end gap-3 border-t border-gray-200 bg-gray-50 pt-2 dark:border-gray-800 dark:bg-gray-950 md:bottom-0"
-	>
-		<Button secondary type="button" onclick={cancel}>Cancel</Button>
-		<Button type="submit" disabled={saving || !file}>
-			{#if saving}
-				<CircleNotch size={18} class="animate-spin" />
-				Queuing
-			{:else}
-				Add
-			{/if}
-		</Button>
+	<footer class="shrink-0">
+		<div
+			class="flex items-center justify-end gap-3 border-t border-gray-200 pt-2 dark:border-gray-800"
+		>
+			<Button secondary type="button" onclick={cancel}>Cancel</Button>
+			<Button type="submit" disabled={saving || !file}>
+				{#if saving}
+					<CircleNotch size={18} class="animate-spin" />
+					Queuing
+				{:else}
+					Add
+				{/if}
+			</Button>
+		</div>
 	</footer>
 </form>

@@ -13,6 +13,7 @@
 		nav?: boolean;
 		active?: boolean;
 		icon?: Snippet;
+		labelClass?: string;
 	};
 
 	let {
@@ -23,6 +24,7 @@
 		nav = false,
 		active = false,
 		class: className,
+		labelClass,
 		icon,
 		children,
 		...rest
@@ -78,7 +80,7 @@
 			{@render icon()}
 		{/if}
 		{#if children}
-			<span class="truncate">{@render children()}</span>
+			<span class={cn("truncate", labelClass)}>{@render children()}</span>
 		{/if}
 	{:else if children}
 		{@render children()}

@@ -11,11 +11,10 @@
 		Visibility,
 	} from "$lib/types";
 	import Input from "$lib/components/ui/Input.svelte";
-	import Textarea from "$lib/components/ui/Textarea.svelte";
 	import ComboBox from "$lib/components/ui/ComboBox.svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Assignments from "$lib/components/course/Assignments.svelte";
-	import { Trash, ArrowLeft } from "phosphor-svelte";
+	import { ArrowLeft } from "phosphor-svelte";
 
 	const qc = useQueryClient();
 	const id = $derived(page.params.id);
@@ -130,53 +129,50 @@
 {:else if course.data}
 	<form
 		onsubmit={saveCourse}
-		class="relative flex min-h-[calc(100dvh-2rem)] flex-col"
+		class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
 	>
-		<!-- Sticky Header -->
-		<header
-			class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
-		>
-			<Button
-				variant="icon"
-				ghost
-				type="button"
-				onclick={() => goto("/courses")}
-				title="Back to courses"
+		<header class="shrink-0">
+			<div
+				class="flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 			>
-				{#snippet icon()}
-					<ArrowLeft size={20} />
-				{/snippet}
-			</Button>
-			<div>
-				<h1
-					class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
+				<Button
+					variant="icon"
+					ghost
+					type="button"
+					onclick={() => goto("/courses")}
+					title="Back to courses"
 				>
-					Edit Course
-				</h1>
+					{#snippet icon()}
+						<ArrowLeft size={20} />
+					{/snippet}
+				</Button>
+				<div>
+					<h1
+						class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
+					>
+						Edit Course
+					</h1>
+				</div>
+				<Button
+					variant="text"
+					type="button"
+					danger
+					class="ml-auto"
+					onclick={removeCourse}
+					title="Delete course"
+				>
+					Delete
+				</Button>
 			</div>
-			<Button
-				variant="icon+text"
-				type="button"
-				danger
-				class="ml-auto"
-				onclick={removeCourse}
-				title="Delete course"
-			>
-				{#snippet icon()}
-					<Trash size={18} />
-				{/snippet}
-				Delete
-			</Button>
 		</header>
 
-		<!-- Scrollable Middle -->
-		<div class="flex flex-col flex-1 gap-6 py-4">
+		<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
 			<div class="grid gap-6 md:grid-cols-2">
 				<div class="md:col-span-2">
 					<Input id="course-name" label="Name" bind:value={draftName} />
 				</div>
 				{#if isAdmin}
-					<label class="grid gap-1.5">
+					<label class="grid gap-1.5 md:col-span-2">
 						<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Faculty</span>
 						<ComboBox
 							bind:value={draftFacultyId}
@@ -198,12 +194,10 @@
 						]}
 					/>
 				</label>
-				<Textarea
+				<Input
 					id="course-description"
 					label="Description"
 					bind:value={draftDescription}
-					rows={4}
-					class="md:col-span-2"
 				/>
 			</div>
 
@@ -223,22 +217,23 @@
 			{/if}
 		</div>
 
-		<!-- Sticky Footer -->
-		<footer
-			class="sticky bottom-20 z-10 flex items-center justify-between gap-4 border-t border-gray-200 bg-gray-50 pt-2 dark:border-gray-800 dark:bg-gray-950 md:bottom-0"
-		>
-			<div class="min-w-0 flex-1 pl-2">
-				<span class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-					{draftName}
-				</span>
-			</div>
-			<div class="flex shrink-0 items-center gap-3">
-				<Button secondary type="button" onclick={() => goto("/courses")}
-					>Cancel</Button
-				>
-				<Button type="submit" disabled={saving}>
-					Save Course
-				</Button>
+		<footer class="shrink-0">
+			<div
+				class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-800"
+			>
+				<div class="min-w-0 flex-1 pl-2">
+					<span class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+						{draftName}
+					</span>
+				</div>
+				<div class="flex shrink-0 items-center gap-3">
+					<Button secondary type="button" onclick={() => goto("/courses")}
+						>Cancel</Button
+					>
+					<Button type="submit" disabled={saving}>
+						Save Course
+					</Button>
+				</div>
 			</div>
 		</footer>
 	</form>

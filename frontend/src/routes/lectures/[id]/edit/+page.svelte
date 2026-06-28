@@ -11,7 +11,7 @@
 		ManagedUser,
 		Visibility,
 	} from "$lib/types";
-	import { Plus, ArrowLeft, Trash } from "phosphor-svelte";
+	import { Plus, ArrowLeft } from "phosphor-svelte";
 	import Button from "$lib/components/ui/Button.svelte";
 	import Input from "$lib/components/ui/Input.svelte";
 	import ComboBox from "$lib/components/ui/ComboBox.svelte";
@@ -170,47 +170,44 @@
 {:else if lecture.data}
 	<form
 		onsubmit={saveLecture}
-		class="relative flex min-h-[calc(100dvh-2rem)] flex-col"
+		class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
 	>
-		<!-- Sticky Header -->
-		<header
-			class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
-		>
-			<Button
-				variant="icon"
-				ghost
-				type="button"
-				onclick={() => goto(`/lectures/${id}`)}
-				title="Back to lecture"
+		<header class="shrink-0">
+			<div
+				class="flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 			>
-				{#snippet icon()}
-					<ArrowLeft size={20} />
-				{/snippet}
-			</Button>
-			<div>
-				<h1
-					class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
+				<Button
+					variant="icon"
+					ghost
+					type="button"
+					onclick={() => goto(`/lectures/${id}`)}
+					title="Back to lecture"
 				>
-					Edit Lecture
-				</h1>
+					{#snippet icon()}
+						<ArrowLeft size={20} />
+					{/snippet}
+				</Button>
+				<div>
+					<h1
+						class="text-2xl font-bold tracking-tight text-primary dark:text-gray-50"
+					>
+						Edit Lecture
+					</h1>
+				</div>
+				<Button
+					variant="text"
+					type="button"
+					danger
+					class="ml-auto"
+					onclick={removeLecture}
+					title="Delete lecture"
+				>
+					Delete
+				</Button>
 			</div>
-			<Button
-				variant="icon+text"
-				type="button"
-				danger
-				class="ml-auto"
-				onclick={removeLecture}
-				title="Delete lecture"
-			>
-				{#snippet icon()}
-					<Trash size={18} />
-				{/snippet}
-				Delete
-			</Button>
 		</header>
 
-		<!-- Scrollable Middle -->
-		<div class="flex flex-col flex-1 gap-6 py-4">
+		<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
 			<div class="grid gap-6 md:grid-cols-2">
 				<div class="md:col-span-2">
 					<Input
@@ -312,22 +309,23 @@
 			{/if}
 		</div>
 
-		<!-- Sticky Footer -->
-		<footer
-			class="sticky bottom-20 z-10 flex items-center justify-between gap-4 border-t border-gray-200 bg-gray-50 pt-2 dark:border-gray-800 dark:bg-gray-950 md:bottom-0"
-		>
-			<div class="min-w-0 flex-1 pl-2">
-				<span class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400">
-					{lecture.data.title ?? lecture.data.course_name ?? "Untitled"}
-				</span>
-			</div>
-			<div class="flex shrink-0 items-center gap-3">
-				<Button secondary type="button" onclick={() => goto(`/lectures/${id}`)}
-					>Cancel</Button
-				>
-				<Button type="submit" disabled={saving}>
-					Save
-				</Button>
+		<footer class="shrink-0">
+			<div
+				class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-800"
+			>
+				<div class="min-w-0 flex-1 pl-2">
+					<span class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400">
+						{lecture.data.title ?? lecture.data.course_name ?? "Untitled"}
+					</span>
+				</div>
+				<div class="flex shrink-0 items-center gap-3">
+					<Button secondary type="button" onclick={() => goto(`/lectures/${id}`)}
+						>Cancel</Button
+					>
+					<Button type="submit" disabled={saving}>
+						Save
+					</Button>
+				</div>
 			</div>
 		</footer>
 	</form>

@@ -22,7 +22,9 @@
 </script>
 
 {#if lecture.data}
-	<div class="relative flex h-[calc(100dvh-2rem)] max-h-[calc(100dvh-2rem)] flex-col">
+	<div
+		class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
+	>
 		<header
 			class="shrink-0 flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 		>
@@ -45,7 +47,7 @@
 			</div>
 		</header>
 
-		<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto py-4 pr-2">
+		<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
 			<p
 				class="whitespace-pre-wrap text-base leading-relaxed text-gray-700 dark:text-gray-300"
 			>

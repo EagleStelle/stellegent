@@ -92,11 +92,10 @@
 
 <form
 	onsubmit={createCourse}
-	class="relative flex min-h-[calc(100dvh-2rem)] flex-col"
+	class="relative flex h-[calc(100dvh-7rem)] max-h-[calc(100dvh-7rem)] flex-col gap-4 md:h-[calc(100dvh-2rem)] md:max-h-[calc(100dvh-2rem)]"
 >
-	<!-- Sticky Header -->
 	<header
-		class="sticky top-0 z-10 flex items-center gap-4 border-b border-gray-200 bg-gray-50 pb-2 dark:border-gray-800 dark:bg-gray-950"
+		class="shrink-0 flex items-center gap-4 border-b border-gray-200 pb-2 dark:border-gray-800"
 	>
 		<Button
 			variant="icon"
@@ -118,8 +117,7 @@
 		</div>
 	</header>
 
-	<!-- Scrollable Middle -->
-	<div class="flex flex-col flex-1 gap-6 py-4">
+	<div class="flex min-h-0 flex-1 flex-col gap-6 overflow-y-auto pr-2">
 		<div class="grid gap-6 md:grid-cols-2">
 			<div class="md:col-span-2">
 				<Input
@@ -130,7 +128,7 @@
 				/>
 			</div>
 			{#if isAdmin}
-				<label class="grid gap-1.5">
+				<label class="grid gap-1.5 md:col-span-2">
 					<span class="text-[11px] font-semibold uppercase tracking-wide text-primary/60 md:text-xs dark:text-gray-400">Faculty</span>
 					<ComboBox
 						bind:value={newFacultyId}
@@ -152,12 +150,10 @@
 					]}
 				/>
 			</label>
-			<Textarea
+			<Input
 				id="new-course-description"
 				label="Description"
 				bind:value={newDescription}
-				rows={4}
-				class="md:col-span-2"
 			/>
 		</div>
 
@@ -177,9 +173,8 @@
 		{/if}
 	</div>
 
-	<!-- Sticky Footer -->
 	<footer
-		class="sticky bottom-20 z-10 flex items-center justify-between gap-4 border-t border-gray-200 bg-gray-50 pt-2 dark:border-gray-800 dark:bg-gray-950 md:bottom-0"
+		class="shrink-0 flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-800"
 	>
 		<div class="min-w-0 flex-1 pl-2">
 			<span class="block truncate text-sm font-medium text-gray-500 dark:text-gray-400">
