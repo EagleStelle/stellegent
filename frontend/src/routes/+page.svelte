@@ -18,7 +18,8 @@
 		ArrowRight,
 		Sun,
 		Moon,
-		GoogleLogoIcon
+		GoogleLogoIcon,
+		GithubLogo
 	} from 'phosphor-svelte';
 
 	const qc = useQueryClient();
@@ -97,15 +98,23 @@
 		<div
 			class="pointer-events-none absolute -bottom-32 -left-16 size-96 rounded-lg bg-secondary/20 blur-[130px]"
 		></div>
-		<div
-			class="pointer-events-none absolute inset-0 opacity-[0.06]"
-			style="background-image:radial-gradient(circle at 1px 1px,#fff 1px,transparent 0);background-size:24px 24px;"
-		></div>
-
 		<a href="/" class="relative flex w-max items-center gap-3">
 			<Logo size={44} />
 			<span class="text-lg font-bold tracking-tight">Stellegent</span>
 		</a>
+
+		<footer class="relative flex flex-col gap-2 text-sm text-white/70">
+			<span>&copy; Stellegent 2026</span>
+			<a
+				href="https://github.com/EagleStelle"
+				target="_blank"
+				rel="noopener noreferrer"
+				class="flex w-max items-center gap-2 transition-colors hover:text-white"
+			>
+				<GithubLogo size={18} weight="fill" />
+				<span>EagleStelle</span>
+			</a>
+		</footer>
 	</aside>
 
 	<!-- Form panel -->
