@@ -261,13 +261,34 @@ def update_lecture(lecture_id: str, **fields) -> Optional[sqlite3.Row]:
                 "SELECT name, faculty_id, visibility FROM courses WHERE id = ?",
                 (updates["course_id"],)).fetchone()
             if course:
-                if "course_name" not in updates:
-                    updates["course_name"] = course["name"]
+                new_name = updates.get("course_name") or course["name"]
+                updates["course_name"] = new_name
+                # Rewrite the "<course>: <title>" prefix to the new course. Strip
+                # using the OLD course_name (still on the row) so any prefix the
+                # client echoed back is removed, then reapply the new name. Done
+                # unconditionally because the edit form always resubmits the
+                # prefixed title, and it stays idempotent for same-course saves.
+                current = c.execute(
+                    "SELECT title, course_name FROM lectures WHERE id = ?",
+                    (lecture_id,)).fetchone()
+                old_name = current["course_name"] if current else None
+                raw_title = updates["title"] if "title" in updates \
+                    else (current["title"] if current else None)
+                base = _strip_course_prefix(raw_title, old_name)
+                updates["title"] = _prefixed_title(base, new_name)
                 # A lecture is owned by the faculty of the course it sits on, so
                 # moving it to another course transfers ownership accordingly.
                 updates["owner_user_id"] = course["faculty_id"]
                 if course["visibility"] == "private":
                     updates["visibility"] = "private"
+    elif "course_id" in updates and updates["course_id"] is None:
+        # Detaching: drop the "<course>: " prefix so the title reverts to base.
+        # The form resubmits the prefixed title, so strip even when title is set.
+        current = get_lecture(lecture_id)
+        old_name = current["course_name"] if current else None
+        raw_title = updates["title"] if "title" in updates \
+            else (current["title"] if current else None)
+        updates["title"] = _strip_course_prefix(raw_title, old_name)
     elif updates.get("visibility") == "public" and "course_id" not in updates:
         current = get_lecture(lecture_id)
         if current and current["course_id"] is not None \

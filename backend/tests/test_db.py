@@ -265,3 +265,37 @@ def test_student_courses_are_readable_without_management_roster(tmp_path, monkey
     opts = courses_api.options({"uid": student_id, "role": "student"})
     assert opts.students == []
     assert {faculty.id for faculty in opts.faculty} == {prof_id}
+
+
+def test_moving_lecture_rewrites_course_prefix(tmp_path, monkeypatch):
+    monkeypatch.setattr(cfg, "DB_PATH", tmp_path / "move.db")
+    from stellegent import db
+
+    db.init_db()
+    prof_id = db.create_user("prof1", "secret123", "prof", email="prof1@example.com")
+    math_id = db.create_course(name="Math", faculty_id=prof_id, visibility="public")
+    physics_id = db.create_course(
+        name="Physics", faculty_id=prof_id, visibility="public"
+    )
+    db.insert_lecture(
+        lecture_id="lec", date="2026-05-03", course_name=None,
+        captured_at="2026-05-03T10:00:00+00:00",
+        image_path="/tmp/i.png", docx_path="/tmp/i.docx", pdf_path="/tmp/i.pdf",
+        txt_path="/tmp/i.txt", raw_ocr_text="x", corrected_text="X",
+        summary="- x", tags=[], owner_user_id=prof_id, title="Lecture 1",
+    )
+
+    # Attach to Math -> title gains the "Math: " prefix.
+    db.update_lecture("lec", course_id=math_id, title="Lecture 1")
+    assert db.get_lecture("lec")["title"] == "Math: Lecture 1"
+
+    # The edit form resubmits the prefixed title while moving to Physics; the
+    # old prefix must be stripped and the new one applied (no compounding).
+    db.update_lecture("lec", course_id=physics_id, title="Math: Lecture 1")
+    row = db.get_lecture("lec")
+    assert row["course_name"] == "Physics"
+    assert row["title"] == "Physics: Lecture 1"
+
+    # Detaching strips the prefix back to the base title.
+    db.update_lecture("lec", course_id=None, title="Physics: Lecture 1")
+    assert db.get_lecture("lec")["title"] == "Lecture 1"
