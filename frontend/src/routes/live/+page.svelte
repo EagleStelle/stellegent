@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { goto } from '$app/navigation';
 	import { createQuery } from '@tanstack/svelte-query';
 	import { apiGet, apiPost } from '$lib/api/client';
 	import type { CapturePayload, Course, ProcessingTask, Visibility } from '$lib/types';
@@ -268,9 +267,10 @@
 		status = 'Queuing...';
 		try {
 			await (source === 'client' ? captureClient() : captureServer());
-			goto('/lectures');
+			status = 'Queued for processing';
 		} catch (err) {
 			status = err instanceof Error ? err.message : 'Capture failed';
+		} finally {
 			capturing = false;
 		}
 	}
